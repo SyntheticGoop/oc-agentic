@@ -1,5 +1,5 @@
-import type { PlanState, ToolResponse, CommitPlan } from "./types.js";
-import { parseCommit, ParseError } from "./parser.js";
+import { ParseError, parseCommit } from "./parser.js";
+import type { CommitPlan, PlanState, ToolResponse } from "./types.js";
 
 export function derivePlanState(commitContent: string): PlanState {
 	// Handle empty commit

@@ -1,10 +1,10 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
-	parseHeader,
-	parseConstraints,
-	parseTasks,
-	parseCommit,
 	ParseError,
+	parseCommit,
+	parseConstraints,
+	parseHeader,
+	parseTasks,
 } from "./parser.js";
 
 describe("parseHeader", () => {

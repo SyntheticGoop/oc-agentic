@@ -1,4 +1,4 @@
-import type { CommitType, TaskNode, CommitPlan } from "./types.js";
+import type { CommitPlan, CommitType, TaskNode } from "./types.js";
 
 export class ParseError extends Error {
 	constructor(message: string) {

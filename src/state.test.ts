@@ -1,9 +1,9 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
-	derivePlanState,
-	deriveNextActions,
-	deriveToolResponse,
 	deriveAlignmentCheck,
+	deriveNextActions,
+	derivePlanState,
+	deriveToolResponse,
 } from "./state.js";
 
 describe("derivePlanState", () => {
