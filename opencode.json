@@ -1,0 +1,11 @@
+{
+	"$schema": "https://opencode.ai/config.json",
+	"theme": "opencode",
+	"mcp": {
+		"planner": {
+			"type": "local",
+			"command": ["yarn", "run:mcp"],
+			"enabled": true
+		}
+	}
+}
