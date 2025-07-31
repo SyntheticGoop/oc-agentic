@@ -24,9 +24,44 @@ describe("executeJujutsuCommand", () => {
 			expect(result).toEqual({
 				stdout: "test output",
 				stderr: "",
-			});
 		});
 
+		it("should handle commits with empty lines that should be filtered", async () => {
+			const mockExecutor: CommandExecutor = vi.fn().mockResolvedValue({
+				stdout: `@  abcd1234 user@example.com 2024-01-01 12:00:00
+│  (empty)
+│  (no description set)
+~
+
+@
+~`,
+				stderr: "",
+			});
+
+			const result = await checkCommitStatus(mockExecutor);
+
+			// This tests lines 237-238 and 266-269 in jujutsu.ts
+			expect(result.isEmpty).toBe(true);
+			expect(result.hasModifications).toBe(false);
+		});
+
+		it("should handle commits with commit header lines that should be filtered", async () => {
+			const mockExecutor: CommandExecutor = vi.fn().mockResolvedValue({
+				stdout: `@  abcd1234 user@example.com 2024-01-01 12:00:00
+│  feat: test commit
+~
+abc123def    user@example.com    2024-01-01 12:00:00`,
+				stderr: "",
+			});
+
+			const result = await checkCommitStatus(mockExecutor);
+
+			// This tests line 269 regex pattern for commit header filtering
+			expect(result.isEmpty).toBe(false);
+			expect(result.hasModifications).toBe(false);
+		});
+		});
+	});
 		it("should handle commands with multiple arguments", async () => {
 			const mockExecutor: CommandExecutor = vi.fn().mockResolvedValue({
 				stdout: "log output",
@@ -473,7 +508,7 @@ describe("parseCommandOutput", () => {
 	it("should handle parsing errors gracefully", () => {
 		// Simulate a scenario where string operations might fail
 		const originalTrim = String.prototype.trim;
-		String.prototype.trim = function () {
+		String.prototype.trim = () => {
 			throw new Error("Mock trim error");
 		};
 

@@ -866,5 +866,19 @@ Similarly "Tasks [ ]:" might appear in text.`;
 			expect(result.description).toBe("Description with CRLF.");
 			expect(result.tasks).toHaveLength(1);
 		});
+
+		it("should handle deeply nested task with invalid parent", () => {
+			const input = `feat: test feature
+
+Tasks [ ]:
+- [ ] Level 0: task
+    - [ ] Level 2: invalid nesting without level 1`;
+
+			// This tests lines 204-205 in parser.ts - invalid task nesting error path
+			expect(() => parseCommit(input)).toThrow(ParseError);
+			expect(() => parseCommit(input)).toThrow(
+				"Invalid task nesting at level 2",
+			);
+		});
 	});
 });
