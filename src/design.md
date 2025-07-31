@@ -29,7 +29,7 @@ Tasks [ ]:
 1. If any change is a `feat`, the type is `feat`
 2. If any change is a `fix`, and there are no `feat`, the type is `fix`
 3. If any change is a `refactor`, and there are no `feat` or `fix`, the type is `refactor`
-4. Priority order: `ci` > `build` > `docs` > `chore` > `lint`
+4. Priority order: `infra` > `spec` > `build` > `docs` > `chore` > `lint`
 5. If changes can be cleanly broken up, create multiple commits
 
 **Valid Types:**
@@ -40,7 +40,8 @@ Tasks [ ]:
 - `chore`: Configuration file modifications
 - `docs`: Documentation updates
 - `lint`: File formatting
-- `ci`: CI-related file modifications
+- `infra`: Infrastructure-related changes
+- `spec`: Adding tests/specifications
 
 **Scope Rules:**
 - Lowercase noun describing affected program part
