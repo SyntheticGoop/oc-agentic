@@ -108,7 +108,7 @@ type TaskNode = {
   parent_id?: string;
 }
 
-type CommitType = "feat" | "fix" | "refactor" | "build" | "chore" | "docs" | "lint" | "ci";
+type CommitType = "feat" | "fix" | "refactor" | "build" | "chore" | "docs" | "lint" | "infra" | "spec";
 
 type PlanState = {
   phase: "uninitialized" | "planning" | "executing" | "complete";
@@ -141,8 +141,8 @@ type ToolResponse = {
 ## Jujutsu Integration
 
 **Commands Used:**
-- `jj desc -m "message"` - Edit commit descriptions
-- `jj log -r @ -T builtin_log_compact_full_description` - Read current commit
+- `jj desc -m message` - Edit commit descriptions (message passed as separate argument)
+- `jj log -r @ --no-graph -T description` - Read current commit description
 - `jj log -r @ --summary` - Check for modifications (empty commit detection)
 - `jj new` - Create new commits
 

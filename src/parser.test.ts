@@ -112,7 +112,7 @@ describe("parseHeader", () => {
 			for (const type of invalidTypes) {
 				expect(() => parseHeader(`${type}: test`)).toThrow(ParseError);
 				expect(() => parseHeader(`${type}: test`)).toThrow(
-					"Invalid header format",
+					"Invalid commit type",
 				);
 			}
 		});

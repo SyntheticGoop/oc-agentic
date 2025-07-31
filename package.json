@@ -3,10 +3,12 @@
 	"packageManager": "yarn@4.9.2",
 	"scripts": {
 		"run:mcp": "tsx src/index.ts",
-		"test": "vitest"
+		"test": "vitest",
+		"test:clean": "rm -rf test-temp"
 	},
 	"dependencies": {
-		"fastmcp": "^3.13.0"
+		"fastmcp": "^3.13.0",
+		"zod": "^4.0.14"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^2.1.3",

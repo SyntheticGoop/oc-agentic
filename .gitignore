@@ -14,3 +14,7 @@
 
 node_modules
 coverage
+
+# Test temporary files
+test-temp/
+*.test-temp

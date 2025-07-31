@@ -1,7 +1,4 @@
-import { exec } from "node:child_process";
-import { promisify } from "node:util";
-
-const execAsync = promisify(exec);
+import { spawn } from "node:child_process";
 
 export class JujutsuError extends Error {
 	constructor(
@@ -21,30 +18,52 @@ export interface JujutsuResult {
 }
 
 // Injectable executor for testing
-export type CommandExecutor = (command: string) => Promise<JujutsuResult>;
+export type CommandExecutor = (args: string[]) => Promise<JujutsuResult>;
 
-// Default executor using child_process
-const defaultExecutor: CommandExecutor = async (command: string) => {
-	try {
-		const result = await execAsync(command);
-		return {
-			stdout: result.stdout,
-			stderr: result.stderr,
-		};
-	} catch (error: unknown) {
-		// Handle exec errors
-		const execError = error as {
-			message: string;
-			code?: number;
-			stderr?: string;
-		};
-		throw new JujutsuError(
-			`Command failed: ${execError.message}`,
-			command,
-			execError.code,
-			execError.stderr,
-		);
-	}
+// Default executor using spawn (safer than exec for argument handling)
+const defaultExecutor: CommandExecutor = async (args: string[]) => {
+	return new Promise((resolve, reject) => {
+		const child = spawn("jj", args, {
+			stdio: ["pipe", "pipe", "pipe"],
+		});
+
+		let stdout = "";
+		let stderr = "";
+
+		child.stdout?.on("data", (data) => {
+			stdout += data.toString();
+		});
+
+		child.stderr?.on("data", (data) => {
+			stderr += data.toString();
+		});
+
+		child.on("error", (error) => {
+			reject(
+				new JujutsuError(
+					`Command failed: ${error.message}`,
+					`jj ${args.join(" ")}`,
+					undefined,
+					stderr,
+				),
+			);
+		});
+
+		child.on("close", (code) => {
+			if (code === 0) {
+				resolve({ stdout, stderr });
+			} else {
+				reject(
+					new JujutsuError(
+						`Command exited with code ${code}`,
+						`jj ${args.join(" ")}`,
+						code ?? undefined,
+						stderr,
+					),
+				);
+			}
+		});
+	});
 };
 
 export async function executeJujutsuCommand(
@@ -54,7 +73,7 @@ export async function executeJujutsuCommand(
 	const command = `jj ${args.join(" ")}`;
 
 	try {
-		const result = await executor(command);
+		const result = await executor(args);
 
 		// Check for jujutsu-specific errors in stderr
 		if (result.stderr && isJujutsuError(result.stderr)) {
@@ -183,7 +202,7 @@ export async function getCurrentCommit(
 	executor?: CommandExecutor,
 ): Promise<string> {
 	const result = await executeJujutsuCommand(
-		["log", "-r", "@", "-T", "builtin_log_compact_full_description"],
+		["log", "-r", "@", "--no-graph", "-T", "description"],
 		executor,
 	);
 
@@ -222,10 +241,11 @@ export async function checkCommitStatus(executor?: CommandExecutor): Promise<{
 		// Check for file modifications in various formats:
 		// "A file.txt", "   A file.txt", "~  A file.txt"
 		return (
-			trimmed.match(/^[AMD]\s+/) || // Standard format: "A file.txt"
-			line.match(/^\s*[AMD]\s+/) || // Indented format: "   A file.txt"
-			line.match(/^~\s+[AMD]\s+/)
-		); // Jj format: "~  A file.txt"
+			trimmed.match(/^[AMDRC!?]\s+/) || // Standard format: "M file.txt"
+			line.match(/^\s*[AMDRC!?]\s+/) || // Indented format: "   M file.txt"
+			line.match(/^~\s+[AMDRC!?]\s+/) || // Jj format: "~  M file.txt"
+			line.match(/^[│\s]*[AMDRC!?]\s+/)
+		); // Jj format with any combination of pipes and spaces: "│  M file.txt", "│ │  M file.txt", etc.
 	});
 
 	// Check if commit has meaningful description
@@ -244,9 +264,10 @@ export async function checkCommitStatus(executor?: CommandExecutor): Promise<{
 
 		// Skip file modification lines
 		if (
-			trimmed.match(/^[AMD]\s+/) ||
-			line.match(/^\s*[AMD]\s+/) ||
-			line.match(/^~\s+[AMD]\s+/)
+			trimmed.match(/^[AMDRC!?]\s+/) ||
+			line.match(/^\s*[AMDRC!?]\s+/) ||
+			line.match(/^~\s+[AMDRC!?]\s+/) ||
+			line.match(/^[│\s]*[AMDRC!?]\s+/)
 		) {
 			return false;
 		}
