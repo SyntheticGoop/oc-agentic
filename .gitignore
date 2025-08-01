@@ -18,3 +18,4 @@ coverage
 # Test temporary files
 test-temp/
 *.test-temp
+**/mock-env
