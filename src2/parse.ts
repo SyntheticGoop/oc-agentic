@@ -2,7 +2,7 @@
  * @fileoverview Generic state machine parser for structured text documents
  */
 
-export type ParsedHeader =
+export type ParsedHeaderPartial =
 	| {
 			type: string;
 			scope?: never;
@@ -15,12 +15,13 @@ export type ParsedHeader =
 			breaking: boolean;
 			title?: never;
 	  }
-	| {
-			type: string;
-			scope: string;
-			breaking: boolean;
-			title: string;
-	  };
+	| ParsedHeader;
+export type ParsedHeader = {
+	type: string;
+	scope: string;
+	breaking: boolean;
+	title: string;
+};
 
 export type Task = [boolean, string, Task[]];
 
@@ -36,7 +37,7 @@ export type ParsedResult =
 	  }
 	| {
 			state: "parsed" | "halted";
-			header: ParsedHeader;
+			header: ParsedHeaderPartial;
 			description?: never;
 			constraints?: never;
 			tasks?: never;
@@ -168,8 +169,24 @@ function createParsedHeader(
 	breaking?: boolean,
 	title?: string,
 ): ParsedHeader {
+	// ParsedHeader always requires all fields
+	return {
+		type,
+		scope: scope!,
+		breaking: breaking!,
+		title: title!,
+	};
+}
+
+// Helper function to create valid ParsedHeaderPartial according to discriminated union
+function createParsedHeaderPartial(
+	type: string,
+	scope?: string,
+	breaking?: boolean,
+	title?: string,
+): ParsedHeaderPartial {
 	if (title) {
-		// Must have scope and breaking when title is present
+		// Complete header - delegate to ParsedHeader
 		return {
 			type,
 			scope: scope!,
@@ -182,12 +199,15 @@ function createParsedHeader(
 			type,
 			scope,
 			breaking: breaking ?? false,
+			title: undefined as never,
 		};
 	} else {
 		// Only type and breaking
 		return {
 			type,
+			scope: undefined as never,
 			breaking: breaking ?? false,
+			title: undefined as never,
 		};
 	}
 }
@@ -343,7 +363,7 @@ export function parse(
 		if (secondLine !== "") {
 			return {
 				state: "halted",
-				header: createParsedHeader(
+				header: createParsedHeaderPartial(
 					headerResult.header.type,
 					headerResult.header.scope,
 					headerResult.header.breaking,

@@ -376,3 +376,189 @@ The parser integrates with the broader MCP system through:
 - **Result Processing** - Structured output for downstream systems
 
 This parser represents a sophisticated, production-ready solution for structured document parsing with comprehensive validation, type safety, and configurability.
+
+## Validation System
+
+### Overview
+
+The validation system (`src2/validate.ts`) provides comprehensive validation for parsed document output using **Zod schemas**, ensuring grammar compliance and specific keyword validation according to the design specification. It includes automatic type inference and narrowing capabilities that provide stricter, more specific types after successful validation.
+
+### Validation Features
+
+#### Grammar Validation
+- **Commit Types**: Validates against allowed types (`feat`, `fix`, `refactor`, `build`, `chore`, `docs`, `lint`, `infra`, `spec`)
+- **Scope Patterns**: Enforces lowercase letters, numbers, and hyphens starting with a letter (`^[a-z][a-z0-9-]*$`)
+- **Title Length**: Enforces maximum 120 character limit and no leading/trailing whitespace
+- **Breaking Changes**: Validates boolean flag type
+
+#### Constraint Validation
+- **Valid Prefixes**: Enforces specific constraint prefixes (`Do not`, `Never`, `Avoid`, `Decide against`, `Must not`, `Cannot`, `Forbidden`)
+- **Value Format**: Ensures constraint values start with lowercase letters
+- **Non-empty Values**: Prevents empty constraint values
+
+#### Task Validation
+- **Structure Validation**: Ensures proper boolean completion flags and non-empty string descriptions
+- **Nesting Depth**: Enforces maximum nesting depth of 4 levels (0-4)
+- **Recursive Validation**: Validates entire task hierarchy including children
+
+#### Type Validation
+- **String Types**: Validates description and direction are strings when present
+- **State Validation**: Only validates successfully parsed results (`state: "parsed"`)
+
+### Zod Schema-Based Validation with Cascading Types
+
+The validation system uses Zod schemas for robust, type-safe validation while maintaining the parser's cascading discriminated union structure:
+
+```typescript
+// Zod schemas for validation
+const ValidatedCommitTypeSchema = z.enum(VALID_COMMIT_TYPES);
+const ValidatedConstraintPrefixSchema = z.enum(VALID_CONSTRAINT_PREFIXES);
+
+const ValidatedHeaderSchema = z.object({
+  type: ValidatedCommitTypeSchema,
+  scope: z.string().regex(SCOPE_PATTERN, "...").optional(),
+  breaking: z.boolean(),
+  title: z.string()
+    .max(120, "Title exceeds 120 characters")
+    .refine(val => val === val.trim(), "Title should not have leading or trailing whitespace")
+    .optional(),
+});
+
+const ValidatedConstraintSchema = z.tuple([
+  ValidatedConstraintPrefixSchema,
+  z.string()
+    .min(1, "Constraint value cannot be empty")
+    .refine(val => val.length > 0 && val[0] === val[0].toLowerCase(), "Constraint value should start with lowercase")
+]);
+
+// Recursive task schema
+const ValidatedTaskSchema: z.ZodType<ValidatedTaskType> = z.lazy(() =>
+  z.tuple([
+    z.boolean(),
+    z.string().min(1, "Task description must be a non-empty string"),
+    z.array(ValidatedTaskSchema)
+  ])
+);
+
+// Main validation schema
+const ValidatedParsedResultSchema = z.object({
+  state: z.union([z.literal("parsed"), z.literal("halted")]),
+  header: ValidatedHeaderSchema.optional(),
+  description: z.string().optional(),
+  constraints: z.array(ValidatedConstraintSchema).optional(),
+  tasks: z.array(ValidatedTaskSchema).optional().refine(
+    (tasks) => !tasks || validateTaskNestingDepth(tasks),
+    { message: "Task nesting exceeds maximum depth of 4" }
+  ),
+  direction: z.string().optional(),
+});
+```
+
+### Type Inference and Cascading Structure
+
+The system combines Zod's automatic type inference with the parser's cascading discriminated union structure:
+
+```typescript
+// Types automatically inferred from Zod schemas
+export type ValidatedCommitType = z.infer<typeof ValidatedCommitTypeSchema>;
+export type ValidatedConstraintPrefix = z.infer<typeof ValidatedConstraintPrefixSchema>;
+export type ValidatedHeader = z.infer<typeof ValidatedHeaderSchema>;
+export type ValidatedConstraint = z.infer<typeof ValidatedConstraintSchema>;
+export type ValidatedTask = ValidatedTaskType; // Recursive type
+
+// Cascading discriminated union matching parser structure exactly
+export type ValidatedParsedResult =
+  | { state: "empty"; }
+  | { state: "unknown"; }
+  | { state: "parsed" | "halted"; }
+  | { state: "parsed" | "halted"; header: ValidatedHeader; description?: never; constraints?: never; tasks?: never; direction?: never; }
+  | { state: "parsed" | "halted"; header: ValidatedHeader; description: string; constraints?: never; tasks?: never; direction?: never; }
+  | { state: "parsed" | "halted"; header: ValidatedHeader; description: string; constraints: ValidatedConstraint[]; tasks?: never; direction?: never; }
+  | { state: "parsed" | "halted"; header: ValidatedHeader; description: string; constraints: ValidatedConstraint[]; tasks: ValidatedTask[]; direction?: never; }
+  | { state: "parsed" | "halted"; header: ValidatedHeader; description: string; constraints: ValidatedConstraint[]; tasks: ValidatedTask[]; direction: string; };
+```
+
+This approach provides:
+- **Zod Validation**: Robust runtime validation with detailed error messages
+- **Cascading Types**: Exact TypeScript discriminated union structure matching the parser
+- **Type Safety**: Compile-time guarantees about which fields are present at each stage
+
+### Type Guard
+
+The system includes a type guard function for safe type narrowing:
+
+```typescript
+export function isValidatedResult(
+  parsed: ParsedResult, 
+  validation: ValidationResult
+): parsed is ValidatedParsedResult {
+  return validation.isValid && parsed.state === "parsed";
+}
+```
+
+### Error Reporting
+
+Validation errors are automatically converted from Zod's structured error format:
+
+```typescript
+export type ValidationError = {
+  field: string;      // Specific field path (e.g., "header.type", "constraints.0.0")
+  message: string;    // Human-readable error message from Zod
+  code: string;       // Standardized Zod error codes (INVALID_TYPE, TOO_BIG, CUSTOM, etc.)
+};
+
+// Zod provides standardized error codes:
+// - INVALID_TYPE: Type mismatch (string vs number, etc.)
+// - INVALID_VALUE: Invalid enum value
+// - TOO_BIG/TOO_SMALL: Size/length violations
+// - INVALID_FORMAT: Regex pattern failures
+// - CUSTOM: Custom validation failures
+```
+
+### Warning System
+
+The validation system provides warnings for best practices:
+- Scope case warnings (suggests lowercase)
+- Additional warnings can be added without breaking validation
+
+### Usage Example
+
+```typescript
+import { parse } from "./parse.js";
+import { validate, isValidatedResult } from "./validate.js";
+
+const input = "feat(auth): implement OAuth2 flow";
+const parsed = parse(input);
+const validation = validate(parsed);
+
+if (isValidatedResult(parsed, validation)) {
+  // parsed is now typed as ValidatedParsedResult with Zod-inferred types
+  // All fields are guaranteed to meet schema validation requirements
+  console.log(parsed.header.type); // ValidatedCommitType (Zod-inferred)
+}
+```
+
+### Benefits of Zod Integration
+
+1. **Automatic Type Inference**: Types are automatically inferred from schemas, reducing duplication
+2. **Standardized Error Codes**: Consistent error codes across all validation scenarios
+3. **Composable Schemas**: Easy to extend and modify validation rules
+4. **Runtime Safety**: Zod provides both compile-time and runtime type safety
+5. **Rich Validation**: Built-in support for regex, refinements, custom validations, and more
+6. **Better Error Messages**: Zod provides detailed, contextual error messages
+
+### Test Coverage
+
+The validation system includes comprehensive test coverage with 30 test cases covering:
+- Invalid states (empty, unknown, halted)
+- Missing headers
+- Valid and invalid commit types
+- Scope pattern validation
+- Title validation (length, whitespace)
+- Constraint validation (prefixes, values)
+- Task validation (structure, nesting depth)
+- Type validation for all fields
+- Warning generation
+- Complex document validation
+
+This Zod-based validation system ensures that parsed documents meet all grammar and business rule requirements before being processed by downstream systems, while providing excellent TypeScript integration and developer experience.
