@@ -66,7 +66,7 @@ const ValidatedHeaderPartial = z.union([
 ]);
 export type ValidatedHeaderPartial = z.infer<typeof ValidatedHeaderPartial>;
 
-const ValidatedHeader = z.union([
+export const ValidatedHeader = z.union([
 	z.strictObject({
 		type: ValidatedCommitType,
 		scope: ValidatedScope,
@@ -89,7 +89,7 @@ const ValidatedConstraint = z.tuple([
 export type ValidatedConstraint = z.infer<typeof ValidatedConstraint>;
 
 // Recursive task schema
-const ValidatedTask: z.ZodType<ValidatedTask> = z.lazy(() =>
+export const ValidatedTask: z.ZodType<ValidatedTask> = z.lazy(() =>
 	z.tuple([
 		z.boolean(),
 		z.string().min(1, "Task description must be a non-empty string"),

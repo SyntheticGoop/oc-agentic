@@ -562,3 +562,1027 @@ The validation system includes comprehensive test coverage with 30 test cases co
 - Complex document validation
 
 This Zod-based validation system ensures that parsed documents meet all grammar and business rule requirements before being processed by downstream systems, while providing excellent TypeScript integration and developer experience.
+
+## MCP Workflow System
+
+### Overview
+
+The MCP (Model Context Protocol) server implements a sophisticated 6-stage workflow system for requirements gathering and execution. This system guides users through a structured process from initial goal definition to complete implementation, with state persistence through Jujutsu commit descriptions.
+
+### Workflow Architecture
+
+The workflow system is built on several key principles:
+
+- **Stage-Based Progression**: 6 distinct stages (0-6) representing different phases of requirements and execution
+- **Fuzzy Schema Support**: Uses field presence detection rather than strict stage enforcement for flexibility
+- **Resumable Workflow**: Can be resumed at any stage without losing progress
+- **State Persistence**: All workflow state is stored in Jujutsu commit descriptions using structured format
+- **Tool-Driven Interaction**: Each stage has corresponding MCP tools for state management
+
+### Stage Definitions
+
+#### Stage 0: Initial State
+- **Purpose**: Empty or uninitialized workflow
+- **Data Required**: None
+- **Available Actions**: `set_overarching_goal`
+- **Prompt**: Guides user to establish clear overarching goal
+- **Transition**: Moves to Stage 1 when header is set
+
+#### Stage 1: Overarching Goal Defined
+- **Purpose**: Basic goal structure established
+- **Data Required**: `header` (type, scope, breaking, title)
+- **Available Actions**: `set_overarching_goal` (refinement), `set_detailed_goal`
+- **Prompt**: Allows goal refinement or progression to detailed requirements
+- **Transition**: Moves to Stage 2/3 when description is added
+
+#### Stage 2/3: Detailed Goal Phase
+- **Purpose**: Comprehensive requirements definition
+- **Data Required**: `header` + `description`
+- **Available Actions**: `set_detailed_goal`, `set_plan`
+- **Prompt**: Detailed requirements gathering with reasons, targets, and approach
+- **Transition**: Moves to Stage 4 when constraints are added, or Stage 5 when plan is set
+
+#### Stage 4: Constraints Defined
+- **Purpose**: Requirements with strategic constraints
+- **Data Required**: `header` + `description` + `constraints`
+- **Available Actions**: `set_plan`, constraint refinement
+- **Prompt**: Plan definition with established constraints
+- **Transition**: Moves to Stage 5 when tasks are added
+
+#### Stage 5: Plan Established
+- **Purpose**: Executable task breakdown defined
+- **Data Required**: `header` + `description` + `constraints` + `tasks`
+- **Available Actions**: `mark_task`, `finish_job`, plan refinement
+- **Prompt**: Task execution guidance with systematic approach
+- **Transition**: Moves to Stage 6 when execution begins
+
+#### Stage 6: Execution/Completion
+- **Purpose**: Active execution or completed workflow
+- **Data Required**: Full workflow state + `directive` (optional)
+- **Available Actions**: `mark_task`, `finish_job`
+- **Prompt**: Continued execution or completion validation
+- **Transition**: Workflow complete when all tasks finished
+
+### Workflow State Management
+
+#### State Persistence
+```typescript
+// State is stored in Jujutsu commit descriptions using format.ts
+const commitDescription = format(workflowState);
+await jj.description.replace(commitDescription);
+```
+
+#### State Loading
+```typescript
+// State is loaded and validated on each tool invocation
+const result = await jj.description.get();
+const parseResult = validate(parse(result.ok));
+const currentState = parseResult.data;
+```
+
+#### Stage Detection
+The system uses fuzzy schema detection based on field presence:
+- Stage 0: No header
+- Stage 1: Header only
+- Stage 2/3: Header + description
+- Stage 4: Header + description + constraints
+- Stage 5: Header + description + constraints + tasks
+- Stage 6: Full state + directive or completion marker
+
+### Workflow Resumption
+
+The workflow system supports resumption at any stage through several mechanisms:
+
+#### Automatic Stage Detection
+- `gather_requirements` tool analyzes current commit state
+- Determines appropriate stage based on available data
+- Provides stage-specific prompts and guidance
+
+#### Flexible Tool Access
+- All tools can be called at any stage for updates
+- No strict stage enforcement prevents workflow modification
+- Users can refine any part of the workflow at any time
+
+#### State Validation
+- Each tool validates current state before making changes
+- Ensures data integrity across stage transitions
+- Provides clear error messages for invalid operations
+
+### Error Handling and Recovery
+
+#### Simple Error Logging
+- Errors are logged with clear messages to users
+- No complex recovery mechanisms (by design constraint)
+- Critical errors surface immediately with manual intervention guidance
+
+#### State Consistency
+- Format function handles partial states gracefully
+- Validation ensures data integrity at each stage
+- Jujutsu integration provides atomic state updates
+
+### Integration Points
+
+#### MCP Server Integration
+- FastMCP framework provides tool infrastructure
+- Structured tool definitions with Zod parameter validation
+- Consistent response formatting across all tools
+
+#### Jujutsu Integration
+- Commit descriptions store complete workflow state
+- Diff integration shows file changes in context
+- Empty commit detection for workflow initialization
+
+#### Parser Integration
+- Uses existing parser system for commit description parsing
+- Leverages validation system for state verification
+- Benefits from fuzzy schema support for partial states
+
+This workflow system provides a robust foundation for structured requirements gathering and execution, with the flexibility to adapt to various development scenarios while maintaining state consistency and user guidance throughout the process.
+
+## MCP Tool Interface Specifications
+
+### Overview
+
+The MCP server exposes 6 tools that provide complete workflow management capabilities. Each tool is designed for specific workflow operations and includes comprehensive parameter validation, error handling, and state management.
+
+### Tool Definitions
+
+#### 1. gather_requirements
+
+**Purpose**: Entry point for workflow analysis and stage detection
+
+**Parameters**: None (empty object)
+
+**Behavior**:
+- Loads current commit state from Jujutsu
+- Detects workflow stage based on available data
+- Provides stage-appropriate prompts and guidance
+- Includes file change context when modifications exist
+
+**Return Type**: 
+```typescript
+{ content: Array<{ type: "text"; text: string }> } | { type: "text"; text: string }
+```
+
+**Usage Example**:
+```typescript
+// Always call first to understand current workflow state
+const result = await mcpClient.callTool("gather_requirements", {});
+```
+
+**Error Conditions**:
+- Jujutsu command failures
+- Commit parsing/validation errors
+- File diff retrieval errors
+
+#### 2. set_overarching_goal
+
+**Purpose**: Define or update the primary workflow objective
+
+**Parameters**:
+```typescript
+{
+  goal: {
+    type: "feat" | "fix" | "refactor" | "build" | "chore" | "docs" | "lint" | "infra" | "spec";
+    scope: string; // lowercase, letters/numbers/hyphens
+    breaking: boolean;
+    title: string; // max 120 chars, trimmed
+  }
+}
+```
+
+**Behavior**:
+- Validates goal structure against Zod schema
+- Updates workflow header in commit description
+- Transitions workflow to Stage 1
+- Provides guidance for next steps (detailed goal definition)
+
+**Return Type**: `{ type: "text"; text: string }`
+
+**Usage Example**:
+```typescript
+await mcpClient.callTool("set_overarching_goal", {
+  goal: {
+    type: "feat",
+    scope: "mcp",
+    breaking: false,
+    title: "implement draft requirements gathering to execution workflow"
+  }
+});
+```
+
+**Error Conditions**:
+- Invalid goal structure (type, scope pattern, title length)
+- Jujutsu commit update failures
+- State serialization errors
+
+#### 3. set_detailed_goal
+
+**Purpose**: Define comprehensive requirements with reasons, targets, and approach
+
+**Parameters**:
+```typescript
+{
+  description: string; // detailed requirements specification
+}
+```
+
+**Behavior**:
+- Adds detailed description to workflow state
+- Transitions workflow to Stage 2/3
+- Provides guidance for plan definition
+- Maintains existing header information
+
+**Return Type**: `{ type: "text"; text: string }`
+
+**Usage Example**:
+```typescript
+await mcpClient.callTool("set_detailed_goal", {
+  description: `Replace unmaintainable v1 MCP server with structured, testable v2 architecture.
+
+TARGETS OF CHANGE:
+1. Workflow Engine: 6-stage progression system
+2. State Management: Jujutsu commit description integration
+...
+
+APPROACH TO CHANGE:
+- Generic workflow engine architecture
+- Tool-driven user interactions
+...`
+});
+```
+
+**Error Conditions**:
+- Empty or invalid description
+- State update failures
+- Commit serialization errors
+
+#### 4. set_plan
+
+**Purpose**: Define executable task breakdown with hierarchical structure
+
+**Parameters**:
+```typescript
+{
+  plan: Array<[boolean, string, ValidatedTask[]]>; // recursive task structure
+}
+```
+
+**Task Structure**:
+```typescript
+type ValidatedTask = [
+  boolean,        // completion status
+  string,         // task description
+  ValidatedTask[] // subtasks (max 4 levels deep)
+];
+```
+
+**Behavior**:
+- Validates task structure and nesting depth (max 4 levels)
+- Updates workflow with executable plan
+- Transitions workflow to Stage 5
+- Provides execution guidance
+
+**Return Type**: `{ type: "text"; text: string }`
+
+**Usage Example**:
+```typescript
+await mcpClient.callTool("set_plan", {
+  plan: [
+    [false, "Fix and stabilize existing draft implementation", [
+      [false, "Repair syntax errors in format.ts", []],
+      [false, "Fix return type inconsistencies", []]
+    ]],
+    [false, "Complete missing workflow implementation", []]
+  ]
+});
+```
+
+**Error Conditions**:
+- Invalid task structure
+- Nesting depth exceeds 4 levels
+- Empty task descriptions
+- State update failures
+
+#### 5. mark_task
+
+**Purpose**: Update task completion status during execution
+
+**Parameters**:
+```typescript
+{
+  task_id: string;           // partial match against task descriptions
+  completed?: boolean;       // defaults to true
+}
+```
+
+**Behavior**:
+- Searches task hierarchy for matching description
+- Updates completion status for found task
+- Persists updated state to commit description
+- Provides execution continuation guidance
+
+**Return Type**: `{ type: "text"; text: string }`
+
+**Usage Example**:
+```typescript
+// Mark task as complete
+await mcpClient.callTool("mark_task", {
+  task_id: "syntax errors",
+  completed: true
+});
+
+// Mark task as incomplete
+await mcpClient.callTool("mark_task", {
+  task_id: "return type inconsistencies", 
+  completed: false
+});
+```
+
+**Error Conditions**:
+- No tasks defined in workflow
+- Task ID not found in hierarchy
+- State update failures
+
+#### 6. finish_job
+
+**Purpose**: Complete the entire workflow when all tasks are finished
+
+**Parameters**: None (empty object)
+
+**Behavior**:
+- Validates all tasks are marked complete
+- Sets workflow directive to "COMPLETE"
+- Transitions workflow to final Stage 6
+- Provides completion confirmation
+
+**Return Type**: `{ type: "text"; text: string }`
+
+**Usage Example**:
+```typescript
+// Complete workflow when all tasks done
+await mcpClient.callTool("finish_job", {});
+```
+
+**Error Conditions**:
+- Incomplete tasks remaining
+- No tasks defined
+- State update failures
+
+### Tool Integration Patterns
+
+#### Workflow Initialization
+```typescript
+// 1. Check current state
+await mcpClient.callTool("gather_requirements", {});
+
+// 2. Set overarching goal
+await mcpClient.callTool("set_overarching_goal", { goal: {...} });
+
+// 3. Define detailed requirements
+await mcpClient.callTool("set_detailed_goal", { description: "..." });
+
+// 4. Create execution plan
+await mcpClient.callTool("set_plan", { plan: [...] });
+```
+
+#### Task Execution
+```typescript
+// 1. Check current state and tasks
+await mcpClient.callTool("gather_requirements", {});
+
+// 2. Execute tasks and mark complete
+await mcpClient.callTool("mark_task", { task_id: "first task" });
+await mcpClient.callTool("mark_task", { task_id: "second task" });
+
+// 3. Complete workflow
+await mcpClient.callTool("finish_job", {});
+```
+
+#### Workflow Resumption
+```typescript
+// 1. Always start with requirements gathering
+await mcpClient.callTool("gather_requirements", {});
+
+// 2. System provides appropriate next steps based on current stage
+// 3. Use relevant tools to continue from current state
+```
+
+### Error Handling Patterns
+
+All tools follow consistent error handling:
+
+```typescript
+// Error response format
+{
+  type: "text",
+  text: "An internal error occurred: <error_type> `<metadata>`\n\nMetadata:\n<detailed_info>\n\nThis is a CRITICAL ISSUE..."
+}
+```
+
+**Common Error Types**:
+- `command failed`: Jujutsu command execution errors
+- `command non zero exit`: Jujutsu command returned error code
+- `commit validation failed`: Parsed commit doesn't match schema
+- `no tasks found`: Task operations on empty task list
+- `task not found`: Task ID doesn't match any task descriptions
+- `not all tasks complete`: Finish job called with incomplete tasks
+
+### Tool Annotations
+
+All tools include FastMCP annotations for client guidance:
+
+```typescript
+annotations: {
+  title: "Human Readable Title",
+  destructiveHint: boolean,    // true for state-changing operations
+  readOnlyHint: boolean,       // true for read-only operations
+  idempotentHint: boolean,     // true for safe-to-retry operations
+  openWorldHint: false,        // always false for controlled workflow
+  streamingHint: false,        // always false for atomic operations
+}
+```
+
+This tool interface provides complete workflow management capabilities with robust error handling, flexible resumption, and comprehensive state management through the MCP protocol.
+
+## Workflow State Transitions and Resumption Logic
+
+### State Transition Architecture
+
+The workflow system implements a sophisticated state management approach that prioritizes flexibility and resumability over strict enforcement. This design enables users to modify any aspect of their workflow at any time while maintaining data consistency.
+
+### Fuzzy Schema Approach
+
+#### Design Philosophy
+
+Rather than enforcing strict stage progression, the system uses a "fuzzy schema" approach:
+
+```typescript
+// Field presence detection instead of stage enforcement
+switch (true) {
+  case !commit.header:
+    return ""; // Stage 0: No header
+  case !commit.description:
+    return formatHeaderOnly(commit); // Stage 1: Header only
+  case !commit.constraints:
+    return formatHeaderAndDescription(commit); // Stage 2/3: Basic requirements
+  case !commit.tasks:
+    return formatWithConstraints(commit); // Stage 4: With constraints
+  default:
+    return formatComplete(commit); // Stage 5/6: Full workflow
+}
+```
+
+#### Benefits of Fuzzy Schema
+
+1. **Flexible Resumption**: Users can resume at any stage without strict validation
+2. **Partial State Handling**: System gracefully handles incomplete workflows
+3. **Non-Linear Progression**: Users can skip stages or return to previous stages
+4. **Robust Error Recovery**: Malformed states don't break the entire workflow
+
+### State Detection and Stage Mapping
+
+#### Stage Detection Logic
+
+The `gather_requirements` tool determines current stage through field analysis:
+
+```typescript
+async function detectWorkflowStage(commit: ValidatedParsed): Promise<number> {
+  // Stage 0: Empty or no header
+  if (!commit.header) return 0;
+  
+  // Stage 1: Header only
+  if (!commit.description) return 1;
+  
+  // Stage 2/3: Header + description
+  if (!commit.constraints) return commit.description ? 2 : 3;
+  
+  // Stage 4: Header + description + constraints
+  if (!commit.tasks) return 4;
+  
+  // Stage 5: Header + description + constraints + tasks
+  if (!commit.directive || commit.directive !== "COMPLETE") return 5;
+  
+  // Stage 6: Complete workflow
+  return 6;
+}
+```
+
+#### Stage-Specific Behavior
+
+Each detected stage triggers appropriate prompts and available actions:
+
+**Stage 0 → 1 Transition**:
+```typescript
+// Trigger: set_overarching_goal called
+// Effect: Header added, moves to Stage 1
+// Available: Goal refinement, detailed goal definition
+```
+
+**Stage 1 → 2/3 Transition**:
+```typescript
+// Trigger: set_detailed_goal called
+// Effect: Description added, moves to Stage 2/3
+// Available: Detailed goal refinement, plan definition
+```
+
+**Stage 2/3 → 4 Transition**:
+```typescript
+// Trigger: Constraints added (manual or through detailed goal)
+// Effect: Constraints field populated, moves to Stage 4
+// Available: Plan definition, constraint refinement
+```
+
+**Stage 4 → 5 Transition**:
+```typescript
+// Trigger: set_plan called
+// Effect: Tasks added, moves to Stage 5
+// Available: Task execution, plan refinement
+```
+
+**Stage 5 → 6 Transition**:
+```typescript
+// Trigger: finish_job called (all tasks complete)
+// Effect: Directive set to "COMPLETE", moves to Stage 6
+// Available: Workflow complete
+```
+
+### Resumption Mechanisms
+
+#### Automatic State Recovery
+
+When any tool is called, the system automatically:
+
+1. **Loads Current State**: Retrieves commit description from Jujutsu
+2. **Parses and Validates**: Uses parser and validation system
+3. **Detects Stage**: Determines current workflow stage
+4. **Provides Context**: Offers stage-appropriate guidance
+
+```typescript
+async function resumeWorkflow(): Promise<WorkflowContext> {
+  // Load current state
+  const commitResult = await jj.description.get();
+  if (commitResult.err) throw new Error("Cannot load workflow state");
+  
+  // Parse and validate
+  const parseResult = validate(parse(commitResult.ok));
+  if (!parseResult.isValid) throw new Error("Invalid workflow state");
+  
+  // Detect stage and provide context
+  const stage = detectWorkflowStage(parseResult.data);
+  const context = generateStageContext(stage, parseResult.data);
+  
+  return { stage, data: parseResult.data, context };
+}
+```
+
+#### Resumption at Any Stage
+
+**Stage 0 Resumption** (Empty Workflow):
+- System detects no header
+- Prompts for overarching goal definition
+- Provides goal establishment guidance
+
+**Stage 1 Resumption** (Goal Defined):
+- System detects header only
+- Shows current goal
+- Offers goal refinement or detailed requirements
+
+**Stage 2/3 Resumption** (Requirements Defined):
+- System detects header + description
+- Shows current requirements
+- Offers requirements refinement or plan creation
+
+**Stage 4 Resumption** (Constraints Added):
+- System detects header + description + constraints
+- Shows current requirements with constraints
+- Offers plan creation or constraint refinement
+
+**Stage 5 Resumption** (Plan Established):
+- System detects full workflow with tasks
+- Shows current plan and progress
+- Offers task execution or plan refinement
+
+**Stage 6 Resumption** (Workflow Complete):
+- System detects completed workflow
+- Shows completion status
+- Offers workflow review or new workflow initiation
+
+### State Persistence Mechanisms
+
+#### Commit Description Storage
+
+All workflow state is stored in Jujutsu commit descriptions using structured format:
+
+```typescript
+// State serialization
+const serializedState = format(workflowState);
+await jj.description.replace(serializedState);
+
+// Example serialized state
+`feat(mcp): implement draft requirements gathering to execution workflow
+
+Replace unmaintainable v1 MCP server with structured, testable v2 architecture.
+
+TARGETS OF CHANGE:
+1. Workflow Engine: 6-stage progression system
+2. State Management: Jujutsu commit description integration
+
+APPROACH TO CHANGE:
+- Generic workflow engine architecture
+- Tool-driven user interactions
+
+- Do not: implement complex error recovery mechanisms
+- Never: add performance optimizations in this iteration
+
+- [x]: Fix and stabilize existing draft implementation
+  - [x]: Repair syntax errors in format.ts
+  - [x]: Fix return type inconsistencies
+- [ ]: Complete missing workflow implementation
+  - [ ]: Add proper stage transition validation
+
+~~~ EXECUTE ~~~`
+```
+
+#### Atomic State Updates
+
+Each tool operation performs atomic state updates:
+
+```typescript
+async function updateWorkflowState(updater: (state: ValidatedParsed) => void): Promise<Result> {
+  // 1. Load current state
+  const current = await loadCommit(jj);
+  if (current.err) return current;
+  
+  // 2. Apply update
+  updater(current.ok);
+  
+  // 3. Serialize and persist
+  const serialized = format(current.ok);
+  const result = await jj.description.replace(serialized);
+  
+  // 4. Return result
+  return result.err ? result : Ok("State updated successfully");
+}
+```
+
+#### State Consistency Guarantees
+
+1. **Parse-Format Roundtrip**: `parse(format(state)) === state`
+2. **Validation Integrity**: All persisted states pass validation
+3. **Atomic Updates**: State changes are all-or-nothing
+4. **Error Recovery**: Failed updates don't corrupt existing state
+
+### Transition Flow Examples
+
+#### Complete Workflow Flow
+
+```mermaid
+graph TD
+    A[Stage 0: Empty] -->|set_overarching_goal| B[Stage 1: Goal Defined]
+    B -->|set_detailed_goal| C[Stage 2/3: Requirements]
+    C -->|constraints added| D[Stage 4: With Constraints]
+    D -->|set_plan| E[Stage 5: Plan Established]
+    E -->|mark_task| E
+    E -->|finish_job| F[Stage 6: Complete]
+```
+
+#### Non-Linear Resumption Flow
+
+```mermaid
+graph TD
+    A[Any Stage] -->|gather_requirements| B[Stage Detection]
+    B --> C[Stage-Specific Prompt]
+    C --> D[User Action]
+    D -->|Any Tool| E[State Update]
+    E --> F[New Stage]
+    F -->|gather_requirements| B
+```
+
+#### Error Recovery Flow
+
+```mermaid
+graph TD
+    A[Tool Called] --> B[Load State]
+    B -->|Success| C[Validate State]
+    B -->|Error| D[Error Response]
+    C -->|Valid| E[Execute Tool]
+    C -->|Invalid| F[Validation Error]
+    E -->|Success| G[Update State]
+    E -->|Error| H[Execution Error]
+    G --> I[Success Response]
+```
+
+### Resumption Best Practices
+
+#### For Users
+
+1. **Always Start with gather_requirements**: Understand current state before taking action
+2. **Review Current State**: Check what's already defined before making changes
+3. **Incremental Updates**: Make small, focused changes rather than large rewrites
+4. **Validate Progress**: Use gather_requirements to confirm changes took effect
+
+#### For Developers
+
+1. **Idempotent Operations**: Tools should be safe to call multiple times
+2. **Graceful Degradation**: Handle partial states without errors
+3. **Clear Error Messages**: Provide actionable feedback for failures
+4. **State Validation**: Always validate state before and after operations
+
+This resumption system provides maximum flexibility while maintaining data integrity, enabling users to work with workflows in a natural, non-linear fashion while ensuring consistent state management throughout the process.
+
+## Architectural Decisions for v2 Implementation
+
+### Overview
+
+The v2 MCP server represents a complete architectural redesign driven by the limitations and maintainability issues of the v1 "vibe coded" implementation. This section documents the key architectural decisions, their rationale, and the trade-offs considered during the v2 design process.
+
+### Core Architectural Principles
+
+#### 1. Systematic Structure Over "Vibe Coding"
+
+**Decision**: Implement a formal, structured architecture with clear separation of concerns
+
+**Rationale**: 
+- v1 was "vibe coded" without systematic structure, making it difficult to maintain and extend
+- Need for predictable, testable, and maintainable codebase
+- Enable future architectural decisions through solid foundation
+
+**Trade-offs**:
+- ✅ **Pros**: Maintainable, testable, extensible, clear responsibilities
+- ❌ **Cons**: More initial development time, higher complexity for simple operations
+- **Decision**: Prioritize long-term maintainability over short-term development speed
+
+#### 2. Generic Workflow Engine Architecture
+
+**Decision**: Build a generic, configurable workflow engine rather than domain-specific solution
+
+**Rationale**:
+- Enable reuse across different types of requirements gathering scenarios
+- Provide foundation for future workflow types beyond current use case
+- Separate workflow logic from domain-specific concerns
+
+**Alternatives Considered**:
+- **Domain-Specific Engine**: Faster to implement but limited reusability
+- **External Workflow Engine**: More features but additional dependency complexity
+- **Generic Engine**: Chosen for balance of flexibility and simplicity
+
+**Implementation**:
+```typescript
+// Generic stage-based workflow with configurable prompts and tools
+const workflowEngine = {
+  stages: configurable,
+  transitions: flexible,
+  persistence: pluggable,
+  validation: schema-based
+};
+```
+
+### Technology Stack Decisions
+
+#### 1. FastMCP Framework
+
+**Decision**: Use FastMCP for MCP server implementation
+
+**Rationale**:
+- Provides robust MCP protocol implementation
+- Built-in tool management and parameter validation
+- TypeScript-first design aligns with project goals
+- Active development and community support
+
+**Alternatives Considered**:
+- **Custom MCP Implementation**: More control but significant development overhead
+- **Other MCP Frameworks**: Limited options, FastMCP most mature
+- **FastMCP**: Chosen for maturity, TypeScript support, and feature completeness
+
+#### 2. Zod for Schema Validation
+
+**Decision**: Use Zod for all parameter and state validation
+
+**Rationale**:
+- Type-safe validation with automatic TypeScript inference
+- Composable schemas enable complex validation logic
+- Excellent error messages for debugging and user feedback
+- Runtime and compile-time type safety
+
+**Alternatives Considered**:
+- **Manual Validation**: More control but error-prone and verbose
+- **JSON Schema**: Standard but lacks TypeScript integration
+- **Joi/Yup**: Mature but less TypeScript-native
+- **Zod**: Chosen for TypeScript-first design and type inference
+
+**Implementation**:
+```typescript
+// Automatic type inference from schemas
+const ValidatedHeader = z.object({
+  type: z.enum(["feat", "fix", ...]),
+  scope: z.string().regex(/^[a-z][a-z0-9/.-]*$/),
+  breaking: z.boolean(),
+  title: z.string().max(120)
+});
+type ValidatedHeader = z.infer<typeof ValidatedHeader>; // Automatic typing
+```
+
+#### 3. Jujutsu for State Persistence
+
+**Decision**: Use Jujutsu commit descriptions for workflow state storage
+
+**Rationale**:
+- Leverages existing version control for state management
+- Provides atomic updates and history tracking
+- Integrates naturally with development workflow
+- No additional database or storage dependencies
+
+**Alternatives Considered**:
+- **File System Storage**: Simple but lacks atomicity and history
+- **Database Storage**: Robust but adds dependency complexity
+- **Git Integration**: Similar benefits but Jujutsu provides better API
+- **Jujutsu**: Chosen for atomic operations, history, and integration simplicity
+
+**Implementation**:
+```typescript
+// Atomic state updates through commit descriptions
+await jj.description.replace(format(newState));
+```
+
+### Design Pattern Decisions
+
+#### 1. Fuzzy Schema vs Strict Stage Enforcement
+
+**Decision**: Implement fuzzy schema with field presence detection
+
+**Rationale**:
+- Enables flexible workflow resumption at any stage
+- Handles partial states gracefully without errors
+- Allows non-linear workflow progression
+- Reduces user frustration with strict validation
+
+**Alternatives Considered**:
+- **Strict Stage Enforcement**: Simpler logic but inflexible user experience
+- **State Machine Pattern**: More formal but complex for user modifications
+- **Fuzzy Schema**: Chosen for user experience and flexibility
+
+**Implementation**:
+```typescript
+// Field presence detection instead of stage validation
+switch (true) {
+  case !commit.header: return handleStage0();
+  case !commit.description: return handleStage1();
+  case !commit.tasks: return handleStage4();
+  default: return handleComplete();
+}
+```
+
+#### 2. Tool-Driven Architecture
+
+**Decision**: Expose workflow operations through discrete MCP tools
+
+**Rationale**:
+- Clear separation of concerns for each operation
+- Enables atomic operations with proper error handling
+- Provides natural API boundaries for testing
+- Aligns with MCP protocol design principles
+
+**Alternatives Considered**:
+- **Monolithic Tool**: Single tool with operation parameters - less clear boundaries
+- **REST API**: More familiar but doesn't leverage MCP protocol benefits
+- **Tool-Driven**: Chosen for clarity, atomicity, and MCP alignment
+
+#### 3. Result Type Pattern
+
+**Decision**: Use Result types (Ok/Err) for error handling
+
+**Rationale**:
+- Explicit error handling without exceptions
+- Type-safe error propagation
+- Clear distinction between success and failure cases
+- Functional programming benefits
+
+**Implementation**:
+```typescript
+type Result<T, E> = Ok<T> | Err<E>;
+
+// Explicit error handling
+const result = await operation();
+if (result.err) {
+  return handleError(result);
+}
+// result.ok is guaranteed to exist
+```
+
+### Constraint Decisions
+
+#### 1. Simple Error Handling
+
+**Decision**: Implement simple error logging without complex recovery mechanisms
+
+**Rationale**:
+- Reduces implementation complexity significantly
+- Aligns with v2 foundation goals (not production system)
+- Enables faster development and testing
+- Complex recovery can be added in future iterations
+
+**Trade-offs**:
+- ✅ **Pros**: Simple implementation, clear error messages, fast development
+- ❌ **Cons**: Manual intervention required for some errors
+- **Decision**: Prioritize simplicity for v2 foundation
+
+#### 2. No Performance Optimization
+
+**Decision**: Avoid performance optimizations in v2 implementation
+
+**Rationale**:
+- Premature optimization conflicts with foundation goals
+- Current use cases don't require high performance
+- Optimization adds complexity that conflicts with maintainability
+- Can be added later when performance requirements are clear
+
+**Trade-offs**:
+- ✅ **Pros**: Simpler code, faster development, easier debugging
+- ❌ **Cons**: May not scale to large workflows
+- **Decision**: Optimize for developer experience over runtime performance
+
+#### 3. Minimal Testing Infrastructure
+
+**Decision**: Maintain existing tests without comprehensive new test suite
+
+**Rationale**:
+- Existing parser and validation tests provide solid foundation
+- Comprehensive testing would significantly increase development time
+- Manual testing sufficient for v2 foundation validation
+- Full test suite can be added in future iterations
+
+**Implementation Strategy**:
+- Ensure existing tests continue to pass
+- Add minimal tests only for new workflow functionality
+- Focus on end-to-end workflow validation over unit test coverage
+
+### Integration Architecture Decisions
+
+#### 1. Parser System Reuse
+
+**Decision**: Leverage existing parser system for commit description parsing
+
+**Rationale**:
+- Existing parser is production-ready with comprehensive test coverage
+- Provides robust parsing with error recovery
+- Maintains consistency with existing document format
+- Avoids reimplementing complex parsing logic
+
+**Benefits**:
+- 42 existing test cases provide confidence
+- Handles edge cases and malformed input gracefully
+- Supports hierarchical task structures
+- Configurable for different document formats
+
+#### 2. Validation System Integration
+
+**Decision**: Build on existing Zod-based validation system
+
+**Rationale**:
+- Existing validation provides comprehensive schema enforcement
+- Type-safe validation with automatic inference
+- Extensible for new workflow requirements
+- Consistent error reporting across system
+
+**Extension Strategy**:
+- Add workflow-specific validation schemas
+- Maintain compatibility with existing parser output
+- Extend type definitions for new workflow concepts
+
+### Future Architecture Considerations
+
+#### Planned Extensions
+
+1. **Performance Optimization**: When scale requirements become clear
+2. **Complex Error Recovery**: When user experience demands it
+3. **Additional Workflow Types**: When generic engine proves valuable
+4. **Comprehensive Testing**: When stability requirements increase
+
+#### Architecture Flexibility
+
+The v2 architecture is designed to support future extensions:
+
+- **Modular Design**: Clear separation enables component replacement
+- **Generic Patterns**: Workflow engine can support different domains
+- **Extensible Validation**: Schema-based validation easily extended
+- **Pluggable Persistence**: Jujutsu integration can be abstracted
+
+### Lessons from v1 Implementation
+
+#### Problems Addressed
+
+1. **"Vibe Coded" Structure**: Replaced with systematic, documented architecture
+2. **Maintenance Difficulty**: Clear separation of concerns and documentation
+3. **Extension Challenges**: Generic patterns enable future development
+4. **Testing Gaps**: Foundation for comprehensive testing infrastructure
+
+#### Design Principles Derived
+
+1. **Systematic Over Intuitive**: Formal patterns over ad-hoc solutions
+2. **Documentation First**: Architecture decisions documented for future reference
+3. **Type Safety**: Comprehensive TypeScript usage for compile-time guarantees
+4. **Separation of Concerns**: Clear boundaries between components
+5. **Testability**: Architecture designed to support comprehensive testing
+
+This architectural foundation provides a solid base for future development while addressing the core maintainability and extensibility issues that plagued the v1 implementation.

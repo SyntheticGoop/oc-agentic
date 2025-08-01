@@ -5,10 +5,15 @@ import { FastMCP } from "fastmcp";
 import { z } from "zod";
 import { Jujutsu } from "./jujutsu";
 import { parse } from "./parse";
-import { validate } from "./validate";
+import { validate, ValidatedHeader, ValidatedTask } from "./validate";
 import { Err, Ok } from "./result";
+import { format } from "./format";
 
-function format(
+function formatError(error: Err) {
+	return `An internal error ocurred: ${error.err} \`${JSON.stringify(error.meta)}\``;
+}
+
+function composeTextOutput(
 	content:
 		| {
 				type: "error";
@@ -23,7 +28,7 @@ function format(
 		case "error":
 			return {
 				type: "text",
-				text: `An internal error ocurred during tool use: ${content.error.err}
+				text: `${formatError(content.error)}
 
 Metadata:
 ${JSON.stringify(content.error.meta, null, 2)}
@@ -39,10 +44,10 @@ This is a CRITICAL ISSUE. Surface this to the user immediately AND STOP. RESOLVI
 }
 
 const PROMPTS = {
-	DEFINE_INITIAL_GOAL: `You are an expert project planner. Your expertise is root goal extraction, vague objective bisection, possibility exploration and self reflective goal realignment.
+	DEFINE_OVERARCHING_GOAL: `You are an expert project director. Your expertise is root goal extraction, vague objective bisection, possibility exploration and self reflective goal realignment.
 
 IMPORTANT: This is your workflow. DO NOT DEVIATE.
-1. Get the user to establish a clear initial goal.
+1. Get the user to establish a clear overarching goal.
 2. Work with the user to explore and narrow the goal, giving creative suggestions and hypothesis.
 3. Decide on the finalized goal.
 
@@ -52,7 +57,90 @@ A goal will consist of 4 parts. Ensure that these parts are thoroughly investiga
 3. Is this goal breaking?
 4. The goal itself a short 1 line objective.
 
-EXPLICIT ACKNOWLEDGEMENT: You are only done once the user acknowledges that`,
+FORMAT: You need to store to call the set_overarching_goal tool. Ensure that you have all the inputs necessary to call the tool.
+EXPLICIT ACKNOWLEDGEMENT: You are only done once the user acknowledges with "PROCEED"`,
+	DEFINE_DETAILED_GOAL: `You are an assmebly of domain experts brought together to interrogate and critique plans. Your expertise is vague objective bisection, possibility exploration and self reflective goal realignment.
+
+YOUR CORE TONE IS STRICT AND DEMANDING. YOU SEEK JUSTIFICATION. YOU EVALUATE BASED ON EXECUTION COST, PRIORITIZING LOWER COSTS.
+
+IMPORTANT: This is your workflow. DO NOT DEVIATE.
+1. Understand the overarching goal.
+2. Work with the user to explore and expand the requirements of the goal, giving creative suggestions and hypothesis while pruning unwanted suggestions.
+3. Decide on the the fine details of the goal
+
+A goal will consist of 2 parts. Ensure that these parts are thoroughly investigated and abstracted.
+
+The first part is the details of the change. A detail consists of the following:
+1. Reasons for change - any change must be directed by a fundamental need to be fulfilled. Ensure that this is clear and indisputable. It is also required to provide grounding context to enhance explanation.
+2. Targets of change - what parts must be changed in order to satisfy the goal. This must be exhaustive.
+3. Approach to change - how are you going to change things? What techniques, strategies, patterns, sequencing.
+
+The second part is constraints. A goal will ofter have infinite solutions. Define strategically place constraints to narrow the scope.
+The strategy to find constraints is to systematically explore the goal and propose a range of distinct solutions within the goal and existing constraints.
+The user will then pick a few proposals to follow. Your job is to then decide on bisecting constraints that will satisfy extracting only the chosen solutions from this group.
+
+FORMAT: You need to store to call the set_detailed_goal tool. Ensure that you have all the inputs necessary to call the tool.
+EXPLICIT ACKNOWLEDGEMENT: You are only done once the user acknowledges with "PROCEED"`,
+
+	DEFINE_PLAN: `You are an expert requirements implementer. Your expertise is in breaking down an objective into clear distinct steps to execute on.
+
+YOU WILL UNRELENTLESSLY PURSUE THE IDEAL APPROACH TO SATISFY THE CURRENT REQUIREMENT.
+YOU WILL PRIORITIZE SIMPLE OVER COMPLEX.
+YOU WILL PURSUE DECOUPLING OF TASKS.
+YOU WILL ENSURE STREAMLINING OF DIFFICULT DATAFLOWS.
+
+IMPORTANT: This is your workflow. DO NOT DEVIATE.
+1. Completely comprehend the requirements and constraints.
+2. Ask refining questions as necessary.
+3. Present a plan of action.
+4. Iterate on the plan with the user.
+
+Plans are formatted with the following pattern. You MUST follow the plan pattern.
+\`\`\`md plan pattern
+- [ ] First step
+  - [ ] Nested first step
+    - [ ] Nested nested first step
+      - [ ] Nested nested nested first step
+- [ ] Second step
+- [x] Completed step
+\`\`\`
+
+Plans are lists of tasks. Each task can be broken down subtasks. You may only be 4 subtasks deep.
+
+ALWAYS favor a deep over a shallow plan.
+ALWAYS reletlessly refine the plan.
+
+FORMAT: You need to store to call the set_plan tool. Ensure that you have all the inputs necessary to call the tool.
+EXPLICIT ACKNOWLEDGEMENT: You are only done once the user acknowledges with "PROCEED"`,
+	EXECUTE: `You are an expert task executor. Your expertise is in executing tasks to specification..
+
+YOU WILL ADHERE TO ALL QUALITY STANDARDS.
+YOU WILL ADHERE TO ALL CODE STANDARDS.
+YOU WILL EXECUTE TASKS SEQUETIALLY AND IN ORDER.
+YOU WILL MARK TASKS AS DONE USING THE mark_task TOOL.
+YOU WILL BE SYSTEMATIC.
+
+BEFORE EXECUTING A TASK ALWAYS SAY THIS OUT LOUD:
+\`\`\`md
+I am going to do THE_NAME_OF_THE_TASK.
+This is how I will do things: ...
+I will keep in mind these edge cases: ...
+\`\`\`
+
+THEN YOU WILL READ THE PREVIOUS LINE AND SAY THIS:
+\`\`\`md
+Is that accurate?
+These points are accurate: ...
+These points are inaccurate: ...
+\`\`\`
+
+THEN YOU WILL REPEAT AND REFINE UNTIL THERE ARE NO INACCURATE POINTS.
+
+UNLESS EXPLICITLY STOPPED, NEVER STOP EXECUTING.`,
+	SELF_REINFORCEMENT: `DO THE FOLLOWING:
+1. Introsepect and ensure that the agreed upon has been fully captured in this input.
+2. If it is not fully captured, update it again to satisfy it.
+3. Only when fully fully captured then you may stop retrying and proceed.`,
 };
 
 async function loadCommit(jj: ReturnType<(typeof Jujutsu)["cwd"]>) {
@@ -65,6 +153,32 @@ async function loadCommit(jj: ReturnType<(typeof Jujutsu)["cwd"]>) {
 			return Err("commit validation failed");
 		})
 		.catch((error) => Err("unknown error", { error }));
+}
+
+async function reinforceWithContext(
+	jj: ReturnType<(typeof Jujutsu)["cwd"]>,
+	driver: string,
+): Promise<Array<{ type: "text"; text: string }>> {
+	return [
+		{ type: "text", text: driver },
+		{
+			type: "text",
+			text: `FILES CHANGED:\n${await jj.diff.summary().then((summary) => {
+				if (summary.err) return formatError(summary);
+				return summary.ok.map((s) => `${s.type} ${s.file}`).join();
+			})}`,
+		},
+		...(await jj.diff.files().then((files) => {
+			if (files.err)
+				return [{ type: "text" as const, text: formatError(files) ?? "" }];
+			return files.ok
+				.map(
+					(f) =>
+						`WARNING: DIFF PRESENTED MAY LOOK LIKE THERE ARE SYNTAX ERRORS, BUT THAT IS JUST AN ARTIFACT OF DIFFING\nDIFF: ${f.file}\n${f.diff}`,
+				)
+				.map((text) => ({ type: "text" as const, text }));
+		})),
+	];
 }
 
 function start() {
@@ -103,12 +217,14 @@ Calling me will return our current state.`,
 			openWorldHint: false,
 			streamingHint: false,
 		},
-		parameters: z.object({}),
-		execute: async () => {
+		execute: async (): Promise<
+			| { content: Array<{ type: "text"; text: string }> }
+			| { type: "text"; text: string }
+		> => {
 			const commitResult = await loadCommit(jj);
 
 			if (commitResult.err) {
-				return format({
+				return composeTextOutput({
 					type: "error",
 					error: commitResult,
 				});
@@ -119,54 +235,341 @@ Calling me will return our current state.`,
 				.catch((error) => Err("unknown error", { error }));
 
 			if (isEmptyResult.err) {
-				return format({
+				return composeTextOutput({
 					type: "error",
 					error: isEmptyResult,
 				});
 			}
 
+			const currentRequirements = format(commitResult.ok);
+
+			const mergeChangeContent = isEmptyResult.ok
+				? []
+				: await reinforceWithContext(
+						jj,
+						`There are already existing changes. You MUST integrate everything necessary in satisfying those changes into your requirements.
+
+INTROSPECT the changes thoroughly. Be aware that changes are presented with as diffs. Diffs do not fully adhere to the original file format of what is being presented.`,
+					);
+
 			switch (commitResult.ok.stage) {
 				case 0:
-					switch (isEmptyResult.ok) {
-						case true:
-							return format({
+					return {
+						content: [
+							...mergeChangeContent,
+							composeTextOutput({
 								type: "instruct",
-								instruct: `There is currently no plan and no changes. You need to define the initial goal before you are allowed to do anything else. 
+								instruct: `You need to define or update the overarching goal before you are allowed to do anything else. 
 
-Here is your prompt:
-${PROMPTS.DEFINE_INITIAL_GOAL}
-`,
-							});
-						case false:
-							return format({
+${PROMPTS.DEFINE_OVERARCHING_GOAL}`,
+							}),
+						],
+					};
+
+				case 1:
+					return {
+						content: [
+							...mergeChangeContent,
+							composeTextOutput({
 								type: "instruct",
-								instruct: `There is currently no plan but changes exist. You need to define the initial goal before you are allowed to do anything else.
+								instruct: `The current requirements are as follows:
+${currentRequirements}
 
-Here is the list of changes: TODO
+Work with the user to ensure that is accurate.
 
-Here is your prompt:
-${PROMPTS.DEFINE_INITIAL_GOAL}
-`,
-							});
-					}
+${PROMPTS.DEFINE_OVERARCHING_GOAL}`,
+							}),
+						],
+					};
+
+				case 2:
+				case 3:
+					return {
+						content: [
+							...mergeChangeContent,
+							composeTextOutput({
+								type: "instruct",
+								instruct: `The current requirements are as follows:
+${currentRequirements}
+
+Work with the user to ensure that is accurate.
+
+${PROMPTS.DEFINE_DETAILED_GOAL}`,
+							}),
+						],
+					};
+				case 4:
+					return {
+						content: [
+							...mergeChangeContent,
+							composeTextOutput({
+								type: "instruct",
+								instruct: `The current requirements are as follows:
+${currentRequirements}
+
+Work with the user to ensure that is accurate.
+
+${PROMPTS.DEFINE_PLAN}`,
+							}),
+						],
+					};
+				case 5:
+				case 6:
+					return {
+						content: [
+							...mergeChangeContent,
+							composeTextOutput({
+								type: "instruct",
+								instruct: `The current requirements are as follows:
+${currentRequirements}
+
+Work with the user to ensure that is accurate.
+
+${PROMPTS.EXECUTE}`,
+							}),
+						],
+					};
 			}
-
-			return {
-				type: "text",
-				text: "step not implemented",
-			};
 		},
 	});
 
 	server.addTool({
-		name: "set_initial_goal",
+		name: "set_overarching_goal",
 		description: `Use me to set the intial goal of the change.
 
-An initial goal is the grounding objective of all other parts of the requirements.
+An overarching goal is the grounding objective of all other parts of the requirements.
 
 Call me whenever you have decided on updated goal.`,
 		annotations: {
-			title: "Set Initial Goal",
+			title: "Set Overarching Goal",
+			destructiveHint: true,
+			readOnlyHint: false,
+			idempotentHint: true,
+			openWorldHint: false,
+			streamingHint: false,
+		},
+		parameters: z.object({ goal: ValidatedHeader }),
+		execute: async (args) => {
+			const commitResult = await loadCommit(jj);
+			if (commitResult.err) {
+				return composeTextOutput({
+					type: "error",
+					error: commitResult,
+				});
+			}
+
+			commitResult.ok.header = args.goal;
+
+			const result = await jj.description.replace(format(commitResult.ok));
+			if (result.err)
+				return composeTextOutput({
+					type: "error",
+					error: result,
+				});
+
+			return composeTextOutput({
+				type: "instruct",
+				instruct: `The overarching goal has been set to: ${JSON.stringify(args)}
+
+${PROMPTS.SELF_REINFORCEMENT}
+
+${PROMPTS.DEFINE_DETAILED_GOAL}
+`,
+			});
+		},
+	});
+
+	server.addTool({
+		name: "set_detailed_goal",
+		description: `Use me to set the detailed goals of the change.
+
+A detailed goal is the specifics of the overarching goal, and consists of the reasons, targets, approach and constraints of a change.
+
+Call me whenever you have decided on updated goal.`,
+		annotations: {
+			title: "Set Detailed Goal",
+			destructiveHint: true,
+			readOnlyHint: false,
+			idempotentHint: true,
+			openWorldHint: false,
+			streamingHint: false,
+		},
+		parameters: z.object({ description: z.string() }),
+		execute: async (args) => {
+			const commitResult = await loadCommit(jj);
+			if (commitResult.err) {
+				return composeTextOutput({
+					type: "error",
+					error: commitResult,
+				});
+			}
+
+			commitResult.ok.description = args.description;
+
+			const result = await jj.description.replace(format(commitResult.ok));
+			if (result.err)
+				return composeTextOutput({
+					type: "error",
+					error: result,
+				});
+
+			return composeTextOutput({
+				type: "instruct",
+				instruct: `The detailed goal has been set to: ${JSON.stringify({ header: commitResult.ok.header, description: commitResult.ok.description, constraints: commitResult.ok.constraints })}
+
+${PROMPTS.SELF_REINFORCEMENT}
+
+${PROMPTS.DEFINE_PLAN}`,
+			});
+		},
+	});
+
+	server.addTool({
+		name: "set_plan",
+		description: `Use me to set the plan of how to implement the requirements of the change.
+
+A plan is a nested list of items to complete.
+
+\`\`\`md plan pattern
+- [ ] First step
+  - [ ] Nested first step
+    - [ ] Nested nested first step
+      - [ ] Nested nested nested first step
+- [ ] Second step
+- [x] Completed step
+\`\`\`
+
+Plans are lists of tasks. Each task can be broken down subtasks. You may only be 4 subtasks deep.
+
+Call me whenever you need to update tasks.`,
+		annotations: {
+			title: "Set Plan",
+			destructiveHint: true,
+			readOnlyHint: false,
+			idempotentHint: true,
+			openWorldHint: false,
+			streamingHint: false,
+		},
+		parameters: z.object({ plan: z.array(ValidatedTask) }),
+		execute: async (args) => {
+			const commitResult = await loadCommit(jj);
+			if (commitResult.err) {
+				return composeTextOutput({
+					type: "error",
+					error: commitResult,
+				});
+			}
+
+			commitResult.ok.tasks = args.plan;
+
+			const result = await jj.description.replace(format(commitResult.ok));
+			if (result.err)
+				return composeTextOutput({
+					type: "error",
+					error: result,
+				});
+
+			return composeTextOutput({
+				type: "instruct",
+				instruct: `The plan has been set to: ${JSON.stringify({ plan: commitResult.ok.tasks })}
+
+${PROMPTS.SELF_REINFORCEMENT}
+
+${PROMPTS.EXECUTE}
+`,
+			});
+		},
+	});
+
+	server.addTool({
+		name: "mark_task",
+		description: `Use me to mark tasks as complete or incomplete during execution.
+
+Call me whenever you complete a task or need to update task status.`,
+		annotations: {
+			title: "Mark Task",
+			destructiveHint: true,
+			readOnlyHint: false,
+			idempotentHint: true,
+			openWorldHint: false,
+			streamingHint: false,
+		},
+		parameters: z.object({
+			task_id: z.string(),
+			completed: z.boolean().optional(),
+		}),
+		execute: async (args) => {
+			const commitResult = await loadCommit(jj);
+			if (commitResult.err) {
+				return composeTextOutput({
+					type: "error",
+					error: commitResult,
+				});
+			}
+
+			// Find and update the task
+			if (!commitResult.ok.tasks) {
+				return composeTextOutput({
+					type: "error",
+					error: Err("no tasks found", {}),
+				});
+			}
+
+			// Simple task marking logic - find task by description match
+			function markTaskInArray(
+				tasks: ValidatedTask[],
+				taskId: string,
+				completed: boolean,
+			): boolean {
+				for (const task of tasks) {
+					if (task[1].includes(taskId)) {
+						task[0] = completed;
+						return true;
+					}
+					if (markTaskInArray(task[2], taskId, completed)) {
+						return true;
+					}
+				}
+				return false;
+			}
+
+			const completed = args.completed ?? true;
+			const found = markTaskInArray(
+				commitResult.ok.tasks,
+				args.task_id,
+				completed,
+			);
+
+			if (!found) {
+				return composeTextOutput({
+					type: "error",
+					error: Err("task not found", { task_id: args.task_id }),
+				});
+			}
+
+			const result = await jj.description.replace(format(commitResult.ok));
+			if (result.err)
+				return composeTextOutput({
+					type: "error",
+					error: result,
+				});
+
+			return composeTextOutput({
+				type: "instruct",
+				instruct: `Task "${args.task_id}" marked as ${completed ? "complete" : "incomplete"}.
+
+Continue with the next task in sequence.`,
+			});
+		},
+	});
+
+	server.addTool({
+		name: "finish_job",
+		description: `Use me to mark the entire workflow as complete.
+
+Call me when all tasks are finished and the workflow is ready to be completed.`,
+		annotations: {
+			title: "Finish Job",
 			destructiveHint: true,
 			readOnlyHint: false,
 			idempotentHint: true,
@@ -174,18 +577,46 @@ Call me whenever you have decided on updated goal.`,
 			streamingHint: false,
 		},
 		parameters: z.object({}),
-		execute: async (args) => {
+		execute: async () => {
 			const commitResult = await loadCommit(jj);
 			if (commitResult.err) {
-				return format({
+				return composeTextOutput({
 					type: "error",
 					error: commitResult,
 				});
 			}
 
-			if (commitResult.ok.stage) {
-				jj.description.replace("");
+			// Check if all tasks are complete
+			function allTasksComplete(tasks: ValidatedTask[]): boolean {
+				for (const [completed, , children] of tasks) {
+					if (!completed || !allTasksComplete(children)) {
+						return false;
+					}
+				}
+				return true;
 			}
+
+			if (commitResult.ok.tasks && !allTasksComplete(commitResult.ok.tasks)) {
+				return composeTextOutput({
+					type: "error",
+					error: Err("not all tasks complete", {}),
+				});
+			}
+
+			// Mark workflow as complete by setting directive
+			commitResult.ok.directive = "COMPLETE";
+
+			const result = await jj.description.replace(format(commitResult.ok));
+			if (result.err)
+				return composeTextOutput({
+					type: "error",
+					error: result,
+				});
+
+			return composeTextOutput({
+				type: "instruct",
+				instruct: `Workflow completed successfully! All requirements have been satisfied and tasks are complete.`,
+			});
 		},
 	});
 

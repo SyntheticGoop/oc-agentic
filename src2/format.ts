@@ -7,39 +7,28 @@ import type {
 } from "./validate";
 
 export function format(commit: ValidatedParsed): string {
-	switch (commit.stage) {
-		case 0:
+	switch (true) {
+		case !commit.header:
 			return "";
-		case 1:
-		case 2:
+		case !commit.description:
 			return `${formatHeader(commit.header)}
 
 ${formatDirective(commit.directive)}`.trim();
-		case 3:
-			return `${formatHeader(commit.header)}
-
-${commit.description}
-
-${formatDirective(commit.directive)}`.trim();
-		case 4:
+		case !commit.constraints:
 			return `${formatHeader(commit.header)}
 
 ${commit.description}
 
-${formatConstraints(commit.constraints).join("\n")}
-
 ${formatDirective(commit.directive)}`.trim();
-		case 5:
+		case !commit.tasks:
 			return `${formatHeader(commit.header)}
 
 ${commit.description}
 
 ${formatConstraints(commit.constraints).join("\n")}
 
-${formatTasks(commit.tasks).join("\n")}
-
 ${formatDirective(commit.directive)}`.trim();
-		case 6:
+		default:
 			return `${formatHeader(commit.header)}
 
 ${commit.description}

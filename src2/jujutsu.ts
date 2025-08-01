@@ -35,7 +35,7 @@
  */
 
 import { spawn } from "node:child_process";
-import { Err } from "./result";
+import { Err, Ok } from "./result";
 
 function spawnjj(args: string[], options: { cwd: string }) {
 	return new Promise<
@@ -90,7 +90,7 @@ export const Jujutsu = {
 				return spawnjj(["new"], { cwd: dir }).then((result) => {
 					if (result.err) return result;
 
-					return { ok: result.ok.stdout };
+					return Ok(result.ok.stdout);
 				});
 			},
 			description: {
@@ -100,14 +100,64 @@ export const Jujutsu = {
 						{ cwd: dir },
 					).then((result) => {
 						if (result.err) return result;
-						return { ok: result.ok.stdout };
+						return Ok(result.ok.stdout);
 					});
 				},
 				async replace(msg: string) {
 					return spawnjj(["desc", "-m", msg], { cwd: dir }).then((result) => {
 						if (result.err) return result;
-						return { ok: result.ok.stdout };
+						return Ok(result.ok.stdout);
 					});
+				},
+			},
+			async empty() {
+				return spawnjj(["log", "-r", "@", "-T", "empty"], {
+					cwd: dir,
+				}).then((result) => {
+					if (result.err) return result;
+					return Ok(result.ok.stdout === "true");
+				});
+			},
+			diff: {
+				async summary() {
+					return spawnjj(["diff", "-r", "@", "--summary"], {
+						cwd: dir,
+					}).then((result) => {
+						if (result.err) return result;
+						return Ok(
+							result.ok.stdout
+								.trim()
+								.split("\n")
+								.map((entry) => ({
+									type: entry.slice(0, 2).trim(),
+									file: entry.slice(2).trim(),
+								})),
+						);
+					});
+				},
+				async files() {
+					const summary = await this.summary();
+					if (summary.err) return summary;
+
+					const files = [];
+					for (const { file } of summary.ok) {
+						const f = await spawnjj(
+							["diff", "-r", "@", "--context", "20", file],
+							{
+								cwd: dir,
+							},
+						).then((result) => {
+							if (result.err) return result;
+							const split = result.ok.stdout.indexOf("\n");
+							return Ok({
+								file: result.ok.stdout.slice(0, split),
+								diff: result.ok.stdout.slice(split),
+							});
+						});
+						if (f.err) return f;
+						files.push(f.ok);
+					}
+					return Ok(files);
 				},
 			},
 		};
