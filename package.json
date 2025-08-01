@@ -3,6 +3,7 @@
 	"packageManager": "yarn@4.9.2",
 	"scripts": {
 		"run:mcp": "tsx src/index.ts",
+		"run:mcp2": "tsx src2/mcp.ts",
 		"test": "vitest",
 		"test:clean": "rm -rf test-temp"
 	},

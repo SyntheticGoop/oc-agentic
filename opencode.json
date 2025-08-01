@@ -6,6 +6,11 @@
 			"type": "local",
 			"command": ["yarn", "run:mcp"],
 			"enabled": true
+		},
+		"requirements_enforcer": {
+			"type": "local",
+			"command": ["yarn", "run:mcp2"],
+			"enabled": true
 		}
 	}
 }

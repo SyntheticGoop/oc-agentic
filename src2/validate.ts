@@ -7,7 +7,7 @@ import { z } from "zod";
 import type { ParsedResult } from "./parse.js";
 
 // Scope pattern from design specification
-const SCOPE_PATTERN = /^[a-z][a-z0-9-]*$/;
+const SCOPE_PATTERN = /^[a-z][a-z0-9/.-]*$/;
 
 // Base Zod schemas
 const ValidatedCommitType = z.enum([
@@ -51,29 +51,20 @@ const ValidatedTitle = z
 	);
 
 const ValidatedHeaderPartial = z.union([
-	z
-		.object({
-			type: ValidatedCommitType,
-			breaking: z.boolean(),
-		})
-		.strict(),
-	z
-		.object({
-			type: ValidatedCommitType,
-			scope: ValidatedScope,
-			breaking: z.boolean(),
-		})
-		.strict(),
-	z
-		.object({
-			type: ValidatedCommitType,
-			scope: ValidatedScope,
-			breaking: z.boolean(),
-			title: ValidatedTitle,
-		})
-		.strict(),
+	z.object({
+		type: ValidatedCommitType,
+		scope: ValidatedScope.optional(),
+		breaking: z.boolean(),
+		title: z.never().optional(),
+	}),
+	z.object({
+		type: ValidatedCommitType,
+		scope: ValidatedScope,
+		breaking: z.boolean(),
+		title: ValidatedTitle,
+	}),
 ]);
-export type ValidatedHeader = z.infer<typeof ValidatedHeader>;
+export type ValidatedHeaderPartial = z.infer<typeof ValidatedHeaderPartial>;
 
 const ValidatedHeader = z.union([
 	z.strictObject({
@@ -83,6 +74,7 @@ const ValidatedHeader = z.union([
 		title: ValidatedTitle,
 	}),
 ]);
+export type ValidatedHeader = z.infer<typeof ValidatedHeader>;
 
 const ValidatedConstraint = z.tuple([
 	ValidatedConstraintPrefix,
@@ -104,7 +96,7 @@ const ValidatedTask: z.ZodType<ValidatedTask> = z.lazy(() =>
 		z.array(ValidatedTask),
 	]),
 );
-type ValidatedTask = [boolean, string, ValidatedTask[]];
+export type ValidatedTask = [boolean, string, ValidatedTask[]];
 
 // Custom validation for task nesting depth
 const validateTaskNestingDepth = (
@@ -129,41 +121,63 @@ const validateTaskNestingDepth = (
 };
 
 const ValidatedState = z.enum(["parsed", "halted"]);
+
 // Main validation schema - validates the content structure
-const ValidatedParsedResult = z.union([
-	// Branch 1: { state: "empty" }
-	z.strictObject({
-		state: z.literal("empty"),
-	}),
-	// Branch 2: { state: "unknown" }
-	z.strictObject({
-		state: z.literal("unknown"),
-	}),
-	// Branch 3: { state: "parsed" | "halted" }
-	z.strictObject({
+const ValidatedParsed = z.union([
+	// Stage 0: { state: "parsed" | "halted"; stage: 0 }
+	z.object({
 		state: ValidatedState,
+		stage: z.literal(0),
+		header: z.never().optional(),
+		description: z.never().optional(),
+		constraints: z.never().optional(),
+		tasks: z.never().optional(),
+		directive: z.string().uppercase().optional(),
 	}),
-	// Branch 4: { state: "parsed" | "halted"; header: ParsedHeaderPartial; ... }
-	z.strictObject({
+	// Stage 1: { state: "parsed" | "halted"; stage: 1; header: ParsedHeaderPartial; ... }
+	z.object({
 		state: ValidatedState,
+		stage: z.literal(1),
 		header: ValidatedHeaderPartial,
+		description: z.never().optional(),
+		constraints: z.never().optional(),
+		tasks: z.never().optional(),
+		directive: z.string().uppercase().optional(),
 	}),
-	// Branch 5: { state: "parsed" | "halted"; header: ParsedHeader; description: string; ... }
-	z.strictObject({
+	// Stage 2: { state: "parsed" | "halted"; stage: 2; header: ParsedHeader; description: string; ... }
+	z.object({
 		state: ValidatedState,
+		stage: z.literal(2),
 		header: ValidatedHeader,
 		description: z.string(),
+		constraints: z.never().optional(),
+		tasks: z.never().optional(),
+		directive: z.string().uppercase().optional(),
 	}),
-	// Branch 6: { state: "parsed" | "halted"; header: ParsedHeader; description: string; constraints: Array<[string, string]>; ... }
-	z.strictObject({
+	// Stage 3: { state: "parsed" | "halted"; stage: 3; header: ParsedHeader; description: string; ... }
+	z.object({
 		state: ValidatedState,
+		stage: z.literal(3),
+		header: ValidatedHeader,
+		description: z.string(),
+		constraints: z.never().optional(),
+		tasks: z.never().optional(),
+		directive: z.string().uppercase().optional(),
+	}),
+	// Stage 4: { state: "parsed" | "halted"; stage: 4; header: ParsedHeader; description: string; constraints: Array<[string, string]>; ... }
+	z.object({
+		state: ValidatedState,
+		stage: z.literal(4),
 		header: ValidatedHeader,
 		description: z.string(),
 		constraints: z.array(ValidatedConstraint),
+		tasks: z.never().optional(),
+		directive: z.string().uppercase().optional(),
 	}),
-	// Branch 7: { state: "parsed" | "halted"; header: ParsedHeader; description: string; constraints: Array<[string, string]>; tasks: Task[]; ... }
-	z.strictObject({
+	// Stage 5: { state: "parsed" | "halted"; stage: 5; header: ParsedHeader; description: string; constraints: Array<[string, string]>; tasks: Task[]; ... }
+	z.object({
 		state: ValidatedState,
+		stage: z.literal(5),
 		header: ValidatedHeader,
 		description: z.string(),
 		constraints: z.array(ValidatedConstraint),
@@ -172,10 +186,12 @@ const ValidatedParsedResult = z.union([
 			.refine((tasks) => validateTaskNestingDepth(tasks), {
 				message: "Task nesting exceeds maximum depth of 4",
 			}),
+		directive: z.string().uppercase().optional(),
 	}),
-	// Branch 8: { state: "parsed" | "halted"; header: ParsedHeader; description: string; constraints: Array<[string, string]>; tasks: Task[]; direction: string }
-	z.strictObject({
+	// Stage 6: { state: "parsed" | "halted"; stage: 6; header: ParsedHeader; description: string; constraints: Array<[string, string]>; tasks: Task[]; direction: string }
+	z.object({
 		state: ValidatedState,
+		stage: z.literal(6),
 		header: ValidatedHeader,
 		description: z.string(),
 		constraints: z.array(ValidatedConstraint),
@@ -184,48 +200,10 @@ const ValidatedParsedResult = z.union([
 			.refine((tasks) => validateTaskNestingDepth(tasks), {
 				message: "Task nesting exceeds maximum depth of 4",
 			}),
-		direction: z.string(),
-	}),
-	// Additional branches for partial headers with content
-	// Branch 9: { state: "parsed" | "halted"; header: ParsedHeaderPartial; description: string; ... }
-	z.strictObject({
-		state: ValidatedState,
-		header: ValidatedHeaderPartial,
-		description: z.string(),
-	}),
-	// Branch 10: { state: "parsed" | "halted"; header: ParsedHeaderPartial; description: string; constraints: Array<[string, string]>; ... }
-	z.strictObject({
-		state: ValidatedState,
-		header: ValidatedHeaderPartial,
-		description: z.string(),
-		constraints: z.array(ValidatedConstraint),
-	}),
-	// Branch 11: { state: "parsed" | "halted"; header: ParsedHeaderPartial; description: string; constraints: Array<[string, string]>; tasks: Task[]; ... }
-	z.strictObject({
-		state: ValidatedState,
-		header: ValidatedHeaderPartial,
-		description: z.string(),
-		constraints: z.array(ValidatedConstraint),
-		tasks: z
-			.array(ValidatedTask)
-			.refine((tasks) => validateTaskNestingDepth(tasks), {
-				message: "Task nesting exceeds maximum depth of 4",
-			}),
-	}),
-	// Branch 12: { state: "parsed" | "halted"; header: ParsedHeaderPartial; description: string; constraints: Array<[string, string]>; tasks: Task[]; direction: string }
-	z.strictObject({
-		state: ValidatedState,
-		header: ValidatedHeaderPartial,
-		description: z.string(),
-		constraints: z.array(ValidatedConstraint),
-		tasks: z
-			.array(ValidatedTask)
-			.refine((tasks) => validateTaskNestingDepth(tasks), {
-				message: "Task nesting exceeds maximum depth of 4",
-			}),
-		direction: z.string(),
+		directive: z.string().uppercase().optional(),
 	}),
 ]);
+export type ValidatedParsed = z.infer<typeof ValidatedParsed>;
 
 // Validation result types
 export type ValidationError = {
@@ -234,11 +212,16 @@ export type ValidationError = {
 	code: string;
 };
 
-export type ValidationResult = {
-	isValid: boolean;
-	errors: ValidationError[];
-	warnings?: string[];
-};
+export type ValidationResult =
+	| {
+			isValid: false;
+			errors: ValidationError[];
+			warnings?: string[];
+	  }
+	| {
+			isValid: true;
+			data: ValidatedParsed;
+	  };
 
 // Convert Zod errors to our ValidationError format
 function convertZodErrors(zodErrors: z.ZodError): ValidationError[] {
@@ -253,54 +236,14 @@ function convertZodErrors(zodErrors: z.ZodError): ValidationError[] {
 export function validate(parsed: ParsedResult): ValidationResult {
 	const warnings: string[] = [];
 
-	// Special handling for non-parsed states
-	if (parsed.state !== "parsed") {
-		return {
-			isValid: false,
-			errors: [
-				{
-					field: "state",
-					message: `Cannot validate non-parsed result with state: ${parsed.state}`,
-					code: "INVALID_PARSE_STATE",
-				},
-			],
-		};
-	}
-
-	// Special handling for parsed state without header
-	if (!("header" in parsed) || !parsed.header) {
-		return {
-			isValid: false,
-			errors: [
-				{
-					field: "header",
-					message: "Header is required for parsed documents",
-					code: "MISSING_HEADER",
-				},
-			],
-		};
-	}
-
-	// Add warnings for best practices
-	if ("scope" in parsed.header && parsed.header.scope) {
-		const scope = parsed.header.scope;
-		if (scope !== scope.toLowerCase()) {
-			warnings.push(`Scope should be lowercase: ${scope}`);
-		}
-	}
-
 	// Validate with Zod schema
-	const result = ValidatedParsedResult.safeParse(parsed);
+	const result = ValidatedParsed.safeParse(parsed);
 
 	if (result.success) {
 		const validationResult: ValidationResult = {
 			isValid: true,
-			errors: [],
+			data: result.data,
 		};
-
-		if (warnings.length > 0) {
-			validationResult.warnings = warnings;
-		}
 
 		return validationResult;
 	} else {

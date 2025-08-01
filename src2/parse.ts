@@ -2,7 +2,7 @@
  * @fileoverview Generic state machine parser for structured text documents
  */
 
-export type ParsedHeaderPartial =
+type ParsedHeaderPartial =
 	| {
 			type: string;
 			scope?: never;
@@ -11,14 +11,13 @@ export type ParsedHeaderPartial =
 	  }
 	| {
 			type: string;
-			scope: string;
+			scope?: string;
 			breaking: boolean;
 			title?: never;
-	  }
-	| ParsedHeader;
+	  };
 export type ParsedHeader = {
 	type: string;
-	scope: string;
+	scope?: string;
 	breaking: boolean;
 	title: string;
 };
@@ -27,53 +26,53 @@ export type Task = [boolean, string, Task[]];
 
 export type ParsedResult =
 	| {
-			state: "empty";
-	  }
-	| {
-			state: "unknown";
+			state: "parsed" | "halted";
+			stage: 0;
 	  }
 	| {
 			state: "parsed" | "halted";
-	  }
-	| {
-			state: "parsed" | "halted";
+			stage: 1;
 			header: ParsedHeaderPartial;
 			description?: never;
 			constraints?: never;
 			tasks?: never;
-			direction?: never;
+			directive?: string;
 	  }
 	| {
 			state: "parsed" | "halted";
+			stage: 2;
 			header: ParsedHeader;
 			description: string;
 			constraints?: never;
 			tasks?: never;
-			direction?: never;
+			directive?: string;
 	  }
 	| {
 			state: "parsed" | "halted";
+			stage: 3;
+			header: ParsedHeader;
+			description: string;
+			constraints?: never;
+			tasks?: never;
+			directive?: string;
+	  }
+	| {
+			state: "parsed" | "halted";
+			stage: 4;
 			header: ParsedHeader;
 			description: string;
 			constraints: Array<[string, string]>;
 			tasks?: never;
-			direction?: never;
+			directive?: string;
 	  }
 	| {
 			state: "parsed" | "halted";
+			stage: 5;
 			header: ParsedHeader;
 			description: string;
 			constraints: Array<[string, string]>;
 			tasks: Task[];
-			direction?: never;
-	  }
-	| {
-			state: "parsed" | "halted";
-			header: ParsedHeader;
-			description: string;
-			constraints: Array<[string, string]>;
-			tasks: Task[];
-			direction: string;
+			directive?: string;
 	  };
 
 export type ParserConfig = {
@@ -103,10 +102,10 @@ export const DEFAULT_CONFIG: ParserConfig = {
 	maxNestingDepth: 4,
 	maxTaskCount: 1000,
 	headerPatterns: {
-		complete: /^([a-z]+)\(([^)\s]+)\)(!)?:\s*(.+)$/,
-		typeScopeBreaking: /^([a-z]+)\(([^)\s]+)\)!:$/,
-		typeScope: /^([a-z]+)\(([^)\s]+)\):$/,
-		type: /^([a-z]+):.*$/,
+		complete: /^([a-zA-Z]+)\(([^)\s]+)\)(!)?:\s*(.+)$/i,
+		typeScopeBreaking: /^([a-zA-Z]+)\(([^)\s]+)\)!:$/i,
+		typeScope: /^([a-zA-Z]+)\(([^)\s]+)\):$/i,
+		type: /^([a-zA-Z]+):.*$/i,
 	},
 };
 
@@ -183,17 +182,8 @@ function createParsedHeaderPartial(
 	type: string,
 	scope?: string,
 	breaking?: boolean,
-	title?: string,
 ): ParsedHeaderPartial {
-	if (title) {
-		// Complete header - delegate to ParsedHeader
-		return {
-			type,
-			scope: scope!,
-			breaking: breaking!,
-			title,
-		};
-	} else if (scope) {
+	if (scope) {
 		// Has scope and breaking but no title
 		return {
 			type,
@@ -219,47 +209,45 @@ function createParsedResult(
 	description?: string,
 	constraints?: Array<[string, string]>,
 	tasks?: Task[],
-	direction?: string,
+	directive?: string,
 ): ParsedResult {
-	if (direction) {
-		// Must have all fields when direction is present
+	if (tasks && tasks.length > 0) {
+		// Has tasks
 		return {
 			state,
-			header,
-			description: description!,
-			constraints: constraints!,
-			tasks: tasks!,
-			direction,
-		};
-	} else if (tasks && tasks.length > 0) {
-		// Has tasks but no direction
-		return {
-			state,
+			stage: 5,
 			header,
 			description: description!,
 			constraints: constraints!,
 			tasks,
+			directive,
 		};
 	} else if (constraints && constraints.length > 0) {
-		// Has constraints but no tasks or direction
+		// Has constraints but no tasks
 		return {
 			state,
+			stage: 4,
 			header,
 			description: description!,
 			constraints,
+			directive,
 		};
 	} else if (description) {
-		// Has description but no constraints, tasks, or direction
+		// Has description but no constraints or tasks
 		return {
 			state,
+			stage: 3,
 			header,
 			description,
+			directive,
 		};
 	} else {
-		// Only header
+		// Only header - this should be stage 1 for partial header
 		return {
 			state,
-			header,
+			stage: 1,
+			header: header as any, // Cast to ParsedHeaderPartial
+			directive,
 		};
 	}
 }
@@ -312,22 +300,22 @@ export function parse(
 	// Validate configuration
 	const configErrors = validateConfig(config);
 	if (configErrors.length > 0) {
-		return { state: "halted" };
+		return { state: "halted", stage: 0 };
 	}
 
 	// Handle empty input
 	if (!input.trim()) {
-		return { state: "parsed" };
+		return { state: "parsed", stage: 0 };
 	}
 
 	// Check if input starts with newline (should be halted)
 	if (input.startsWith("\n")) {
-		return { state: "halted" };
+		return { state: "halted", stage: 0 };
 	}
 
 	// Validate input length and safety
 	if (input.length > config.maxInputLength || containsUnsafeCharacters(input)) {
-		return { state: "halted" };
+		return { state: "halted", stage: 0 };
 	}
 
 	const lines = input.split("\n");
@@ -336,7 +324,7 @@ export function parse(
 	// Try to parse header
 	const headerResult = parseHeader(firstLine, config);
 	if (!headerResult) {
-		return { state: "halted" };
+		return { state: "halted", stage: 0 };
 	}
 
 	// If it's just a header line (no description), return it
@@ -345,14 +333,26 @@ export function parse(
 		if (headerResult.titleTooLong) {
 			return {
 				state: "halted",
-				header: headerResult.header,
+				stage: 1,
+				header: headerResult.header as any,
 			};
 		}
 
-		return {
-			state: "parsed",
-			header: headerResult.header,
-		};
+		// Determine stage based on header completeness
+		if (headerResult.header.title) {
+			return {
+				state: "parsed",
+				stage: 2,
+				header: headerResult.header,
+				description: "",
+			};
+		} else {
+			return {
+				state: "parsed",
+				stage: 1,
+				header: headerResult.header as any,
+			};
+		}
 	}
 
 	// Handle multiline content
@@ -363,11 +363,11 @@ export function parse(
 		if (secondLine !== "") {
 			return {
 				state: "halted",
+				stage: 1,
 				header: createParsedHeaderPartial(
 					headerResult.header.type,
 					headerResult.header.scope,
 					headerResult.header.breaking,
-					headerResult.header.title,
 				),
 			};
 		}
@@ -375,11 +375,28 @@ export function parse(
 		// Must have empty line after header for valid description
 		if (secondLine === "" && lines.length >= 3) {
 			const contentLines = lines.slice(2);
-			return parseContent(contentLines, headerResult.header, config);
+			// Only call parseContent if we have a complete header
+			if (
+				"title" in headerResult.header &&
+				headerResult.header.title !== undefined
+			) {
+				return parseContent(
+					contentLines,
+					headerResult.header as ParsedHeader,
+					config,
+				);
+			} else {
+				// Incomplete header with content should be halted
+				return {
+					state: "halted",
+					stage: 1,
+					header: headerResult.header as ParsedHeaderPartial,
+				};
+			}
 		}
 	}
 
-	return { state: "halted" };
+	return { state: "halted", stage: 0 };
 }
 
 function parseContent(
@@ -390,12 +407,12 @@ function parseContent(
 	let description: string | undefined;
 	let constraints: Array<[string, string]> = [];
 	let tasks: Task[] = [];
-	let direction: string | undefined;
+	let directive: string | undefined;
 
 	// Simple parsing approach - find sections sequentially
 	let currentIndex = 0;
 
-	// Parse description (until we hit constraints or tasks)
+	// Parse description (until we hit constraints, tasks, or directive)
 	const descriptionLines: string[] = [];
 	while (currentIndex < contentLines.length) {
 		const line = contentLines[currentIndex];
@@ -408,21 +425,36 @@ function parseContent(
 			break;
 		}
 
+		// Stop if we hit a directive pattern
+		if (line.match(/^~~~ ([A-Z\s]+) ~~~$/)) {
+			break;
+		}
+
 		// Check for empty line in description
 		if (line === "") {
-			// Look ahead to see if there are tasks after this empty line
+			// Look ahead to see if there are constraints, tasks, or directives after this empty line
+			let hasConstraintsAfter = false;
 			let hasTasksAfter = false;
+			let hasDirectiveAfter = false;
 			for (let j = currentIndex + 1; j < contentLines.length; j++) {
 				const nextLine = contentLines[j];
+				if (nextLine.match(config.constraintPattern)) {
+					hasConstraintsAfter = true;
+					break;
+				}
 				if (nextLine.match(config.taskPattern)) {
 					hasTasksAfter = true;
+					break;
+				}
+				if (nextLine.match(/^~~~ ([A-Z\s]+) ~~~$/)) {
+					hasDirectiveAfter = true;
 					break;
 				}
 				if (nextLine.trim() !== "") break;
 			}
 
-			if (hasTasksAfter) {
-				// Empty line before tasks is allowed
+			if (hasConstraintsAfter || hasTasksAfter || hasDirectiveAfter) {
+				// Empty line before constraints, tasks, or directive is allowed
 				description = descriptionLines.join("\n");
 				currentIndex++;
 				break;
@@ -430,6 +462,7 @@ function parseContent(
 				// Empty line in middle of description - halt
 				return {
 					state: "halted",
+					stage: 3,
 					header: createParsedHeader(
 						header.type,
 						header.scope,
@@ -464,6 +497,11 @@ function parseContent(
 			break;
 		}
 
+		// Stop if we hit a directive pattern
+		if (line.match(/^~~~ ([A-Z\s]+) ~~~$/)) {
+			break;
+		}
+
 		// Check for constraint format
 		const constraintMatch = line.match(config.constraintPattern);
 		if (constraintMatch) {
@@ -483,7 +521,7 @@ function parseContent(
 			continue;
 		}
 
-		// Not a constraint, might be direction or other content
+		// Not a constraint, might be directive or other content
 		break;
 	}
 
@@ -491,6 +529,11 @@ function parseContent(
 	const taskLines: string[] = [];
 	while (currentIndex < contentLines.length) {
 		const line = contentLines[currentIndex];
+
+		// Stop if we hit a directive pattern
+		if (line.match(/^~~~ ([A-Z\s]+) ~~~$/)) {
+			break;
+		}
 
 		// Check for invalid task formats that should halt
 		if (
@@ -521,7 +564,7 @@ function parseContent(
 			taskLines.push(line);
 			currentIndex++;
 		} else {
-			// Not a task - might be direction
+			// Not a task - might be directive
 			break;
 		}
 	}
@@ -544,20 +587,20 @@ function parseContent(
 		tasks = result.tasks;
 	}
 
-	// Parse direction (remaining content)
+	// Parse directive (remaining content)
 	if (currentIndex < contentLines.length) {
-		const directionLines = contentLines.slice(currentIndex);
-		const directionText = directionLines.join("\n").trim();
+		const directiveLines = contentLines.slice(currentIndex);
+		const directiveText = directiveLines.join("\n").trim();
 
-		if (directionText) {
-			// Check if direction contains newlines - if so, only consider first part
-			const firstLine = directionText.split("\n")[0];
+		if (directiveText) {
+			// Check for directive pattern: ~~~ DIRECTIVE ~~~
+			const directivePattern = /^~~~ ([A-Z\s]+) ~~~$/;
+			const directiveMatch = directiveText.match(directivePattern);
 
-			// Check if direction is incomplete (should halt when exactly configured length)
-			if (
-				config.directionHaltLength &&
-				firstLine.length === config.directionHaltLength
-			) {
+			if (directiveMatch) {
+				directive = directiveMatch[1].trim();
+			} else {
+				// Invalid directive format - should halt
 				return createParsedResult(
 					"halted",
 					createParsedHeader(
@@ -569,23 +612,14 @@ function parseContent(
 					description,
 					constraints.length > 0 ? constraints : [],
 					tasks.length > 0 ? tasks : [],
-					firstLine,
 				);
 			}
-			direction = directionText;
 		}
 	}
 
 	// Handle special case: empty constraints when tasks exist but no constraints were found
-	const shouldIncludeEmptyConstraints =
-		tasks.length > 0 && constraints.length === 0 && description;
-
 	const finalConstraints =
-		constraints.length > 0
-			? constraints
-			: shouldIncludeEmptyConstraints
-				? []
-				: undefined;
+		tasks.length > 0 && constraints.length === 0 ? [] : constraints;
 
 	return createParsedResult(
 		"parsed",
@@ -593,7 +627,7 @@ function parseContent(
 		description,
 		finalConstraints,
 		tasks.length > 0 ? tasks : undefined,
-		direction,
+		directive,
 	);
 }
 
@@ -702,22 +736,40 @@ function buildTaskHierarchy(
 function parseHeader(
 	line: string,
 	config: ParserConfig,
-): { header: ParsedHeader; titleTooLong?: boolean } | null {
+): {
+	header: ParsedHeader | ParsedHeaderPartial;
+	titleTooLong?: boolean;
+} | null {
 	// Pattern for complete commit with description: type(scope): description
 	const completeMatch = line.match(config.headerPatterns.complete);
 	if (completeMatch) {
 		const [, type, scope, breaking, title] = completeMatch;
 
+		// Normalize to lowercase
+		const normalizedType = type.toLowerCase();
+		const normalizedScope = scope.toLowerCase();
+		const normalizedTitle = title.toLowerCase();
+
 		// Check title length
-		if (title.length > config.maxTitleLength) {
+		if (normalizedTitle.length > config.maxTitleLength) {
 			return {
-				header: createParsedHeader(type, scope, breaking === "!", undefined),
+				header: createParsedHeader(
+					normalizedType,
+					normalizedScope,
+					breaking === "!",
+					undefined,
+				),
 				titleTooLong: true,
 			};
 		}
 
 		return {
-			header: createParsedHeader(type, scope, breaking === "!", title),
+			header: createParsedHeader(
+				normalizedType,
+				normalizedScope,
+				breaking === "!",
+				normalizedTitle,
+			),
 		};
 	}
 
@@ -728,7 +780,12 @@ function parseHeader(
 	if (typeScopeBreakingMatch) {
 		const [, type, scope] = typeScopeBreakingMatch;
 		return {
-			header: createParsedHeader(type, scope, true, undefined),
+			header: createParsedHeader(
+				type.toLowerCase(),
+				scope.toLowerCase(),
+				true,
+				undefined,
+			),
 		};
 	}
 
@@ -737,7 +794,12 @@ function parseHeader(
 	if (typeScopeMatch) {
 		const [, type, scope] = typeScopeMatch;
 		return {
-			header: createParsedHeader(type, scope, false, undefined),
+			header: createParsedHeader(
+				type.toLowerCase(),
+				scope.toLowerCase(),
+				false,
+				undefined,
+			),
 		};
 	}
 
@@ -746,7 +808,7 @@ function parseHeader(
 	if (typeMatch) {
 		const [, type] = typeMatch;
 		return {
-			header: createParsedHeader(type, undefined, undefined, undefined),
+			header: createParsedHeaderPartial(type.toLowerCase(), undefined, false),
 		};
 	}
 

@@ -10,9 +10,9 @@ describe("validation", () => {
 				isValid: false,
 				errors: [
 					{
-						field: "state",
-						message: "Cannot validate non-parsed result with state: empty",
-						code: "INVALID_PARSE_STATE",
+						field: "root",
+						message: "Invalid input",
+						code: "INVALID_UNION",
 					},
 				],
 			};
@@ -25,9 +25,9 @@ describe("validation", () => {
 				isValid: false,
 				errors: [
 					{
-						field: "state",
-						message: "Cannot validate non-parsed result with state: unknown",
-						code: "INVALID_PARSE_STATE",
+						field: "root",
+						message: "Invalid input",
+						code: "INVALID_UNION",
 					},
 				],
 			};
@@ -35,16 +35,10 @@ describe("validation", () => {
 		});
 
 		it("validates halted state", () => {
-			const input = { state: "halted" } as ParsedResult;
+			const input = { state: "halted", stage: 0 } as ParsedResult;
 			const expected = {
-				isValid: false,
-				errors: [
-					{
-						field: "state",
-						message: "Cannot validate non-parsed result with state: halted",
-						code: "INVALID_PARSE_STATE",
-					},
-				],
+				isValid: true,
+				data: { state: "halted", stage: 0 },
 			};
 			expect(validate(input)).toEqual(expected);
 		});
@@ -52,16 +46,10 @@ describe("validation", () => {
 
 	describe("Missing Header", () => {
 		it("validates parsed state without header", () => {
-			const input = { state: "parsed" } as ParsedResult;
+			const input = { state: "parsed", stage: 0 } as ParsedResult;
 			const expected = {
-				isValid: false,
-				errors: [
-					{
-						field: "header",
-						message: "Header is required for parsed documents",
-						code: "MISSING_HEADER",
-					},
-				],
+				isValid: true,
+				data: { state: "parsed", stage: 0 },
 			};
 			expect(validate(input)).toEqual(expected);
 		});
@@ -71,11 +59,16 @@ describe("validation", () => {
 		it("validates basic header", () => {
 			const input = {
 				state: "parsed",
+				stage: 1,
 				header: { type: "feat", breaking: false },
 			} as ParsedResult;
 			const expected = {
 				isValid: true,
-				errors: [],
+				data: {
+					state: "parsed",
+					stage: 1,
+					header: { type: "feat", breaking: false },
+				},
 			};
 			expect(validate(input)).toEqual(expected);
 		});
@@ -83,11 +76,16 @@ describe("validation", () => {
 		it("validates header with scope", () => {
 			const input = {
 				state: "parsed",
+				stage: 1,
 				header: { type: "fix", scope: "auth", breaking: false },
 			} as ParsedResult;
 			const expected = {
 				isValid: true,
-				errors: [],
+				data: {
+					state: "parsed",
+					stage: 1,
+					header: { type: "fix", scope: "auth", breaking: false },
+				},
 			};
 			expect(validate(input)).toEqual(expected);
 		});
@@ -95,16 +93,28 @@ describe("validation", () => {
 		it("validates header with scope, breaking, and title", () => {
 			const input = {
 				state: "parsed",
+				stage: 2,
 				header: {
 					type: "refactor",
 					scope: "api-v2",
 					breaking: true,
 					title: "restructure endpoints",
 				},
+				description: "",
 			} as ParsedResult;
 			const expected = {
 				isValid: true,
-				errors: [],
+				data: {
+					state: "parsed",
+					stage: 2,
+					header: {
+						type: "refactor",
+						scope: "api-v2",
+						breaking: true,
+						title: "restructure endpoints",
+					},
+					description: "",
+				},
 			};
 			expect(validate(input)).toEqual(expected);
 		});
@@ -152,6 +162,7 @@ describe("validation", () => {
 		it("rejects scope starting with number", () => {
 			const input = {
 				state: "parsed",
+				stage: 1,
 				header: { type: "feat", scope: "123invalid", breaking: false },
 			} as ParsedResult;
 			const expected = {
@@ -171,6 +182,7 @@ describe("validation", () => {
 		it("rejects scope with underscore", () => {
 			const input = {
 				state: "parsed",
+				stage: 1,
 				header: { type: "chore", scope: "auth_test", breaking: false },
 			} as ParsedResult;
 			const expected = {
@@ -192,12 +204,14 @@ describe("validation", () => {
 		it("rejects title over 120 characters", () => {
 			const input = {
 				state: "parsed",
+				stage: 2,
 				header: {
 					type: "feat",
 					scope: "auth",
 					breaking: false,
 					title: "a".repeat(121),
 				},
+				description: "",
 			} as ParsedResult;
 			const expected = {
 				isValid: false,
@@ -215,12 +229,14 @@ describe("validation", () => {
 		it("rejects title with whitespace", () => {
 			const input = {
 				state: "parsed",
+				stage: 2,
 				header: {
 					type: "fix",
 					scope: "api",
 					breaking: false,
 					title: "  whitespace title  ",
 				},
+				description: "",
 			} as ParsedResult;
 			const expected = {
 				isValid: false,
@@ -238,16 +254,28 @@ describe("validation", () => {
 		it("accepts title at exactly 120 characters", () => {
 			const input = {
 				state: "parsed",
+				stage: 2,
 				header: {
 					type: "docs",
 					scope: "readme",
 					breaking: false,
 					title: "a".repeat(120),
 				},
+				description: "",
 			} as ParsedResult;
 			const expected = {
 				isValid: true,
-				errors: [],
+				data: {
+					state: "parsed",
+					stage: 2,
+					header: {
+						type: "docs",
+						scope: "readme",
+						breaking: false,
+						title: "a".repeat(120),
+					},
+					description: "",
+				},
 			};
 			expect(validate(input)).toEqual(expected);
 		});
@@ -257,13 +285,25 @@ describe("validation", () => {
 		it("validates single constraint", () => {
 			const input = {
 				state: "parsed",
-				header: { type: "feat", breaking: false },
+				stage: 4,
+				header: { type: "feat", scope: "test", breaking: false, title: "test" },
 				description: "test description",
 				constraints: [["Do not", "break existing functionality"]],
 			} as ParsedResult;
 			const expected = {
 				isValid: true,
-				errors: [],
+				data: {
+					state: "parsed",
+					stage: 4,
+					header: {
+						type: "feat",
+						scope: "test",
+						breaking: false,
+						title: "test",
+					},
+					description: "test description",
+					constraints: [["Do not", "break existing functionality"]],
+				},
 			};
 			expect(validate(input)).toEqual(expected);
 		});
@@ -271,7 +311,8 @@ describe("validation", () => {
 		it("validates multiple constraints", () => {
 			const input = {
 				state: "parsed",
-				header: { type: "fix", breaking: false },
+				stage: 4,
+				header: { type: "fix", scope: "test", breaking: false, title: "test" },
 				description: "test description",
 				constraints: [
 					["Never", "expose sensitive data"],
@@ -284,7 +325,25 @@ describe("validation", () => {
 			} as ParsedResult;
 			const expected = {
 				isValid: true,
-				errors: [],
+				data: {
+					state: "parsed",
+					stage: 4,
+					header: {
+						type: "fix",
+						scope: "test",
+						breaking: false,
+						title: "test",
+					},
+					description: "test description",
+					constraints: [
+						["Never", "expose sensitive data"],
+						["Must not", "modify core behavior"],
+						["Cannot", "access external services"],
+						["Forbidden", "hardcoded credentials"],
+						["Avoid", "breaking changes"],
+						["Decide against", "major refactoring"],
+					],
+				},
 			};
 			expect(validate(input)).toEqual(expected);
 		});
@@ -316,7 +375,13 @@ describe("validation", () => {
 		it("rejects uppercase constraint value", () => {
 			const input = {
 				state: "parsed",
-				header: { type: "feat", breaking: false },
+				stage: 4,
+				header: {
+					type: "feat",
+					breaking: false,
+					scope: "test",
+					title: "test feature",
+				},
 				description: "test description",
 				constraints: [["Do not", "Break existing functionality"]],
 			} as ParsedResult;
@@ -336,7 +401,13 @@ describe("validation", () => {
 		it("rejects empty constraint value", () => {
 			const input = {
 				state: "parsed",
-				header: { type: "fix", breaking: false },
+				stage: 4,
+				header: {
+					type: "fix",
+					breaking: false,
+					scope: "test",
+					title: "test fix",
+				},
 				description: "test description",
 				constraints: [["Never", ""]],
 			} as ParsedResult;
@@ -363,14 +434,20 @@ describe("validation", () => {
 		it("validates simple task", () => {
 			const input = {
 				state: "parsed",
-				header: { type: "feat", breaking: false },
+				stage: 5,
+				header: {
+					type: "feat",
+					breaking: false,
+					scope: "test",
+					title: "test feature",
+				},
 				description: "test description",
 				constraints: [],
 				tasks: [[false, "Simple task", []]],
 			} as ParsedResult;
 			const expected = {
 				isValid: true,
-				errors: [],
+				data: input,
 			};
 			expect(validate(input)).toEqual(expected);
 		});
@@ -378,17 +455,23 @@ describe("validation", () => {
 		it("validates nested tasks", () => {
 			const input = {
 				state: "parsed",
-				header: { type: "fix", breaking: false },
+				stage: 5,
+				header: {
+					type: "fix",
+					breaking: false,
+					scope: "test",
+					title: "test fix",
+				},
 				description: "test description",
 				constraints: [],
 				tasks: [
-					[true, "Completed task", []],
-					[false, "Pending task", [[false, "Subtask", []]]],
+					[true, "Parent task", []],
+					[false, "Child task", [[false, "Grandchild task", []]]],
 				],
 			} as ParsedResult;
 			const expected = {
 				isValid: true,
-				errors: [],
+				data: input,
 			};
 			expect(validate(input)).toEqual(expected);
 		});
@@ -396,7 +479,13 @@ describe("validation", () => {
 		it("validates maximum nesting depth", () => {
 			const input = {
 				state: "parsed",
-				header: { type: "refactor", breaking: false },
+				stage: 5,
+				header: {
+					type: "refactor",
+					breaking: false,
+					scope: "test",
+					title: "test refactor",
+				},
 				description: "test description",
 				constraints: [],
 				tasks: [
@@ -421,7 +510,7 @@ describe("validation", () => {
 			} as ParsedResult;
 			const expected = {
 				isValid: true,
-				errors: [],
+				data: input,
 			};
 			expect(validate(input)).toEqual(expected);
 		});
@@ -431,7 +520,8 @@ describe("validation", () => {
 		it("rejects invalid completion flag", () => {
 			const input = {
 				state: "parsed",
-				header: { type: "feat", breaking: false },
+				stage: 5,
+				header: { type: "feat", breaking: false, scope: undefined, title: "" },
 				description: "test description",
 				constraints: [],
 				// biome-ignore lint/suspicious/noExplicitAny: testing invalid type
@@ -453,7 +543,13 @@ describe("validation", () => {
 		it("rejects empty task description", () => {
 			const input = {
 				state: "parsed",
-				header: { type: "fix", breaking: false },
+				stage: 5,
+				header: {
+					type: "fix",
+					breaking: false,
+					scope: "test",
+					title: "test fix",
+				},
 				description: "test description",
 				constraints: [],
 				tasks: [[true, "", []]],
@@ -474,7 +570,8 @@ describe("validation", () => {
 		it("rejects non-string task description", () => {
 			const input = {
 				state: "parsed",
-				header: { type: "chore", breaking: false },
+				stage: 5,
+				header: { type: "chore", breaking: false, scope: undefined, title: "" },
 				description: "test description",
 				constraints: [],
 				// biome-ignore lint/suspicious/noExplicitAny: testing invalid type
@@ -498,7 +595,13 @@ describe("validation", () => {
 		it("rejects excessive nesting", () => {
 			const input = {
 				state: "parsed",
-				header: { type: "feat", breaking: false },
+				stage: 5,
+				header: {
+					type: "feat",
+					breaking: false,
+					scope: "test",
+					title: "test feature",
+				},
 				description: "test description",
 				constraints: [],
 				tasks: [
@@ -517,7 +620,13 @@ describe("validation", () => {
 											[
 												false,
 												"Level 3",
-												[[false, "Level 4", [[false, "Level 5", []]]]],
+												[
+													[
+														false,
+														"Level 4",
+														[[false, "Level 5 - Too deep", []]],
+													],
+												],
 											],
 										],
 									],
@@ -565,12 +674,18 @@ describe("validation", () => {
 		it("rejects non-string direction", () => {
 			const input = {
 				state: "parsed",
-				header: { type: "fix", breaking: false },
+				stage: 5,
+				header: {
+					type: "feat",
+					breaking: false,
+					scope: "test",
+					title: "test feature",
+				},
 				description: "test description",
 				constraints: [],
 				tasks: [],
 				// biome-ignore lint/suspicious/noExplicitAny: testing invalid type
-				direction: 456 as any,
+				directive: 456 as any,
 			} as ParsedResult;
 			const expected = {
 				isValid: false,
@@ -586,32 +701,11 @@ describe("validation", () => {
 		});
 	});
 
-	describe("Warnings", () => {
-		it("warns about uppercase scope", () => {
-			const input = {
-				state: "parsed",
-				header: { type: "feat", scope: "AUTH", breaking: false },
-			} as ParsedResult;
-			const expected = {
-				isValid: false,
-				errors: [
-					{
-						field: "header.scope",
-						message:
-							"Scope must start with a letter and contain only lowercase letters, numbers, and hyphens",
-						code: "INVALID_FORMAT",
-					},
-				],
-				warnings: ["Scope should be lowercase: AUTH"],
-			};
-			expect(validate(input)).toEqual(expected);
-		});
-	});
-
 	describe("Complex Valid Document", () => {
 		it("validates complete document", () => {
 			const input = {
 				state: "parsed",
+				stage: 5,
 				header: {
 					type: "feat",
 					scope: "auth",
@@ -642,11 +736,11 @@ describe("validation", () => {
 						],
 					],
 				],
-				direction: "Continue with testing phase",
+				directive: "CONTINUE WITH TESTING PHASE",
 			} as ParsedResult;
 			const expected = {
 				isValid: true,
-				errors: [],
+				data: input,
 			};
 			expect(validate(input)).toEqual(expected);
 		});
