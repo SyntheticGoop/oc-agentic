@@ -16,7 +16,7 @@
 - **Imports**: Organize imports automatically (Biome assist enabled)
 - **Naming**: Use camelCase for variables/functions, PascalCase for types/classes
 - **Error Handling**: Use proper TypeScript error types, avoid `any`
-- **File Structure**: Keep source in `src/`, main entry at `src/index.ts`
+- **File Structure**: Keep source in `src/`, main entry at `src/mcp.ts`
 - **Testing**: Use Vitest with `.test.ts` suffix, globals enabled
 
 ## Project Context
