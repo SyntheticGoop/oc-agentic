@@ -14,7 +14,7 @@ export function format(commit: ValidatedParsed): string {
 			return `${formatHeader(commit.header)}
 
 ${formatDirective(commit.directive)}`.trim();
-		case !commit.constraints:
+		case !commit.constraints && !commit.tasks:
 			return `${formatHeader(commit.header)}
 
 ${commit.description}
@@ -28,16 +28,30 @@ ${commit.description}
 ${formatConstraints(commit.constraints).join("\n")}
 
 ${formatDirective(commit.directive)}`.trim();
-		default:
-			return `${formatHeader(commit.header)}
+		default: {
+			const parts = [formatHeader(commit.header), commit.description];
 
-${commit.description}
+			if (commit.constraints) {
+				const constraints = formatConstraints(commit.constraints);
+				if (constraints.length > 0) {
+					parts.push(constraints.join("\n"));
+				}
+			}
 
-${formatConstraints(commit.constraints).join("\n")}
+			if (commit.tasks) {
+				const tasks = formatTasks(commit.tasks);
+				if (tasks.length > 0) {
+					parts.push(tasks.join("\n"));
+				}
+			}
 
-${formatTasks(commit.tasks).join("\n")}
+			const directive = formatDirective(commit.directive);
+			if (directive) {
+				parts.push(directive);
+			}
 
-${formatDirective(commit.directive)}`.trim();
+			return parts.join("\n\n");
+		}
 	}
 }
 

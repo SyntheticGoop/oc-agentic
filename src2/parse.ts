@@ -433,44 +433,36 @@ function parseContent(
 		// Check for empty line in description
 		if (line === "") {
 			// Look ahead to see if there are constraints, tasks, or directives after this empty line
-			let hasConstraintsAfter = false;
-			let hasTasksAfter = false;
-			let hasDirectiveAfter = false;
+			let hasStructuredContentAfter = false;
+
 			for (let j = currentIndex + 1; j < contentLines.length; j++) {
 				const nextLine = contentLines[j];
-				if (nextLine.match(config.constraintPattern)) {
-					hasConstraintsAfter = true;
+				if (nextLine.trim() === "") continue; // Skip empty lines
+
+				// Found non-empty line, check if it's structured content
+				if (
+					nextLine.match(config.constraintPattern) ||
+					nextLine.match(config.taskPattern) ||
+					nextLine.match(/^~~~ ([A-Z\s]+) ~~~$/)
+				) {
+					hasStructuredContentAfter = true;
+					break;
+				} else {
+					// Found non-empty line that's not structured content
 					break;
 				}
-				if (nextLine.match(config.taskPattern)) {
-					hasTasksAfter = true;
-					break;
-				}
-				if (nextLine.match(/^~~~ ([A-Z\s]+) ~~~$/)) {
-					hasDirectiveAfter = true;
-					break;
-				}
-				if (nextLine.trim() !== "") break;
 			}
 
-			if (hasConstraintsAfter || hasTasksAfter || hasDirectiveAfter) {
-				// Empty line before constraints, tasks, or directive is allowed
+			if (hasStructuredContentAfter) {
+				// Empty line before structured content - end description here
 				description = descriptionLines.join("\n");
 				currentIndex++;
 				break;
 			} else {
-				// Empty line in middle of description - halt
-				return {
-					state: "halted",
-					stage: 3,
-					header: createParsedHeader(
-						header.type,
-						header.scope,
-						header.breaking,
-						header.title,
-					),
-					description: descriptionLines.join("\n"),
-				};
+				// Empty line in middle of description or at end - allow it
+				descriptionLines.push(line);
+				currentIndex++;
+				continue;
 			}
 		}
 

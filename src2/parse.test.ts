@@ -212,7 +212,7 @@ describe.each([
 			[
 				"f(s): t\n\ndes\ncript\n\nion",
 				{
-					state: "halted",
+					state: "parsed",
 					stage: 3,
 					header: {
 						type: "f",
@@ -220,7 +220,68 @@ describe.each([
 						title: "t",
 						breaking: false,
 					},
-					description: "des\ncript",
+					description: "des\ncript\n\nion",
+				},
+			],
+			[
+				"f(s): t\n\nFirst paragraph.\n\nSecond paragraph.\n\nThird paragraph.",
+				{
+					state: "parsed",
+					stage: 3,
+					header: {
+						type: "f",
+						scope: "s",
+						title: "t",
+						breaking: false,
+					},
+					description:
+						"First paragraph.\n\nSecond paragraph.\n\nThird paragraph.",
+				},
+			],
+			[
+				"f(s): t\n\nMulti-paragraph description.\n\nSecond paragraph here.\n\n- Do not: break things",
+				{
+					state: "parsed",
+					stage: 4,
+					header: {
+						type: "f",
+						scope: "s",
+						title: "t",
+						breaking: false,
+					},
+					description: "Multi-paragraph description.\n\nSecond paragraph here.",
+					constraints: [["Do not", "break things"]],
+				},
+			],
+			[
+				"f(s): t\n\nMulti-paragraph description.\n\nSecond paragraph here.\n\n- [ ]: Task",
+				{
+					state: "parsed",
+					stage: 5,
+					header: {
+						type: "f",
+						scope: "s",
+						title: "t",
+						breaking: false,
+					},
+					description: "Multi-paragraph description.\n\nSecond paragraph here.",
+					constraints: [],
+					tasks: [[false, "Task", []]],
+				},
+			],
+			[
+				"f(s): t\n\nMulti-paragraph description.\n\nSecond paragraph here.\n\n~~~ PROCEED ~~~",
+				{
+					state: "parsed",
+					stage: 3,
+					header: {
+						type: "f",
+						scope: "s",
+						title: "t",
+						breaking: false,
+					},
+					description: "Multi-paragraph description.\n\nSecond paragraph here.",
+					directive: "PROCEED",
 				},
 			],
 		],
@@ -627,6 +688,40 @@ describe.each([
 						scope: undefined,
 						title: undefined,
 					},
+				},
+			],
+		],
+	],
+	[
+		"Debug Parser Output",
+		[
+			[
+				"fix(mcp): improve correctness and prevent tool use issues\n\nThe MCP server validation system in src2/mcp.ts was overly complex with a custom validateRoundtrip function that introduced unnecessary complexity and potential failure points.\n\n- [ ]: Remove complex validateRoundtrip function\n  - [ ]: Locate and analyze the validateRoundtrip function in src2/mcp.ts",
+				{
+					state: "parsed",
+					stage: 5,
+					header: {
+						type: "fix",
+						scope: "mcp",
+						title: "improve correctness and prevent tool use issues",
+						breaking: false,
+					},
+					description:
+						"The MCP server validation system in src2/mcp.ts was overly complex with a custom validateRoundtrip function that introduced unnecessary complexity and potential failure points.",
+					constraints: [],
+					tasks: [
+						[
+							false,
+							"Remove complex validateRoundtrip function",
+							[
+								[
+									false,
+									"Locate and analyze the validateRoundtrip function in src2/mcp.ts",
+									[],
+								],
+							],
+						],
+					],
 				},
 			],
 		],

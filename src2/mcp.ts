@@ -8,6 +8,7 @@ import { parse } from "./parse";
 import { validate, ValidatedHeader, ValidatedTask } from "./validate";
 import { Err, Ok } from "./result";
 import { format } from "./format";
+import { isEqual } from "lodash";
 
 function formatError(error: Err) {
 	return `An internal error ocurred: ${error.err} \`${JSON.stringify(error.meta)}\``;
@@ -58,7 +59,9 @@ A goal will consist of 4 parts. Ensure that these parts are thoroughly investiga
 4. The goal itself a short 1 line objective.
 
 FORMAT: You need to store to call the set_overarching_goal tool. Ensure that you have all the inputs necessary to call the tool.
-EXPLICIT ACKNOWLEDGEMENT: You are only done once the user acknowledges with "PROCEED"`,
+EXPLICIT ACKNOWLEDGEMENT: You are only done once the user acknowledges with "PROCEED"
+
+NAVIGATION: You are at the beginning - no previous steps to jump to.`,
 	DEFINE_DETAILED_GOAL: `You are an assmebly of domain experts brought together to interrogate and critique plans. Your expertise is vague objective bisection, possibility exploration and self reflective goal realignment.
 
 YOUR CORE TONE IS STRICT AND DEMANDING. YOU SEEK JUSTIFICATION. YOU EVALUATE BASED ON EXECUTION COST, PRIORITIZING LOWER COSTS.
@@ -79,8 +82,11 @@ The second part is constraints. A goal will ofter have infinite solutions. Defin
 The strategy to find constraints is to systematically explore the goal and propose a range of distinct solutions within the goal and existing constraints.
 The user will then pick a few proposals to follow. Your job is to then decide on bisecting constraints that will satisfy extracting only the chosen solutions from this group.
 
-FORMAT: You need to store to call the set_detailed_goal tool. Ensure that you have all the inputs necessary to call the tool.
-EXPLICIT ACKNOWLEDGEMENT: You are only done once the user acknowledges with "PROCEED"`,
+FORMAT: You need to store to call the set_detailed_goal tool. Ensure that you have all the inputs necessary to call the tool. Your description must be in english paragraphs without headers or points.
+EXPLICIT ACKNOWLEDGEMENT: You are only done once the user acknowledges with "PROCEED"
+
+NAVIGATION: You can jump back to:
+- jump("goal") - Revise the overarching goal`,
 
 	DEFINE_PLAN: `You are an expert requirements implementer. Your expertise is in breaking down an objective into clear distinct steps to execute on.
 
@@ -111,7 +117,11 @@ ALWAYS favor a deep over a shallow plan.
 ALWAYS reletlessly refine the plan.
 
 FORMAT: You need to store to call the set_plan tool. Ensure that you have all the inputs necessary to call the tool.
-EXPLICIT ACKNOWLEDGEMENT: You are only done once the user acknowledges with "PROCEED"`,
+EXPLICIT ACKNOWLEDGEMENT: You are only done once the user acknowledges with "PROCEED"
+
+NAVIGATION: You can jump back to:
+- jump("goal") - Revise the overarching goal
+- jump("detailed") - Revise detailed requirements`,
 	EXECUTE: `You are an expert task executor. Your expertise is in executing tasks to specification..
 
 YOU WILL ADHERE TO ALL QUALITY STANDARDS.
@@ -119,6 +129,11 @@ YOU WILL ADHERE TO ALL CODE STANDARDS.
 YOU WILL EXECUTE TASKS SEQUETIALLY AND IN ORDER.
 YOU WILL MARK TASKS AS DONE USING THE mark_task TOOL.
 YOU WILL BE SYSTEMATIC.
+YOU WILL GROUND YOUR WORK IN EXISTING CODE.
+ALWAYS READ AND FOLLOW EXISTING PATTERNS.
+NEVER MAKE ASSUMPTIONS.
+ALWAYS MAKE CHANGES BY MODIFYING EXISTING CODE IN STRUCTURE BEFORE BUILDING NEW THINGS.
+
 
 BEFORE EXECUTING A TASK ALWAYS SAY THIS OUT LOUD:
 \`\`\`md
@@ -136,7 +151,12 @@ These points are inaccurate: ...
 
 THEN YOU WILL REPEAT AND REFINE UNTIL THERE ARE NO INACCURATE POINTS.
 
-UNLESS EXPLICITLY STOPPED, NEVER STOP EXECUTING.`,
+UNLESS EXPLICITLY STOPPED, NEVER STOP EXECUTING.
+
+NAVIGATION: You can jump back to:
+- jump("goal") - Revise the overarching goal
+- jump("detailed") - Revise detailed requirements
+- jump("plan") - Revise the plan`,
 	SELF_REINFORCEMENT: `DO THE FOLLOWING:
 1. Introsepect and ensure that the agreed upon has been fully captured in this input.
 2. If it is not fully captured, update it again to satisfy it.
@@ -360,6 +380,22 @@ Call me whenever you have decided on updated goal.`,
 
 			commitResult.ok.header = args.goal;
 
+			// Validate roundtrip before storing
+			const processedExpectation = validate(parse(format(commitResult.ok)));
+
+			if (
+				!processedExpectation.isValid ||
+				!isEqual(processedExpectation.data.header, commitResult.ok.header)
+			) {
+				return composeTextOutput({
+					type: "error",
+					error: Err("incorrect input format", {
+						input: commitResult.ok,
+						output: processedExpectation,
+					}),
+				});
+			}
+
 			const result = await jj.description.replace(format(commitResult.ok));
 			if (result.err)
 				return composeTextOutput({
@@ -405,6 +441,25 @@ Call me whenever you have decided on updated goal.`,
 			}
 
 			commitResult.ok.description = args.description;
+
+			// Validate roundtrip before storing
+			const processedExpectation = validate(parse(format(commitResult.ok)));
+
+			if (
+				!processedExpectation.isValid ||
+				!isEqual(
+					processedExpectation.data.description,
+					commitResult.ok.description,
+				)
+			) {
+				return composeTextOutput({
+					type: "error",
+					error: Err("incorrect input format", {
+						input: commitResult.ok,
+						output: processedExpectation,
+					}),
+				});
+			}
 
 			const result = await jj.description.replace(format(commitResult.ok));
 			if (result.err)
@@ -461,6 +516,22 @@ Call me whenever you need to update tasks.`,
 			}
 
 			commitResult.ok.tasks = args.plan;
+
+			// Validate roundtrip before storing
+			const processedExpectation = validate(parse(format(commitResult.ok)));
+
+			if (
+				!processedExpectation.isValid ||
+				!isEqual(processedExpectation.data.tasks, commitResult.ok.tasks)
+			) {
+				return composeTextOutput({
+					type: "error",
+					error: Err("incorrect input format", {
+						input: commitResult.ok,
+						output: processedExpectation,
+					}),
+				});
+			}
 
 			const result = await jj.description.replace(format(commitResult.ok));
 			if (result.err)
@@ -547,6 +618,22 @@ Call me whenever you complete a task or need to update task status.`,
 				});
 			}
 
+			// Validate roundtrip before storing
+			const processedExpectation = validate(parse(format(commitResult.ok)));
+
+			if (
+				!processedExpectation.isValid ||
+				!isEqual(processedExpectation.data.tasks, commitResult.ok.tasks)
+			) {
+				return composeTextOutput({
+					type: "error",
+					error: Err("incorrect input format", {
+						input: commitResult.ok,
+						output: processedExpectation,
+					}),
+				});
+			}
+
 			const result = await jj.description.replace(format(commitResult.ok));
 			if (result.err)
 				return composeTextOutput({
@@ -560,6 +647,123 @@ Call me whenever you complete a task or need to update task status.`,
 
 Continue with the next task in sequence.`,
 			});
+		},
+	});
+
+	server.addTool({
+		name: "jump",
+		description: `Use me to jump to any previous stage and get the appropriate guiding prompt.
+		
+		This allows you to revise earlier decisions in the requirements workflow.`,
+		annotations: {
+			title: "Jump to Stage",
+			destructiveHint: false,
+			readOnlyHint: true,
+			idempotentHint: false,
+			openWorldHint: false,
+			streamingHint: false,
+		},
+		parameters: z.object({
+			stage: z.enum(["goal", "detailed", "plan", "execute"]),
+		}),
+		execute: async (
+			args,
+		): Promise<
+			| { content: Array<{ type: "text"; text: string }> }
+			| { type: "text"; text: string }
+		> => {
+			const commitResult = await loadCommit(jj);
+			if (commitResult.err) {
+				return composeTextOutput({
+					type: "error",
+					error: commitResult,
+				});
+			}
+
+			const isEmptyResult = await jj
+				.empty()
+				.catch((error) => Err("unknown error", { error }));
+
+			if (isEmptyResult.err) {
+				return composeTextOutput({
+					type: "error",
+					error: isEmptyResult,
+				});
+			}
+
+			const currentRequirements = format(commitResult.ok);
+
+			const mergeChangeContent = isEmptyResult.ok
+				? []
+				: await reinforceWithContext(
+						jj,
+						`There are already existing changes. You MUST integrate everything necessary in satisfying those changes into your requirements.
+
+INTROSPECT the changes thoroughly. Be aware that changes are presented with as diffs. Diffs do not fully adhere to the original file format of what is being presented.`,
+					);
+
+			switch (args.stage) {
+				case "goal":
+					return {
+						content: [
+							...mergeChangeContent,
+							composeTextOutput({
+								type: "instruct",
+								instruct: `The current requirements are as follows:
+${currentRequirements}
+
+Work with the user to ensure that is accurate.
+
+${PROMPTS.DEFINE_OVERARCHING_GOAL}`,
+							}),
+						],
+					};
+				case "detailed":
+					return {
+						content: [
+							...mergeChangeContent,
+							composeTextOutput({
+								type: "instruct",
+								instruct: `The current requirements are as follows:
+${currentRequirements}
+
+Work with the user to ensure that is accurate.
+
+${PROMPTS.DEFINE_DETAILED_GOAL}`,
+							}),
+						],
+					};
+				case "plan":
+					return {
+						content: [
+							...mergeChangeContent,
+							composeTextOutput({
+								type: "instruct",
+								instruct: `The current requirements are as follows:
+${currentRequirements}
+
+Work with the user to ensure that is accurate.
+
+${PROMPTS.DEFINE_PLAN}`,
+							}),
+						],
+					};
+				case "execute":
+					return {
+						content: [
+							...mergeChangeContent,
+							composeTextOutput({
+								type: "instruct",
+								instruct: `The current requirements are as follows:
+${currentRequirements}
+
+Work with the user to ensure that is accurate.
+
+${PROMPTS.EXECUTE}`,
+							}),
+						],
+					};
+			}
 		},
 	});
 
@@ -605,6 +809,22 @@ Call me when all tasks are finished and the workflow is ready to be completed.`,
 
 			// Mark workflow as complete by setting directive
 			commitResult.ok.directive = "COMPLETE";
+
+			// Validate roundtrip before storing
+			const processedExpectation = validate(parse(format(commitResult.ok)));
+
+			if (
+				!processedExpectation.isValid ||
+				!isEqual(processedExpectation.data, commitResult.ok)
+			) {
+				return composeTextOutput({
+					type: "error",
+					error: Err("incorrect input format", {
+						input: commitResult.ok,
+						output: processedExpectation,
+					}),
+				});
+			}
 
 			const result = await jj.description.replace(format(commitResult.ok));
 			if (result.err)

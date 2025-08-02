@@ -349,5 +349,210 @@ THIS IS A DESCRIPTION WITH UPPERCASE.`;
 				);
 			}
 		});
+
+		it("handles complex real-world case with multi-paragraph description and nested tasks", () => {
+			const input = `fix(mcp): improve correctness and prevent tool use issues
+
+The MCP server validation system in src2/mcp.ts was overly complex with a custom validateRoundtrip function that introduced unnecessary complexity and potential failure points. The original implementation attempted to validate data integrity by formatting data to text, parsing it back, and performing complex validation checks, which created opportunities for false negatives and made the system fragile. This complexity was not justified by the actual validation needs and created maintenance burden without corresponding benefits.
+
+The target of change is exclusively the validation logic within src2/mcp.ts, specifically replacing the complex validateRoundtrip function with simpler, more reliable lodash isEqual comparisons. The approach involves leveraging lodash's battle-tested deep equality checking to perform straightforward comparisons between expected and actual data structures after format/parse operations. This eliminates the custom validation complexity while maintaining data integrity assurance through proven library functions.
+
+The change is constrained to minimal modifications within src2/mcp.ts only, avoiding any changes to other files, the core MCP protocol, or tool interfaces. The solution prioritizes simplicity over sophistication, using established library functions rather than custom logic. The scope is deliberately narrow, addressing only the immediate complexity issue without expanding into broader validation system redesign or optimization efforts.
+
+- [ ]: Remove complex validateRoundtrip function
+  - [ ]: Locate and analyze the validateRoundtrip function in src2/mcp.ts
+  - [ ]: Identify all places where validateRoundtrip is called
+  - [ ]: Remove the validateRoundtrip function definition
+- [ ]: Replace validation logic with lodash isEqual
+  - [ ]: Update Set Overarching Goal tool validation
+    - [ ]: Replace validateRoundtrip call with format/parse/isEqual check
+    - [ ]: Update error handling to use structured error format
+  - [ ]: Update Set Detailed Goal tool validation
+    - [ ]: Replace validateRoundtrip call with format/parse/isEqual check
+    - [ ]: Update error handling to use structured error format
+  - [ ]: Update Set Plan tool validation
+    - [ ]: Replace validateRoundtrip call with format/parse/isEqual check
+    - [ ]: Update error handling to use structured error format
+  - [ ]: Update Mark Task tool validation
+    - [ ]: Replace validateRoundtrip call with format/parse/isEqual check
+    - [ ]: Update error handling to use structured error format
+  - [ ]: Update Finish Job tool validation
+    - [ ]: Replace validateRoundtrip call with format/parse/isEqual check
+    - [ ]: Update error handling to use structured error format
+- [ ]: Verify implementation correctness
+  - [ ]: Run tests to ensure validation works correctly
+  - [ ]: Test MCP server functionality with sample data
+  - [ ]: Verify no regressions in existing functionality`;
+
+			const parsed = parse(input);
+			const validated = validate(parsed);
+
+			expect(validated.isValid).toBe(true);
+			if (validated.isValid) {
+				const formatted = format(validated.data);
+				expect(formatted).toBe(input);
+
+				// Test second round-trip
+				const parsed2 = parse(formatted);
+				const validated2 = validate(parsed2);
+				expect(validated2.isValid).toBe(true);
+				if (validated2.isValid) {
+					const formatted2 = format(validated2.data);
+					expect(formatted2).toBe(formatted);
+				}
+			}
+		});
+
+		it("handles MCP-style object mutation and validation", () => {
+			// Start with an object like the MCP tools do, not text
+			const commitObject = {
+				state: "parsed" as const,
+				stage: 3 as const,
+				header: {
+					type: "fix" as const,
+					scope: "mcp",
+					breaking: false,
+					title: "improve correctness and prevent tool use issues",
+				},
+				description:
+					"The MCP server validation system in src2/mcp.ts was overly complex with a custom validateRoundtrip function that introduced unnecessary complexity and potential failure points. The original implementation attempted to validate data integrity by formatting data to text, parsing it back, and performing complex validation checks, which created opportunities for false negatives and made the system fragile. This complexity was not justified by the actual validation needs and created maintenance burden without corresponding benefits.\n\nThe target of change is exclusively the validation logic within src2/mcp.ts, specifically replacing the complex validateRoundtrip function with simpler, more reliable lodash isEqual comparisons. The approach involves leveraging lodash's battle-tested deep equality checking to perform straightforward comparisons between expected and actual data structures after format/parse operations. This eliminates the custom validation complexity while maintaining data integrity assurance through proven library functions.\n\nThe change is constrained to minimal modifications within src2/mcp.ts only, avoiding any changes to other files, the core MCP protocol, or tool interfaces. The solution prioritizes simplicity over sophistication, using established library functions rather than custom logic. The scope is deliberately narrow, addressing only the immediate complexity issue without expanding into broader validation system redesign or optimization efforts.",
+			};
+
+			// Mutate the object by adding tasks (like the Set Plan tool does)
+			const mutatedObject = {
+				...commitObject,
+				tasks: [
+					[
+						false,
+						"Remove complex validateRoundtrip function",
+						[
+							[
+								false,
+								"Locate and analyze the validateRoundtrip function in src2/mcp.ts",
+								[],
+							],
+							[
+								false,
+								"Identify all places where validateRoundtrip is called",
+								[],
+							],
+							[false, "Remove the validateRoundtrip function definition", []],
+						],
+					],
+					[
+						false,
+						"Replace validation logic with lodash isEqual",
+						[
+							[
+								false,
+								"Update Set Overarching Goal tool validation",
+								[
+									[
+										false,
+										"Replace validateRoundtrip call with format/parse/isEqual check",
+										[],
+									],
+									[
+										false,
+										"Update error handling to use structured error format",
+										[],
+									],
+								],
+							],
+							[
+								false,
+								"Update Set Detailed Goal tool validation",
+								[
+									[
+										false,
+										"Replace validateRoundtrip call with format/parse/isEqual check",
+										[],
+									],
+									[
+										false,
+										"Update error handling to use structured error format",
+										[],
+									],
+								],
+							],
+							[
+								false,
+								"Update Set Plan tool validation",
+								[
+									[
+										false,
+										"Replace validateRoundtrip call with format/parse/isEqual check",
+										[],
+									],
+									[
+										false,
+										"Update error handling to use structured error format",
+										[],
+									],
+								],
+							],
+							[
+								false,
+								"Update Mark Task tool validation",
+								[
+									[
+										false,
+										"Replace validateRoundtrip call with format/parse/isEqual check",
+										[],
+									],
+									[
+										false,
+										"Update error handling to use structured error format",
+										[],
+									],
+								],
+							],
+							[
+								false,
+								"Update Finish Job tool validation",
+								[
+									[
+										false,
+										"Replace validateRoundtrip call with format/parse/isEqual check",
+										[],
+									],
+									[
+										false,
+										"Update error handling to use structured error format",
+										[],
+									],
+								],
+							],
+						],
+					],
+					[
+						false,
+						"Verify implementation correctness",
+						[
+							[false, "Run tests to ensure validation works correctly", []],
+							[false, "Test MCP server functionality with sample data", []],
+							[false, "Verify no regressions in existing functionality", []],
+						],
+					],
+				] as const,
+			};
+
+			// Run through format → parse → validate like the MCP tools do
+			const processedExpectation = validate(
+				parse(format(mutatedObject as any)),
+			);
+
+			// Should succeed
+			expect(processedExpectation.isValid).toBe(true);
+
+			if (processedExpectation.isValid) {
+				// The tasks field should be preserved correctly
+				expect(processedExpectation.data.stage).toBe(5); // Should be stage 5 (with tasks)
+				expect("tasks" in processedExpectation.data).toBe(true);
+				if ("tasks" in processedExpectation.data) {
+					expect(processedExpectation.data.tasks).toEqual(mutatedObject.tasks);
+				}
+			}
+		});
 	});
 });
