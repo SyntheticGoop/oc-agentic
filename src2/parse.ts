@@ -405,7 +405,7 @@ function parseContent(
 	config: ParserConfig,
 ): ParsedResult {
 	let description: string | undefined;
-	let constraints: Array<[string, string]> = [];
+	const constraints: Array<[string, string]> = [];
 	let tasks: Task[] = [];
 	let directive: string | undefined;
 

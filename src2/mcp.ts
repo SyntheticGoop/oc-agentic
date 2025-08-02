@@ -2,13 +2,13 @@
 process.chdir(process.env.INIT_CWD ?? process.cwd());
 
 import { FastMCP } from "fastmcp";
+import { isEqual } from "lodash";
 import { z } from "zod";
+import { format } from "./format";
 import { Jujutsu } from "./jujutsu";
 import { parse } from "./parse";
-import { validate, ValidatedHeader, ValidatedTask } from "./validate";
 import { Err, Ok } from "./result";
-import { format } from "./format";
-import { isEqual } from "lodash";
+import { ValidatedHeader, ValidatedTask, validate } from "./validate";
 
 function formatError(error: Err) {
 	return `An internal error ocurred: ${error.err} \`${JSON.stringify(error.meta)}\``;
@@ -134,6 +134,7 @@ ALWAYS READ AND FOLLOW EXISTING PATTERNS.
 NEVER MAKE ASSUMPTIONS.
 ALWAYS MAKE CHANGES BY MODIFYING EXISTING CODE IN STRUCTURE BEFORE BUILDING NEW THINGS.
 
+WORKFLOW COMPLETION: When all tasks are complete, the workflow will automatically finish. Use gather_requirements() to see completion status and get guidance for starting a new cycle.
 
 BEFORE EXECUTING A TASK ALWAYS SAY THIS OUT LOUD:
 \`\`\`md
@@ -160,7 +161,8 @@ NAVIGATION: You can jump back to:
 	SELF_REINFORCEMENT: `DO THE FOLLOWING:
 1. Introsepect and ensure that the agreed upon has been fully captured in this input.
 2. If it is not fully captured, update it again to satisfy it.
-3. Only when fully fully captured then you may stop retrying and proceed.`,
+3. Ensure that every part of the plan is cohesive.
+4. Only when fully fully captured then you may stop retrying and proceed.`,
 };
 
 async function loadCommit(jj: ReturnType<(typeof Jujutsu)["cwd"]>) {
@@ -205,17 +207,23 @@ function start() {
 	const server = new FastMCP({
 		name: "requirements enforcer",
 		version: "0.1.0",
-		instructions: `I am requirements enforcer. I am designed to guide the process of making a change from the start to end.
+		instructions: `I am requirements enforcer. I am designed to guide the cyclical process of making changes from start to finish and back to start.
 
 A change is any action that caused code to alter from one state to another.
 
-A changes must be detected at the following stages:
-1. Before any change is made, when declaring the intent to change
-2. During the planning stage of a change when deciding on the requirements
-3. During the execution stage of a change when implementing the requirements
-4. During the post execution stage of a change where we check and realign with our requirements
+CYCLICAL WORKFLOW:
+1. gather_requirements() - Assess current state and get appropriate guidance
+2. Follow the guided workflow: goal → detailed → plan → execute
+3. When all tasks complete, gather_requirements() will detect completion
+4. Use new_commit() to start fresh cycle
+5. Return to step 1
 
-If you detect any of the above to be true, use this tool.
+WORKFLOW STAGES:
+1. Before any change is made, when declaring the intent to change
+2. During the planning stage of a change when deciding on the requirements  
+3. During the execution stage of a change when implementing the requirements
+4. Automatic completion when all tasks are done
+5. Fresh cycle initiation for continuous development
 
 Always start with "gather_requirements"
 `,
@@ -334,7 +342,37 @@ ${PROMPTS.DEFINE_PLAN}`,
 						],
 					};
 				case 5:
-				case 6:
+				case 6: {
+					// Check if all tasks are complete
+					function allTasksComplete(tasks: ValidatedTask[]): boolean {
+						for (const [completed, , children] of tasks) {
+							if (!completed || !allTasksComplete(children)) {
+								return false;
+							}
+						}
+						return true;
+					}
+
+					if (
+						commitResult.ok.tasks &&
+						allTasksComplete(commitResult.ok.tasks)
+					) {
+						return {
+							content: [
+								...mergeChangeContent,
+								composeTextOutput({
+									type: "instruct",
+									instruct: `WORKFLOW COMPLETED SUCCESSFULLY! All requirements have been satisfied and all tasks are complete.
+
+The current requirements were:
+${currentRequirements}
+
+Use new_commit() to start a fresh requirements cycle.`,
+								}),
+							],
+						};
+					}
+
 					return {
 						content: [
 							...mergeChangeContent,
@@ -349,6 +387,7 @@ ${PROMPTS.EXECUTE}`,
 							}),
 						],
 					};
+				}
 			}
 		},
 	});
@@ -405,7 +444,7 @@ Call me whenever you have decided on updated goal.`,
 
 			return composeTextOutput({
 				type: "instruct",
-				instruct: `The overarching goal has been set to: ${JSON.stringify(args)}
+				instruct: `The overarching goal has been set to: ${JSON.stringify(processedExpectation.data)}
 
 ${PROMPTS.SELF_REINFORCEMENT}
 
@@ -470,7 +509,7 @@ Call me whenever you have decided on updated goal.`,
 
 			return composeTextOutput({
 				type: "instruct",
-				instruct: `The detailed goal has been set to: ${JSON.stringify({ header: commitResult.ok.header, description: commitResult.ok.description, constraints: commitResult.ok.constraints })}
+				instruct: `The detailed goal has been set to: ${JSON.stringify(processedExpectation.data)}
 
 ${PROMPTS.SELF_REINFORCEMENT}
 
@@ -542,7 +581,7 @@ Call me whenever you need to update tasks.`,
 
 			return composeTextOutput({
 				type: "instruct",
-				instruct: `The plan has been set to: ${JSON.stringify({ plan: commitResult.ok.tasks })}
+				instruct: `The plan has been set to: ${JSON.stringify(processedExpectation.data)}
 
 ${PROMPTS.SELF_REINFORCEMENT}
 
@@ -555,6 +594,8 @@ ${PROMPTS.EXECUTE}
 	server.addTool({
 		name: "mark_task",
 		description: `Use me to mark tasks as complete or incomplete during execution.
+
+Parent tasks are automatically completed once all child tasks are complete. They cannot be manually marked.
 
 Call me whenever you complete a task or need to update task status.`,
 		annotations: {
@@ -768,65 +809,22 @@ ${PROMPTS.EXECUTE}`,
 	});
 
 	server.addTool({
-		name: "finish_job",
-		description: `Use me to mark the entire workflow as complete.
+		name: "new_commit",
+		description: `Use me to start a fresh requirements cycle after completing the current workflow.
 
-Call me when all tasks are finished and the workflow is ready to be completed.`,
+This resets all state and begins a new commit planning process.`,
 		annotations: {
-			title: "Finish Job",
+			title: "New Commit",
 			destructiveHint: true,
 			readOnlyHint: false,
-			idempotentHint: true,
+			idempotentHint: false,
 			openWorldHint: false,
 			streamingHint: false,
 		},
 		parameters: z.object({}),
 		execute: async () => {
-			const commitResult = await loadCommit(jj);
-			if (commitResult.err) {
-				return composeTextOutput({
-					type: "error",
-					error: commitResult,
-				});
-			}
-
-			// Check if all tasks are complete
-			function allTasksComplete(tasks: ValidatedTask[]): boolean {
-				for (const [completed, , children] of tasks) {
-					if (!completed || !allTasksComplete(children)) {
-						return false;
-					}
-				}
-				return true;
-			}
-
-			if (commitResult.ok.tasks && !allTasksComplete(commitResult.ok.tasks)) {
-				return composeTextOutput({
-					type: "error",
-					error: Err("not all tasks complete", {}),
-				});
-			}
-
-			// Mark workflow as complete by setting directive
-			commitResult.ok.directive = "COMPLETE";
-
-			// Validate roundtrip before storing
-			const processedExpectation = validate(parse(format(commitResult.ok)));
-
-			if (
-				!processedExpectation.isValid ||
-				!isEqual(processedExpectation.data, commitResult.ok)
-			) {
-				return composeTextOutput({
-					type: "error",
-					error: Err("incorrect input format", {
-						input: commitResult.ok,
-						output: processedExpectation,
-					}),
-				});
-			}
-
-			const result = await jj.description.replace(format(commitResult.ok));
+			// Reset commit state by creating empty commit description
+			const result = await jj.new();
 			if (result.err)
 				return composeTextOutput({
 					type: "error",
@@ -835,7 +833,13 @@ Call me when all tasks are finished and the workflow is ready to be completed.`,
 
 			return composeTextOutput({
 				type: "instruct",
-				instruct: `Workflow completed successfully! All requirements have been satisfied and tasks are complete.`,
+				instruct: `NEW COMMIT CREATED SUCCESSFULLY.
+
+YOU MUST IMMEDIATELY CALL gather_requirements() TO BEGIN THE REQUIREMENTS PROCESS.
+
+DO NOT PERFORM ANY OTHER ACTIONS. DO NOT LINGER IN THIS STATE.
+
+CALL gather_requirements() NOW.`,
 			});
 		},
 	});

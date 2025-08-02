@@ -3,7 +3,7 @@
  * Tests that the round-trip conversion maintains data integrity and produces stable output
  */
 
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import { format } from "./format.js";
 import { parse } from "./parse.js";
 import { validate } from "./validate.js";

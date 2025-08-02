@@ -1,7 +1,7 @@
-import { describe, expect, it, beforeEach, afterEach } from "vitest";
+import { spawn } from "node:child_process";
 import { promises as fs } from "node:fs";
 import { join } from "node:path";
-import { spawn } from "node:child_process";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { Jujutsu } from "./jujutsu";
 
 const MOCK_ENV_DIR = join(__dirname, "mock-env");

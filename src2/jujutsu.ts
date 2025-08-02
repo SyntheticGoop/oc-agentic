@@ -142,7 +142,7 @@ export const Jujutsu = {
 					const files = [];
 					for (const { file } of summary.ok) {
 						const f = await spawnjj(
-							["diff", "-r", "@", "--context", "20", file],
+							["diff", "-r", "@", "--context", "20", "--git", file],
 							{
 								cwd: dir,
 							},
