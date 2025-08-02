@@ -37,126 +37,137 @@
 import { spawn } from "node:child_process";
 import { Err, Ok } from "./result";
 
-function spawnjj(args: string[], options: { cwd: string }) {
-	return new Promise<
-		| Ok<{ stdout: string; stderr: string }>
-		| Err<"command failed", { cmd: string; msg: string }>
-		| Err<"command non zero exit", { cmd: string; code: number | null }>
-	>((ok) => {
-		const child = spawn("jj", args, {
-			stdio: ["pipe", "pipe", "pipe"],
-			cwd: options.cwd,
-		});
+function spawnjj(args: string[]) {
+  return new Promise<
+    | Ok<{ stdout: string; stderr: string }>
+    | Err<"command failed", { cmd: string; msg: string }>
+    | Err<"command non zero exit", { cmd: string; code: number | null }>
+  >((ok) => {
+    const child = spawn("jj", args, {
+      stdio: ["pipe", "pipe", "pipe"],
+    });
 
-		let stdout = "";
-		let stderr = "";
+    let stdout = "";
+    let stderr = "";
 
-		child.stdout?.on("data", (data) => {
-			stdout += data.toString();
-		});
+    child.stdout?.on("data", (data) => {
+      stdout += data.toString();
+    });
 
-		child.stderr?.on("data", (data) => {
-			stderr += data.toString();
-		});
+    child.stderr?.on("data", (data) => {
+      stderr += data.toString();
+    });
 
-		child.on("error", (error) => {
-			ok(
-				Err("command failed", {
-					cmd: `jj ${args.join(" ")}`,
-					msg: error.message,
-				}),
-			);
-		});
+    child.on("error", (error) => {
+      ok(
+        Err("command failed", {
+          cmd: `jj ${args.join(" ")}`,
+          msg: error.message,
+        }),
+      );
+    });
 
-		child.on("close", (code) => {
-			if (code === 0) {
-				ok({ ok: { stdout, stderr } } satisfies Ok);
-			} else {
-				ok(
-					Err("command non zero exit", {
-						cmd: `jj ${args.join(" ")}`,
-						code,
-					}),
-				);
-			}
-		});
-	});
+    child.on("close", (code) => {
+      if (code === 0) {
+        ok({ ok: { stdout, stderr } } satisfies Ok);
+      } else {
+        ok(
+          Err("command non zero exit", {
+            cmd: `jj ${args.join(" ")}`,
+            code,
+          }),
+        );
+      }
+    });
+  });
 }
 
 export const Jujutsu = {
-	cwd(dir: string) {
-		return {
-			async new() {
-				return spawnjj(["new"], { cwd: dir }).then((result) => {
-					if (result.err) return result;
+  cwd(dir: string) {
+    return {
+      async new() {
+        return spawnjj(["new", "-R", dir]).then((result) => {
+          if (result.err) return result;
 
-					return Ok(result.ok.stdout);
-				});
-			},
-			description: {
-				async get() {
-					return spawnjj(
-						["log", "-r", "@", "-T", "description", "--no-graph"],
-						{ cwd: dir },
-					).then((result) => {
-						if (result.err) return result;
-						return Ok(result.ok.stdout);
-					});
-				},
-				async replace(msg: string) {
-					return spawnjj(["desc", "-m", msg], { cwd: dir }).then((result) => {
-						if (result.err) return result;
-						return Ok(result.ok.stdout);
-					});
-				},
-			},
-			async empty() {
-				return spawnjj(["log", "-r", "@", "-T", "empty"], {
-					cwd: dir,
-				}).then((result) => {
-					if (result.err) return result;
-					return Ok(result.ok.stdout === "true");
-				});
-			},
-			diff: {
-				async summary() {
-					return spawnjj(["diff", "-r", "@", "--summary"], {
-						cwd: dir,
-					}).then((result) => {
-						if (result.err) return result;
-						return Ok(
-							result.ok.stdout
-								.trim()
-								.split("\n")
-								.map((entry) => ({
-									type: entry.slice(0, 2).trim(),
-									file: entry.slice(2).trim(),
-								})),
-						);
-					});
-				},
-				async files() {
-					const summary = await this.summary();
-					if (summary.err) return summary;
+          return Ok(result.ok.stdout);
+        });
+      },
+      description: {
+        async get() {
+          return spawnjj([
+            "log",
+            "-r",
+            "@",
+            "-T",
+            "description",
+            "--no-graph",
+            "-R",
+            dir,
+          ]).then((result) => {
+            if (result.err) return result;
+            return Ok(result.ok.stdout);
+          });
+        },
+        async replace(msg: string) {
+          return spawnjj(["desc", "-R", dir, "-m", msg]).then((result) => {
+            if (result.err) return result;
+            return Ok(result.ok.stdout);
+          });
+        },
+      },
+      async empty() {
+        return spawnjj(["log", "-r", "@", "-T", "empty", "-R", dir]).then(
+          (result) => {
+            if (result.err) return result;
+            return Ok(result.ok.stdout === "true");
+          },
+        );
+      },
+      diff: {
+        async summary() {
+          return spawnjj(["diff", "-r", "@", "--summary", "-R", dir]).then(
+            (result) => {
+              if (result.err) return result;
+              return Ok(
+                result.ok.stdout
+                  .trim()
+                  .split("\n")
+                  .map((entry) => ({
+                    type: entry.slice(0, 2).trim(),
+                    file: entry.slice(2).trim(),
+                  })),
+              );
+            },
+          );
+        },
+        async files() {
+          const summary = await this.summary();
+          if (summary.err) return summary;
 
-					const files = [];
-					for (const { file } of summary.ok) {
-						const f = await spawnjj(["diff", "-r", "@", "--git", file], {
-							cwd: dir,
-						}).then((result) => {
-							if (result.err) return result;
-							const split = result.ok.stdout.indexOf("\n");
-							return Ok({
-								file: result.ok.stdout.slice(0, split),
-								diff: result.ok.stdout.slice(split),
-							});
-						});
-						if (f.err) return f;
-						files.push(f.ok);
-					}
-					return Ok(files);
-				},
-			},
-		};
-	},
+          const files = [];
+          for (const { file } of summary.ok) {
+            const f = await spawnjj([
+              "diff",
+              "-R",
+              dir,
+              "-r",
+              "@",
+              "--git",
+              file,
+            ]).then((result) => {
+              if (result.err) return result;
+              const split = result.ok.stdout.indexOf("\n");
+              return Ok({
+                file: result.ok.stdout.slice(0, split),
+                diff: result.ok.stdout.slice(split),
+              });
+            });
+            if (f.err) return f;
+            files.push(f.ok);
+          }
+          return Ok(files);
+        },
+      },
+    };
+  },
 };
