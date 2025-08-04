@@ -2,16 +2,124 @@
 process.chdir(process.env.INIT_CWD ?? process.cwd());
 
 import { FastMCP } from "fastmcp";
-import { isEqual } from "lodash";
 import { z } from "zod";
-import { format } from "./format";
 import { Jujutsu } from "./jujutsu";
-import { parse } from "./parse";
-import { Err, Ok } from "./result";
-import { ValidatedHeader, ValidatedTask, validate } from "./validate";
+import type { SavingPlanData } from "./persistence/saver";
+import { PlanningLibrary } from "./planning";
+import { Err } from "./result";
+
+class PlanningLibraryQueue {
+	private queue: Array<{
+		operation: (library: PlanningLibrary) => Promise<any>;
+		resolve: (value: any) => void;
+		reject: (error: any) => void;
+	}> = [];
+	private processing = false;
+	private jj: ReturnType<typeof Jujutsu.cwd>;
+
+	constructor(jujutsuInstance: ReturnType<typeof Jujutsu.cwd>) {
+		this.jj = jujutsuInstance;
+	}
+
+	async enqueue<T>(
+		operation: (library: PlanningLibrary) => Promise<T>,
+	): Promise<T> {
+		return new Promise<T>((resolve, reject) => {
+			this.queue.push({ operation, resolve, reject });
+			this.processQueue();
+		});
+	}
+
+	private async processQueue(): Promise<void> {
+		if (this.processing || this.queue.length === 0) {
+			return;
+		}
+
+		this.processing = true;
+
+		while (this.queue.length > 0) {
+			const { operation, resolve, reject } = this.queue.shift()!;
+
+			try {
+				const library = new PlanningLibrary(this.jj);
+				const result = await operation(library);
+				resolve(result);
+			} catch (error) {
+				reject(error);
+			}
+		}
+
+		this.processing = false;
+	}
+}
+
+// Schema validation patterns from loader.ts and validate.ts
+const SCOPE_PATTERN = /^[a-z][a-z0-9/.-]*$/;
+
+const ValidatedCommitType = z.enum([
+	"feat",
+	"fix",
+	"refactor",
+	"build",
+	"chore",
+	"docs",
+	"lint",
+	"infra",
+	"spec",
+]);
+
+const ValidatedScope = z
+	.string()
+	.regex(
+		SCOPE_PATTERN,
+		"Scope must start with lowercase letter and contain only lowercase letters, numbers, hyphens, dots, and slashes (e.g., 'auth', 'user/profile', 'api.v2')",
+	)
+	.nullable();
+
+const ValidatedTitle = z
+	.string()
+	.min(1, "Title cannot be empty")
+	.max(120, "Title must not exceed 120 characters")
+	.refine(
+		(val) => val === val.trim(),
+		"Title must not have leading or trailing whitespace",
+	)
+	.refine(
+		(val) => val.length > 0 && val[0] === val[0].toLowerCase(),
+		"Title must start with lowercase letter",
+	);
+
+const ValidatedIntent = z
+	.string()
+	.min(
+		1,
+		"Intent cannot be empty - explain WHY this exists and what problem it solves",
+	);
+
+const ValidatedObjectives = z
+	.array(z.string().min(1, "Objective cannot be empty"))
+	.min(1, "At least one objective is required - specify measurable outcomes");
+
+const ValidatedConstraints = z
+	.array(z.string().min(1, "Constraint cannot be empty"))
+	.default([]);
 
 function formatError(error: Err) {
-	return `An internal error ocurred: ${error.err} \`${JSON.stringify(error.meta)}\``;
+	// Provide helpful error messages with recovery guidance
+	switch (error.err) {
+		case "task_not_found":
+			return `Task '${error.meta?.task_key}' not found. Use get_project to see available tasks, or create a new task with create_task.`;
+		case "invalid_task_keys":
+			return `Invalid task keys provided. Available tasks: [${error.meta?.existing?.join(", ")}]. You provided: [${error.meta?.provided?.join(", ")}]. Use get_project to see current tasks.`;
+		case "empty task not allowed":
+			return `Cannot save project with no tasks. Add at least one task using create_task before saving.`;
+		case "Cannot remove commit that has files":
+			return `Cannot delete task '${error.meta?.task_key}' because it contains uncommitted changes. Commit or discard changes first.`;
+		case "Cannot move non-existent task key":
+			return `Cannot reorder tasks: some task keys don't exist. Use get_project to see available tasks.`;
+		default:
+			return `Error: ${error.err}. ${error.meta ? `Details: ${JSON.stringify(error.meta)}` : ""}`;
+	}
 }
 
 function composeTextOutput(
@@ -21,8 +129,8 @@ function composeTextOutput(
 				error: Err<string, unknown>;
 		  }
 		| {
-				type: "instruct";
-				instruct: string;
+				type: "success";
+				message: string;
 		  },
 ): { type: "text"; text: string } {
 	switch (content.type) {
@@ -36,810 +144,785 @@ ${JSON.stringify(content.error.meta, null, 2)}
 
 This is a CRITICAL ISSUE. Surface this to the user immediately AND STOP. RESOLVING THIS ISSUE REQUIRES MANUAL USER INTERVENTION.`,
 			};
-		case "instruct":
+		case "success": {
 			return {
 				type: "text",
-				text: content.instruct,
+				text: content.message,
 			};
+		}
 	}
-}
-
-const PROMPTS = {
-	DEFINE_OVERARCHING_GOAL: `You are an expert project director. Your expertise is root goal extraction, vague objective bisection, possibility exploration and self reflective goal realignment.
-
-IMPORTANT: This is your workflow. DO NOT DEVIATE.
-1. Get the user to establish a clear overarching goal.
-2. Work with the user to explore and narrow the goal, giving creative suggestions and hypothesis.
-3. Decide on the finalized goal.
-
-A goal will consist of 4 parts. Ensure that these parts are thoroughly investigated and abstracted.
-1. What kind of change is this goal?
-2. What is the scope of this goal?
-3. Is this goal breaking?
-4. The goal itself a short 1 line objective.
-
-FORMAT: You need to store to call the set_overarching_goal tool. Ensure that you have all the inputs necessary to call the tool.
-EXPLICIT ACKNOWLEDGEMENT: You are only done once the user acknowledges with "PROCEED"
-
-NAVIGATION: You are at the beginning - no previous steps to jump to.`,
-	DEFINE_DETAILED_GOAL: `You are an assmebly of domain experts brought together to interrogate and critique plans. Your expertise is vague objective bisection, possibility exploration and self reflective goal realignment.
-
-YOUR CORE TONE IS STRICT AND DEMANDING. YOU SEEK JUSTIFICATION. YOU EVALUATE BASED ON EXECUTION COST, PRIORITIZING LOWER COSTS.
-
-IMPORTANT: This is your workflow. DO NOT DEVIATE.
-1. Understand the overarching goal.
-2. Work with the user to explore and expand the requirements of the goal, giving creative suggestions and hypothesis while pruning unwanted suggestions.
-3. Decide on the the fine details of the goal
-
-A goal will consist of 2 parts. Ensure that these parts are thoroughly investigated and abstracted.
-
-The first part is the details of the change. A detail consists of the following:
-1. Reasons for change - any change must be directed by a fundamental need to be fulfilled. Ensure that this is clear and indisputable. It is also required to provide grounding context to enhance explanation.
-2. Targets of change - what parts must be changed in order to satisfy the goal. This must be exhaustive.
-3. Approach to change - how are you going to change things? What techniques, strategies, patterns, sequencing.
-
-The second part is constraints. A goal will ofter have infinite solutions. Define strategically place constraints to narrow the scope.
-The strategy to find constraints is to systematically explore the goal and propose a range of distinct solutions within the goal and existing constraints.
-The user will then pick a few proposals to follow. Your job is to then decide on bisecting constraints that will satisfy extracting only the chosen solutions from this group.
-
-FORMAT: You need to store to call the set_detailed_goal tool. Ensure that you have all the inputs necessary to call the tool. Your description must be in english paragraphs without headers or points.
-EXPLICIT ACKNOWLEDGEMENT: You are only done once the user acknowledges with "PROCEED"
-
-NAVIGATION: You can jump back to:
-- jump("goal") - Revise the overarching goal`,
-
-	DEFINE_PLAN: `You are an expert requirements implementer. Your expertise is in breaking down an objective into clear distinct steps to execute on.
-
-YOU WILL UNRELENTLESSLY PURSUE THE IDEAL APPROACH TO SATISFY THE CURRENT REQUIREMENT.
-YOU WILL PRIORITIZE SIMPLE OVER COMPLEX.
-YOU WILL PURSUE DECOUPLING OF TASKS.
-YOU WILL ENSURE STREAMLINING OF DIFFICULT DATAFLOWS.
-
-IMPORTANT: This is your workflow. DO NOT DEVIATE.
-1. Completely comprehend the requirements and constraints.
-2. Ask refining questions as necessary.
-3. Present a plan of action.
-4. Iterate on the plan with the user.
-
-Plans are formatted with the following pattern. You MUST follow the plan pattern.
-\`\`\`md plan pattern
-- [ ] First step
-  - [ ] Nested first step
-    - [ ] Nested nested first step
-      - [ ] Nested nested nested first step
-- [ ] Second step
-- [x] Completed step
-\`\`\`
-
-Plans are lists of tasks. Each task can be broken down subtasks. You may only be 4 subtasks deep.
-
-ALWAYS favor a deep over a shallow plan.
-ALWAYS reletlessly refine the plan.
-
-FORMAT: You need to store to call the set_plan tool. Ensure that you have all the inputs necessary to call the tool.
-EXPLICIT ACKNOWLEDGEMENT: You are only done once the user acknowledges with "PROCEED"
-
-NAVIGATION: You can jump back to:
-- jump("goal") - Revise the overarching goal
-- jump("detailed") - Revise detailed requirements`,
-	EXECUTE: `You are an expert task executor. Your expertise is in executing tasks to specification..
-
-YOU WILL ADHERE TO ALL QUALITY STANDARDS.
-YOU WILL ADHERE TO ALL CODE STANDARDS.
-YOU WILL EXECUTE TASKS SEQUETIALLY AND IN ORDER.
-YOU WILL MARK TASKS AS DONE USING THE mark_task TOOL.
-YOU WILL BE SYSTEMATIC.
-YOU WILL GROUND YOUR WORK IN EXISTING CODE.
-ALWAYS READ AND FOLLOW EXISTING PATTERNS.
-NEVER MAKE ASSUMPTIONS.
-ALWAYS MAKE CHANGES BY MODIFYING EXISTING CODE IN STRUCTURE BEFORE BUILDING NEW THINGS.
-
-WORKFLOW COMPLETION: When all tasks are complete, the workflow will automatically finish. Use gather_requirements() to see completion status and get guidance for starting a new cycle.
-
-BEFORE EXECUTING A TASK ALWAYS SAY THIS OUT LOUD:
-\`\`\`md
-I am going to do THE_NAME_OF_THE_TASK.
-This is how I will do things: ...
-I will keep in mind these edge cases: ...
-\`\`\`
-
-THEN YOU WILL READ THE PREVIOUS LINE AND SAY THIS:
-\`\`\`md
-Is that accurate?
-These points are accurate: ...
-These points are inaccurate: ...
-\`\`\`
-
-THEN YOU WILL REPEAT AND REFINE UNTIL THERE ARE NO INACCURATE POINTS.
-
-UNLESS EXPLICITLY STOPPED, NEVER STOP EXECUTING.
-
-NAVIGATION: You can jump back to:
-- jump("goal") - Revise the overarching goal
-- jump("detailed") - Revise detailed requirements
-- jump("plan") - Revise the plan`,
-	SELF_REINFORCEMENT: `DO THE FOLLOWING:
-1. Introsepect and ensure that the agreed upon has been fully captured in this input.
-2. If it is not fully captured, update it again to satisfy it.
-3. Ensure that every part of the plan is cohesive.
-4. Only when fully fully captured then you may stop retrying and proceed.`,
-};
-
-async function loadCommit(jj: ReturnType<(typeof Jujutsu)["cwd"]>) {
-	return await jj.description
-		.get()
-		.then((result) => {
-			if (result.err) return result;
-			const parseResult = validate(parse(result.ok));
-			if (parseResult.isValid) return Ok(parseResult.data);
-			return Err("commit validation failed");
-		})
-		.catch((error) => Err("unknown error", { error }));
-}
-
-async function reinforceWithContext(
-	jj: ReturnType<(typeof Jujutsu)["cwd"]>,
-	driver: string,
-): Promise<Array<{ type: "text"; text: string }>> {
-	return [
-		{ type: "text", text: driver },
-		{
-			type: "text",
-			text: `FILES CHANGED:\n${await jj.diff.summary().then((summary) => {
-				if (summary.err) return formatError(summary);
-				return summary.ok.map((s) => `${s.type} ${s.file}`).join();
-			})}`,
-		},
-		...(await jj.diff.files().then((files) => {
-			if (files.err)
-				return [{ type: "text" as const, text: formatError(files) ?? "" }];
-			return files.ok
-				.map(
-					(f) =>
-						`WARNING: DIFF PRESENTED MAY LOOK LIKE THERE ARE SYNTAX ERRORS, BUT THAT IS JUST AN ARTIFACT OF DIFFING\nDIFF: ${f.file}\n${f.diff}`,
-				)
-				.map((text) => ({ type: "text" as const, text }));
-		})),
-	];
 }
 
 function start() {
 	const server = new FastMCP({
-		name: "requirements enforcer",
+		name: "planner",
 		version: "0.1.0",
-		instructions: `I am requirements enforcer. I am designed to guide the cyclical process of making changes from start to finish and back to start.
+		instructions: `I am a planning library MCP server for managing project plans and tasks.
 
-A change is any action that caused code to alter from one state to another.
+WORKFLOW GUIDE:
+1. ALWAYS START: Call get_project to see current state
+   - EXAMINE the returned project data carefully
+   - VERIFY it matches your expectations for the current state
+   - If it doesn't match expectations, investigate why before proceeding
 
-CYCLICAL WORKFLOW:
-1. gather_requirements() - Assess current state and get appropriate guidance
-2. Follow the guided workflow: goal → detailed → plan → execute
-3. When all tasks complete, gather_requirements() will detect completion
-4. Use new_commit() to start fresh cycle
-5. Return to step 1
+2. AFTER EVERY OPERATION: Verify the result AND STOP
+   - Each tool returns the complete project state after the operation
+   - You MUST examine this result and confirm it matches your intent
+   - If the result is unexpected, you MUST investigate and correct immediately
 
-WORKFLOW STAGES:
-1. Before any change is made, when declaring the intent to change
-2. During the planning stage of a change when deciding on the requirements  
-3. During the execution stage of a change when implementing the requirements
-4. Automatic completion when all tasks are done
-5. Fresh cycle initiation for continuous development
 
-Always start with "gather_requirements"
-`,
+3. NEVER ASSUME: Always verify tool results
+   - Don't assume operations succeeded just because no error occurred
+   - Check that the actual data matches what you intended
+   - Take corrective action if results don't match expectations
+
+4. PERSISTENT CLARIFICATION LOOP (MANDATORY):
+   - NEVER assume any missing details - always ask for specifics
+   - KEEP asking clarifying questions until you have ALL required information
+   - DO NOT STOP at the first clarification - continue until complete
+   - ONLY proceed when user explicitly opts out with "proceed", "go ahead", "that's enough", etc.
+   - NEVER execute create/update/delete operations without explicit user permission
+   - When user gives vague requests, engage in persistent clarification until they opt out
+
+IMPORTANT: YOU ARE OPERATING WITHIN A PLANNING TOOL CONTEXT WHERE PRECISION IS CRITICAL. DO NOT MAKE ASSUMPTIONS. DO NOT PROCEED WITHOUT EXPLICIT USER APPROVAL. ALWAYS CLARIFY BEFORE ACTING.
+
+AUTOMATIC BEHAVIORS:
+- 1 task = single format (just the task commit)
+- 2+ tasks = multi format (begin/tasks/end commits)
+- task_key is auto-generated when creating tasks (leave empty)
+- task_key is required when updating/deleting tasks (get from get_project)
+
+Each operation loads current state, makes one change, and saves immediately for safety.`,
 	});
 
 	const jj = Jujutsu.cwd(process.cwd());
+	const libraryQueue = new PlanningLibraryQueue(jj);
 
-	// Single tool: gather_requirements
+	// Project CRUD Operations
 	server.addTool({
-		name: "gather_requirements",
-		description: `Use me to gather requirements of the change. I am always the first step.
+		name: "get_project",
+		description: `Returns the complete current project state. ALWAYS CALL THIS FIRST.
 
-Calling me will return our current state.`,
-		annotations: {
-			title: "Gather Requirements",
-			destructiveHint: false,
-			readOnlyHint: true,
-			idempotentHint: false,
-			openWorldHint: false,
-			streamingHint: false,
-		},
-		execute: async (): Promise<
-			| { content: Array<{ type: "text"; text: string }> }
-			| { type: "text"; text: string }
-		> => {
-			const commitResult = await loadCommit(jj);
+CRITICAL: You MUST examine the returned project data and verify it matches your expectations.
 
-			if (commitResult.err) {
+WORKFLOW:
+1. This tool returns the complete current project state
+2. You MUST analyze the returned data to understand what exists
+3. Compare the actual state with what you expected to find
+4. If the state doesn't match your expectations, investigate why
+
+WHEN TO USE:
+✅ DO: Call this first before any other operations
+✅ DO: Call this to verify project state after making changes
+✅ DO: Use the returned data to make informed decisions about next steps
+❌ DON'T: Skip examining the returned project data
+❌ DON'T: Assume the project state without checking
+❌ DON'T: Proceed if the state doesn't match your expectations
+
+VERIFICATION REQUIRED:
+After calling this tool, you must examine the project data and confirm:
+- Is this the project state you expected?
+- Do the title, scope, intent, objectives, and constraints match expectations?
+- Are the tasks what you expected to find?
+- If not, what corrective action is needed?`,
+		parameters: z.object({}),
+		execute: async () => {
+			return libraryQueue.enqueue(async (library) => {
+				const project = await library.project();
+
+				if (project.err)
+					return composeTextOutput({
+						type: "error",
+						error: project,
+					});
+
+				if (project.ok === null)
+					return composeTextOutput({
+						type: "success",
+						message: `No existing project. You should start a new one.`,
+					});
+
 				return composeTextOutput({
-					type: "error",
-					error: commitResult,
+					type: "success",
+					message: `Project retrieved. EXAMINE THE RESULT: ${JSON.stringify(project.ok, null, 2)}
+
+REQUIRED: You must analyze this project data and determine if it matches your expectations:
+- Does the title match what you expected?
+- Do the tasks match what you expected? 
+- Are the objectives, constraints, and intent what you expected?
+- If this doesn't match your expectations, you MUST take corrective action immediately.
+
+IMPORTANT: WITHIN THE CONTEXT OF USING THIS TOOL, YOU ARE REQUIRED TO ENGAGE IN PERSISTENT CLARIFICATION BEFORE ANY CREATE/UPDATE/DELETE OPERATION. You must ask specific questions about missing details and continue asking until the user explicitly says "proceed", "go ahead", or "that's enough". DO NOT ASSUME ANY DETAILS. DO NOT PROCEED WITHOUT EXPLICIT USER PERMISSION.`,
 				});
-			}
-
-			const isEmptyResult = await jj
-				.empty()
-				.catch((error) => Err("unknown error", { error }));
-
-			if (isEmptyResult.err) {
-				return composeTextOutput({
-					type: "error",
-					error: isEmptyResult,
-				});
-			}
-
-			const currentRequirements = format(commitResult.ok);
-
-			const mergeChangeContent = isEmptyResult.ok
-				? []
-				: await reinforceWithContext(
-						jj,
-						`There are already existing changes. You MUST integrate everything necessary in satisfying those changes into your requirements.
-
-INTROSPECT the changes thoroughly. Be aware that changes are presented with as diffs. Diffs do not fully adhere to the original file format of what is being presented.`,
-					);
-
-			switch (commitResult.ok.stage) {
-				case 0:
-					return {
-						content: [
-							...mergeChangeContent,
-							composeTextOutput({
-								type: "instruct",
-								instruct: `You need to define or update the overarching goal before you are allowed to do anything else. 
-
-${PROMPTS.DEFINE_OVERARCHING_GOAL}`,
-							}),
-						],
-					};
-
-				case 1:
-					return {
-						content: [
-							...mergeChangeContent,
-							composeTextOutput({
-								type: "instruct",
-								instruct: `The current requirements are as follows:
-${currentRequirements}
-
-Work with the user to ensure that is accurate.
-
-${PROMPTS.DEFINE_OVERARCHING_GOAL}`,
-							}),
-						],
-					};
-
-				case 2:
-				case 3:
-					return {
-						content: [
-							...mergeChangeContent,
-							composeTextOutput({
-								type: "instruct",
-								instruct: `The current requirements are as follows:
-${currentRequirements}
-
-Work with the user to ensure that is accurate.
-
-${PROMPTS.DEFINE_DETAILED_GOAL}`,
-							}),
-						],
-					};
-				case 4:
-					return {
-						content: [
-							...mergeChangeContent,
-							composeTextOutput({
-								type: "instruct",
-								instruct: `The current requirements are as follows:
-${currentRequirements}
-
-Work with the user to ensure that is accurate.
-
-${PROMPTS.DEFINE_PLAN}`,
-							}),
-						],
-					};
-				case 5:
-				case 6: {
-					// Check if all tasks are complete
-					function allTasksComplete(tasks: ValidatedTask[]): boolean {
-						for (const [completed, , children] of tasks) {
-							if (!completed || !allTasksComplete(children)) {
-								return false;
-							}
-						}
-						return true;
-					}
-
-					if (
-						commitResult.ok.tasks &&
-						allTasksComplete(commitResult.ok.tasks)
-					) {
-						return {
-							content: [
-								...mergeChangeContent,
-								composeTextOutput({
-									type: "instruct",
-									instruct: `WORKFLOW COMPLETED SUCCESSFULLY! All requirements have been satisfied and all tasks are complete.
-
-The current requirements were:
-${currentRequirements}
-
-Use new_commit() to start a fresh requirements cycle.`,
-								}),
-							],
-						};
-					}
-
-					return {
-						content: [
-							...mergeChangeContent,
-							composeTextOutput({
-								type: "instruct",
-								instruct: `The current requirements are as follows:
-${currentRequirements}
-
-Work with the user to ensure that is accurate.
-
-${PROMPTS.EXECUTE}`,
-							}),
-						],
-					};
-				}
-			}
-		},
-	});
-
-	server.addTool({
-		name: "set_overarching_goal",
-		description: `Use me to set the intial goal of the change.
-
-An overarching goal is the grounding objective of all other parts of the requirements.
-
-Call me whenever you have decided on updated goal.`,
-		annotations: {
-			title: "Set Overarching Goal",
-			destructiveHint: true,
-			readOnlyHint: false,
-			idempotentHint: true,
-			openWorldHint: false,
-			streamingHint: false,
-		},
-		parameters: z.object({ goal: ValidatedHeader }),
-		execute: async (args) => {
-			const commitResult = await loadCommit(jj);
-			if (commitResult.err) {
-				return composeTextOutput({
-					type: "error",
-					error: commitResult,
-				});
-			}
-
-			commitResult.ok.header = args.goal;
-
-			// Validate roundtrip before storing
-			const processedExpectation = validate(parse(format(commitResult.ok)));
-
-			if (
-				!processedExpectation.isValid ||
-				!isEqual(processedExpectation.data.header, commitResult.ok.header)
-			) {
-				return composeTextOutput({
-					type: "error",
-					error: Err("incorrect input format", {
-						input: commitResult.ok,
-						output: processedExpectation,
-					}),
-				});
-			}
-
-			const result = await jj.description.replace(format(commitResult.ok));
-			if (result.err)
-				return composeTextOutput({
-					type: "error",
-					error: result,
-				});
-
-			return composeTextOutput({
-				type: "instruct",
-				instruct: `The overarching goal has been set to: ${JSON.stringify(processedExpectation.data)}
-
-${PROMPTS.SELF_REINFORCEMENT}
-
-${PROMPTS.DEFINE_DETAILED_GOAL}
-`,
 			});
 		},
 	});
 
 	server.addTool({
-		name: "set_detailed_goal",
-		description: `Use me to set the detailed goals of the change.
+		name: "create_project",
+		description: `Creates a new project with metadata. Use this after get_project shows a default/empty project.
 
-A detailed goal is the specifics of the overarching goal, and consists of the reasons, targets, approach and constraints of a change.
+MANDATORY: Before creating project, engage in persistent clarification loop until user explicitly says to proceed. Never assume missing details.
 
-Call me whenever you have decided on updated goal.`,
-		annotations: {
-			title: "Set Detailed Goal",
-			destructiveHint: true,
-			readOnlyHint: false,
-			idempotentHint: true,
-			openWorldHint: false,
-			streamingHint: false,
-		},
-		parameters: z.object({ description: z.string() }),
-		execute: async (args) => {
-			const commitResult = await loadCommit(jj);
-			if (commitResult.err) {
-				return composeTextOutput({
-					type: "error",
-					error: commitResult,
-				});
-			}
+IMPORTANT: YOU ARE REQUIRED TO ASK CLARIFYING QUESTIONS BEFORE USING THIS TOOL. DO NOT PROCEED WITHOUT EXPLICIT USER PERMISSION.
 
-			commitResult.ok.description = args.description;
+WHEN TO USE:
+- After get_project returns a default project with just a "wip" task
+- When starting completely fresh work
+- When completely replacing existing project metadata
 
-			// Validate roundtrip before storing
-			const processedExpectation = validate(parse(format(commitResult.ok)));
+PARAMETER GUIDE:
 
-			if (
-				!processedExpectation.isValid ||
-				!isEqual(
-					processedExpectation.data.description,
-					commitResult.ok.description,
-				)
-			) {
-				return composeTextOutput({
-					type: "error",
-					error: Err("incorrect input format", {
-						input: commitResult.ok,
-						output: processedExpectation,
-					}),
-				});
-			}
+SCOPE - Area of change (examples of transforming user input):
+- "User Authentication System" → "auth" or "user-auth"  
+- "API Version 2 Updates" → "api.v2" or "api/v2"
+- "Database Migration Tools" → "db/migration" or "db-tools"
+- "Frontend Components" → "ui" or "frontend"
+- Can be null if project spans multiple areas
 
-			const result = await jj.description.replace(format(commitResult.ok));
-			if (result.err)
-				return composeTextOutput({
-					type: "error",
-					error: result,
-				});
+TITLE - Brief description (lowercase start, max 120 chars):
+- "implement user authentication system"
+- "migrate database to postgresql" 
+- "add real-time notifications"
 
-			return composeTextOutput({
-				type: "instruct",
-				instruct: `The detailed goal has been set to: ${JSON.stringify(processedExpectation.data)}
+INTENT - WHY this project exists (be specific):
+✅ GOOD: "Users currently cannot securely access their accounts, leading to security risks and poor user experience. We need authentication to protect user data and enable personalized features."
+❌ BAD: "Add login functionality" (doesn't explain WHY)
 
-${PROMPTS.SELF_REINFORCEMENT}
+OBJECTIVES - Measurable outcomes (what success looks like):
+✅ GOOD: ["Users can register with email/password", "Login completes within 3 seconds", "Password reset via email works", "Support 1000 concurrent users"]
+❌ BAD: ["Better security", "Improved UX"] (not measurable)
 
-${PROMPTS.DEFINE_PLAN}`,
-			});
-		},
-	});
+CONSTRAINTS - Limitations/requirements:
+✅ GOOD: ["Must use existing PostgreSQL database", "Cannot store passwords in plain text", "Must work on mobile devices"]
+❌ BAD: ["Make it secure"] (not actionable)
 
-	server.addTool({
-		name: "set_plan",
-		description: `Use me to set the plan of how to implement the requirements of the change.
+TYPE - What kind of work this project represents:
+- feat: New user-facing features ("implement user authentication", "add search functionality")
+- fix: Bug repairs ("fix security vulnerabilities", "resolve login issues")
+- refactor: Code improvements ("reorganize authentication system")
+- build: Build/deployment changes ("setup CI/CD pipeline")
+- chore: Maintenance ("update dependencies", "cleanup old code")
+- docs: Documentation ("create API documentation")
+- lint: Code style improvements ("enforce coding standards")
+- infra: Infrastructure ("setup monitoring", "deploy to cloud")
+- spec: Requirements/specifications ("define authentication requirements")
 
-A plan is a nested list of items to complete.
-
-\`\`\`md plan pattern
-- [ ] First step
-  - [ ] Nested first step
-    - [ ] Nested nested first step
-      - [ ] Nested nested nested first step
-- [ ] Second step
-- [x] Completed step
-\`\`\`
-
-Plans are lists of tasks. Each task can be broken down subtasks. You may only be 4 subtasks deep.
-
-Call me whenever you need to update tasks.`,
-		annotations: {
-			title: "Set Plan",
-			destructiveHint: true,
-			readOnlyHint: false,
-			idempotentHint: true,
-			openWorldHint: false,
-			streamingHint: false,
-		},
-		parameters: z.object({ plan: z.array(ValidatedTask) }),
-		execute: async (args) => {
-			const commitResult = await loadCommit(jj);
-			if (commitResult.err) {
-				return composeTextOutput({
-					type: "error",
-					error: commitResult,
-				});
-			}
-
-			commitResult.ok.tasks = args.plan;
-
-			// Validate roundtrip before storing
-			const processedExpectation = validate(parse(format(commitResult.ok)));
-
-			if (
-				!processedExpectation.isValid ||
-				!isEqual(processedExpectation.data.tasks, commitResult.ok.tasks)
-			) {
-				return composeTextOutput({
-					type: "error",
-					error: Err("incorrect input format", {
-						input: commitResult.ok,
-						output: processedExpectation,
-					}),
-				});
-			}
-
-			const result = await jj.description.replace(format(commitResult.ok));
-			if (result.err)
-				return composeTextOutput({
-					type: "error",
-					error: result,
-				});
-
-			return composeTextOutput({
-				type: "instruct",
-				instruct: `The plan has been set to: ${JSON.stringify(processedExpectation.data)}
-
-${PROMPTS.SELF_REINFORCEMENT}
-
-${PROMPTS.EXECUTE}
-`,
-			});
-		},
-	});
-
-	server.addTool({
-		name: "mark_task",
-		description: `Use me to mark tasks as complete or incomplete during execution.
-
-Parent tasks are automatically completed once all child tasks are complete. They cannot be manually marked.
-
-Call me whenever you complete a task or need to update task status.`,
-		annotations: {
-			title: "Mark Task",
-			destructiveHint: true,
-			readOnlyHint: false,
-			idempotentHint: true,
-			openWorldHint: false,
-			streamingHint: false,
-		},
+Parameters:
+- scope: Area of change (lowercase start, letters/numbers/hyphens/dots/slashes, or null)
+- title: Brief description (lowercase start, max 120 chars)
+- intent: WHY this project exists (detailed explanation required)
+- objectives: Measurable outcomes (at least one required)
+- constraints: Limitations/requirements (optional, defaults to empty)
+- type: Task type for the initial task (feat/fix/refactor/build/chore/docs/lint/infra/spec)`,
 		parameters: z.object({
-			task_id: z.string(),
+			scope: ValidatedScope,
+			title: ValidatedTitle,
+			intent: ValidatedIntent,
+			objectives: ValidatedObjectives,
+			constraints: ValidatedConstraints,
+			type: ValidatedCommitType,
+		}),
+		execute: async (args) => {
+			return libraryQueue.enqueue(async (library) => {
+				const project = await library.project({ new: true });
+				if (project.err)
+					return composeTextOutput({
+						type: "error",
+						error: project,
+					});
+
+				// Update project metadata and clear default tasks
+				project.ok.scope = args.scope;
+				project.ok.title = args.title;
+				project.ok.intent = args.intent;
+				project.ok.objectives = args.objectives;
+				project.ok.constraints = args.constraints;
+				project.ok.tasks = [
+					{
+						completed: false,
+						constraints: args.constraints,
+						intent: args.intent,
+						objectives: args.objectives,
+						scope: args.scope,
+						title: args.title,
+						type: args.type,
+					},
+				];
+
+				const saveResult = await project.ok.save();
+				if (saveResult.err) {
+					return composeTextOutput({
+						type: "error",
+						error: saveResult as Err<string, unknown>,
+					});
+				}
+
+				return composeTextOutput({
+					type: "success",
+					message: `Project creation completed. VERIFY THE RESULT: ${JSON.stringify(project.ok, null, 2)}
+
+REQUIRED: You must verify this matches what you intended to create:
+- Title: "${project.ok.title}" - Is this correct?
+- Scope: "${project.ok.scope || "null"}" - Is this correct?
+- Intent: "${project.ok.intent}" - Is this correct?
+- Objectives: ${JSON.stringify(project.ok.objectives)} - Are these correct?
+- Constraints: ${JSON.stringify(project.ok.constraints)} - Are these correct?
+- Tasks: ${project.ok.tasks.length} tasks - Is this the expected number?
+
+If ANY of these don't match your expectations, you MUST investigate and take corrective action.`,
+				});
+			});
+		},
+	});
+
+	server.addTool({
+		name: "update_project",
+		description: `Updates existing project metadata with partial changes (does not modify tasks).
+
+
+
+1. Projects organize development work into structured plans with goals and constraints
+2. This tool allows updating specific project fields without affecting tasks
+3. Use this when you need to refine project scope, intent, objectives or constraints
+4. Examples:
+   ✅ DO: Update intent to be more specific about the problem being solved
+   ✅ DO: Add new constraint "Must maintain API compatibility" to existing constraints
+   ❌ DON'T: Update without clear reason - changes should improve clarity or accuracy
+   ❌ DON'T: Make contradictory changes that conflict with existing tasks
+
+Parameters (all optional - only provided fields will be updated):
+- scope: Area of change this project covers (must start with lowercase letter, can contain lowercase letters, numbers, hyphens, dots, slashes; examples: 'auth', 'user/profile', 'api.v2', or null)
+- title: Brief project description (must start with lowercase letter, max 120 characters, no leading/trailing whitespace)
+- intent: Detailed explanation of WHY this project exists and what problem it solves (if provided, cannot be empty)
+- objectives: Array of specific measurable outcomes this project should achieve (if provided, at least one required, each must be non-empty)
+- constraints: Array of limitations, requirements, or boundaries that must be respected (if provided, defaults to empty array)
+
+If errors occur, surface them immediately to the user for manual intervention.`,
+		parameters: z.object({
+			scope: ValidatedScope.optional(),
+			title: ValidatedTitle.optional(),
+			intent: ValidatedIntent.optional(),
+			objectives: ValidatedObjectives.optional(),
+			constraints: ValidatedConstraints.optional(),
+		}),
+		execute: async (args) => {
+			return libraryQueue.enqueue(async (library) => {
+				const project = await library.project();
+				if (project.err)
+					return composeTextOutput({
+						type: "error",
+						error: project,
+					});
+
+				if (project.ok === null)
+					return composeTextOutput({
+						type: "error",
+						error: Err("Tool Error: There is no existing project to update."),
+					});
+
+				// Update only provided fields
+				if (args.scope !== undefined) project.ok.scope = args.scope;
+				if (args.title !== undefined) project.ok.title = args.title;
+				if (args.intent !== undefined) project.ok.intent = args.intent;
+				if (args.objectives !== undefined)
+					project.ok.objectives = args.objectives;
+				if (args.constraints !== undefined)
+					project.ok.constraints = args.constraints;
+
+				const saveResult = await project.ok.save();
+				if (saveResult.err) {
+					return composeTextOutput({
+						type: "error",
+						error: saveResult as Err<string, unknown>,
+					});
+				}
+
+				return composeTextOutput({
+					type: "success",
+					message: `Project update completed. VERIFY THE CHANGES: ${JSON.stringify(project.ok, null, 2)}
+
+REQUIRED: You must verify your changes were applied correctly:
+- Check that only the fields you intended to change were modified
+- Check that all other fields remained unchanged
+- If the result doesn't match your expectations, investigate and correct immediately.`,
+				});
+			});
+		},
+	});
+
+	server.addTool({
+		name: "delete_project",
+		description: `Removes project completely.
+
+1. Projects organize development work into structured plans with goals and constraints
+2. This tool clears all project metadata and resets to a clean slate
+3. Use this only when explicity told to do so.
+4. Examples:
+   ❌ DON'T: Delete project when asked to start a new one
+   ❌ DON'T: Delete project when expected project doesn't match - either update or create a new project
+   ❌ DON'T: Delete project just to make small changes - use update instead
+   ❌ DON'T: Delete without user confirmation - this removes all project data
+
+If errors occur, surface them immediately to the user for manual intervention.`,
+		parameters: z.object({}),
+		execute: async () => {
+			return libraryQueue.enqueue(async (library) => {
+				const project = await library.project();
+				if (project.err)
+					return composeTextOutput({
+						type: "error",
+						error: project,
+					});
+
+				if (project.ok !== null) {
+					const result = await project.ok.drop();
+					if (result.err) {
+						return composeTextOutput({
+							type: "error",
+							error: result,
+						});
+					}
+				}
+
+				return composeTextOutput({
+					type: "success",
+					message: `Project deletion completed. You must now start a new project`,
+				});
+			});
+		},
+	});
+
+	// Task CRUD Operations
+	server.addTool({
+		name: "create_task",
+		description: `Creates a new task and adds it to the project. Requires an existing project (call get_project first).
+
+MANDATORY: Before creating task, engage in persistent clarification loop until user explicitly says to proceed. Never assume missing details.
+
+IMPORTANT: YOU ARE REQUIRED TO ASK CLARIFYING QUESTIONS BEFORE USING THIS TOOL. DO NOT PROCEED WITHOUT EXPLICIT USER PERMISSION.
+
+WHEN TO USE:
+- After confirming project exists with get_project
+- To break down project work into actionable steps
+- To add new work items to existing project
+
+TASK TYPE GUIDE (choose the right type):
+- feat: New user-facing features ("add login form", "implement search")
+- fix: Bug repairs ("fix memory leak", "resolve crash on startup") 
+- refactor: Code improvements without changing behavior ("reorganize auth module")
+- build: Build system changes ("update webpack config", "add CI pipeline")
+- chore: Maintenance tasks ("update dependencies", "clean up logs")
+- docs: Documentation ("add API docs", "update README")
+- lint: Code style/formatting ("fix eslint errors", "format with prettier")
+- infra: Infrastructure changes ("deploy to AWS", "setup monitoring")
+- spec: Specifications/requirements ("define API contract", "write test cases")
+
+PARAMETER GUIDE:
+
+SCOPE: Same as project scope or more specific:
+- Project scope "auth" → Task scope "auth/login" or "auth/signup"
+- Project scope "api" → Task scope "api/users" or "api/posts"
+
+TITLE: What work will be done (lowercase start):
+- "implement user registration form"
+- "fix password validation bug"
+- "refactor database connection logic"
+
+INTENT: WHY this specific task is needed:
+✅ GOOD: "Users need a way to create accounts before they can access protected features. Registration form is the entry point for new users."
+❌ BAD: "Add registration" (doesn't explain why)
+
+OBJECTIVES: Specific outcomes for this task:
+✅ GOOD: ["Registration form accepts email/password", "Form validates input in real-time", "Success redirects to dashboard"]
+❌ BAD: ["Better registration"] (not specific)
+
+Parameters:
+- type: feat/fix/refactor/build/chore/docs/lint/infra/spec
+- scope: Area of change (can be more specific than project scope, or null)
+- title: What work will be done (lowercase start, max 120 chars)
+- intent: WHY this task is needed (detailed explanation)
+- objectives: Specific outcomes for this task (at least one required)
+- constraints: Task-specific limitations (optional)
+- completed: false (default for new tasks)`,
+		parameters: z.object({
+			type: ValidatedCommitType,
+			scope: ValidatedScope,
+			title: ValidatedTitle,
+			intent: ValidatedIntent,
+			objectives: ValidatedObjectives,
+			constraints: ValidatedConstraints,
+			completed: z.boolean().default(false),
+		}),
+		execute: async (args) => {
+			return libraryQueue.enqueue(async (library) => {
+				const project = await library.project();
+				if (project.err)
+					return composeTextOutput({
+						type: "error",
+						error: project,
+					});
+
+				if (project.ok === null)
+					return composeTextOutput({
+						type: "error",
+						error: Err("Tool Error: There is no existing project to update."),
+					});
+
+				// Add new task (task_key will be auto-assigned by saver)
+				const newTask = {
+					type: args.type,
+					scope: args.scope,
+					title: args.title,
+					intent: args.intent,
+					objectives: args.objectives,
+					constraints: args.constraints,
+					completed: args.completed,
+				};
+
+				project.ok.tasks.push(newTask);
+
+				const saveResult = await project.ok.save();
+				if (saveResult.err) {
+					return composeTextOutput({
+						type: "error",
+						error: saveResult as Err<string, unknown>,
+					});
+				}
+
+				return composeTextOutput({
+					type: "success",
+					message: `Task '${newTask.title}' created successfully. VERIFY THE RESULT: ${JSON.stringify(project.ok, null, 2)}
+
+REQUIRED: Confirm the task was created correctly with the right details.
+- Verify that the entire project scope and task order MUST BE coherent
+- If the result doesn't match your expectations, YOU MUST investigate and correct immediately.`,
+				});
+			});
+		},
+	});
+
+	server.addTool({
+		name: "update_task",
+		description: `Updates an existing task with partial changes. Requires task_key from get_project.
+
+MANDATORY: Before updating task, engage in persistent clarification loop until user explicitly says to proceed. Never assume missing details.
+
+WORKFLOW:
+1. Call get_project to see available tasks and their task_keys
+2. Use the task_key to identify which task to update
+3. Provide only the fields you want to change (all parameters except task_key are optional)
+
+WHEN TO USE:
+- Mark task as completed when work is finished
+- Refine task details based on new information
+- Change task type if requirements change
+- Update objectives as work progresses
+
+TASK_KEY REQUIREMENT:
+- REQUIRED: Must provide the exact task_key from get_project
+- Get task_keys by calling get_project first
+- Task_key identifies which task to update (cannot be changed)
+
+COMMON UPDATES:
+- Mark complete: completed: true
+- Change type: type: "fix" (if requirements changed)
+- Refine scope: scope: "auth/password-reset" (more specific)
+- Update objectives: objectives: ["New objective based on findings"]
+
+Parameters:
+- task_key: REQUIRED - Exact task_key from get_project (cannot be empty)
+- type: Optional - feat/fix/refactor/build/chore/docs/lint/infra/spec
+- scope: Optional - Area of change (can be more specific, or null)
+- title: Optional - What work will be done (lowercase start, max 120 chars)
+- intent: Optional - WHY this task is needed (if provided, cannot be empty)
+- objectives: Optional - Specific outcomes (if provided, at least one required)
+- constraints: Optional - Task-specific limitations
+- completed: Optional - true when task is finished`,
+		parameters: z.object({
+			task_key: z.string().min(1, "Task key cannot be empty"),
+			type: ValidatedCommitType.optional(),
+			scope: ValidatedScope.optional(),
+			title: ValidatedTitle.optional(),
+			intent: ValidatedIntent.optional(),
+			objectives: ValidatedObjectives.optional(),
+			constraints: ValidatedConstraints.optional(),
 			completed: z.boolean().optional(),
 		}),
 		execute: async (args) => {
-			const commitResult = await loadCommit(jj);
-			if (commitResult.err) {
-				return composeTextOutput({
-					type: "error",
-					error: commitResult,
-				});
-			}
+			return libraryQueue.enqueue(async (library) => {
+				const project = await library.project();
+				if (project.err)
+					return composeTextOutput({
+						type: "error",
+						error: project,
+					});
 
-			// Find and update the task
-			if (!commitResult.ok.tasks) {
-				return composeTextOutput({
-					type: "error",
-					error: Err("no tasks found", {}),
-				});
-			}
+				if (project.ok === null)
+					return composeTextOutput({
+						type: "error",
+						error: Err("Tool Error: There is no existing project to update."),
+					});
 
-			// Simple task marking logic - find task by description match
-			function markTaskInArray(
-				tasks: ValidatedTask[],
-				taskId: string,
-				completed: boolean,
-			): boolean {
-				for (const task of tasks) {
-					if (task[1].includes(taskId)) {
-						task[0] = completed;
-						return true;
-					}
-					if (markTaskInArray(task[2], taskId, completed)) {
-						return true;
-					}
+				// Find task to update
+				const task = project.ok.tasks.find((t) => t.task_key === args.task_key);
+				if (!task) {
+					return composeTextOutput({
+						type: "error",
+						error: {
+							err: "task_not_found",
+							meta: { task_key: args.task_key },
+						} as Err<string, unknown>,
+					});
 				}
-				return false;
-			}
 
-			const completed = args.completed ?? true;
-			const found = markTaskInArray(
-				commitResult.ok.tasks,
-				args.task_id,
-				completed,
-			);
+				// Update only provided fields
+				if (args.type !== undefined) task.type = args.type;
+				if (args.scope !== undefined) task.scope = args.scope;
+				if (args.title !== undefined) task.title = args.title;
+				if (args.intent !== undefined) task.intent = args.intent;
+				if (args.objectives !== undefined) task.objectives = args.objectives;
+				if (args.constraints !== undefined) task.constraints = args.constraints;
+				if (args.completed !== undefined) task.completed = args.completed;
 
-			if (!found) {
+				const saveResult = await project.ok.save();
+				if (saveResult.err) {
+					return composeTextOutput({
+						type: "error",
+						error: saveResult as Err<string, unknown>,
+					});
+				}
+
 				return composeTextOutput({
-					type: "error",
-					error: Err("task not found", { task_id: args.task_id }),
+					type: "success",
+					message: `Task update completed. VERIFY THE CHANGES: ${JSON.stringify(project.ok, null, 2)}
+
+REQUIRED: You must verify your task update was applied correctly:
+- Check that the changes you made were in line with the agreed upon changes.
+- Verify that the entire project scope and task order MUST BE coherent
+- If the result doesn't match your expectations, YOU MUST investigate and correct immediately.`,
 				});
-			}
-
-			// Validate roundtrip before storing
-			const processedExpectation = validate(parse(format(commitResult.ok)));
-
-			if (
-				!processedExpectation.isValid ||
-				!isEqual(processedExpectation.data.tasks, commitResult.ok.tasks)
-			) {
-				return composeTextOutput({
-					type: "error",
-					error: Err("incorrect input format", {
-						input: commitResult.ok,
-						output: processedExpectation,
-					}),
-				});
-			}
-
-			const result = await jj.description.replace(format(commitResult.ok));
-			if (result.err)
-				return composeTextOutput({
-					type: "error",
-					error: result,
-				});
-
-			return composeTextOutput({
-				type: "instruct",
-				instruct: `Task "${args.task_id}" marked as ${completed ? "complete" : "incomplete"}.
-
-Continue with the next task in sequence.`,
 			});
 		},
 	});
 
 	server.addTool({
-		name: "jump",
-		description: `Use me to jump to any previous stage and get the appropriate guiding prompt.
-		
-		This allows you to revise earlier decisions in the requirements workflow.`,
-		annotations: {
-			title: "Jump to Stage",
-			destructiveHint: false,
-			readOnlyHint: true,
-			idempotentHint: false,
-			openWorldHint: false,
-			streamingHint: false,
-		},
+		name: "delete_task",
+		description: `Removes a task from the project.
+
+1. Projects organize development work into structured plans with goals and constraints
+2. Tasks are individual work items that implement specific parts of the project plan
+3. Use this when a task is no longer needed or was created in error
+4. Examples:
+   ✅ DO: Delete task when requirements change and task is no longer relevant
+   ✅ DO: Remove duplicate tasks that were created accidentally
+   ❌ DON'T: Delete task just to modify it - use update_task instead
+   ❌ DON'T: Delete tasks without considering impact on project objectives
+
+Parameters:
+- task_key: Unique identifier of the task to remove (required, cannot be empty)
+
+If errors occur, surface them immediately to the user for manual intervention.`,
 		parameters: z.object({
-			stage: z.enum(["goal", "detailed", "plan", "execute"]),
+			task_key: z.string().min(1, "Task key cannot be empty"),
 		}),
-		execute: async (
-			args,
-		): Promise<
-			| { content: Array<{ type: "text"; text: string }> }
-			| { type: "text"; text: string }
-		> => {
-			const commitResult = await loadCommit(jj);
-			if (commitResult.err) {
+		execute: async (args) => {
+			return libraryQueue.enqueue(async (library) => {
+				const project = await library.project();
+				if (project.err)
+					return composeTextOutput({
+						type: "error",
+						error: project,
+					});
+
+				if (project.ok === null)
+					return composeTextOutput({
+						type: "error",
+						error: Err("Tool Error: There is no existing project to update."),
+					});
+
+				// Find task index
+				const taskIndex = project.ok.tasks.findIndex(
+					(t) => t.task_key === args.task_key,
+				);
+				if (taskIndex === -1) {
+					return composeTextOutput({
+						type: "error",
+						error: {
+							err: "task_not_found",
+							meta: { task_key: args.task_key },
+						} as Err<string, unknown>,
+					});
+				}
+
+				// Remove task
+				project.ok.tasks.splice(taskIndex, 1);
+
+				const saveResult = await project.ok.save();
+				if (saveResult.err) {
+					return composeTextOutput({
+						type: "error",
+						error: saveResult as Err<string, unknown>,
+					});
+				}
+
 				return composeTextOutput({
-					type: "error",
-					error: commitResult,
+					type: "success",
+					message: `Task deletion completed. VERIFY THE RESULT: ${JSON.stringify(project.ok.tasks, null, 2)}
+
+REQUIRED: You must verify the task was deleted correctly:
+- Confirm that task has been removed
+- If the result doesn't match your expectations, YOU MUST investigate and correct immediately.`,
 				});
-			}
-
-			const isEmptyResult = await jj
-				.empty()
-				.catch((error) => Err("unknown error", { error }));
-
-			if (isEmptyResult.err) {
-				return composeTextOutput({
-					type: "error",
-					error: isEmptyResult,
-				});
-			}
-
-			const currentRequirements = format(commitResult.ok);
-
-			const mergeChangeContent = isEmptyResult.ok
-				? []
-				: await reinforceWithContext(
-						jj,
-						`There are already existing changes. You MUST integrate everything necessary in satisfying those changes into your requirements.
-
-INTROSPECT the changes thoroughly. Be aware that changes are presented with as diffs. Diffs do not fully adhere to the original file format of what is being presented.`,
-					);
-
-			switch (args.stage) {
-				case "goal":
-					return {
-						content: [
-							...mergeChangeContent,
-							composeTextOutput({
-								type: "instruct",
-								instruct: `The current requirements are as follows:
-${currentRequirements}
-
-Work with the user to ensure that is accurate.
-
-${PROMPTS.DEFINE_OVERARCHING_GOAL}`,
-							}),
-						],
-					};
-				case "detailed":
-					return {
-						content: [
-							...mergeChangeContent,
-							composeTextOutput({
-								type: "instruct",
-								instruct: `The current requirements are as follows:
-${currentRequirements}
-
-Work with the user to ensure that is accurate.
-
-${PROMPTS.DEFINE_DETAILED_GOAL}`,
-							}),
-						],
-					};
-				case "plan":
-					return {
-						content: [
-							...mergeChangeContent,
-							composeTextOutput({
-								type: "instruct",
-								instruct: `The current requirements are as follows:
-${currentRequirements}
-
-Work with the user to ensure that is accurate.
-
-${PROMPTS.DEFINE_PLAN}`,
-							}),
-						],
-					};
-				case "execute":
-					return {
-						content: [
-							...mergeChangeContent,
-							composeTextOutput({
-								type: "instruct",
-								instruct: `The current requirements are as follows:
-${currentRequirements}
-
-Work with the user to ensure that is accurate.
-
-${PROMPTS.EXECUTE}`,
-							}),
-						],
-					};
-			}
+			});
 		},
 	});
 
 	server.addTool({
-		name: "new_commit",
-		description: `Use me to start a fresh requirements cycle after completing the current workflow.
+		name: "reorder_tasks",
+		description: `Reorders tasks in the project according to dependency sequence.
 
-This resets all state and begins a new commit planning process.`,
-		annotations: {
-			title: "New Commit",
-			destructiveHint: true,
-			readOnlyHint: false,
-			idempotentHint: false,
-			openWorldHint: false,
-			streamingHint: false,
-		},
-		parameters: z.object({}),
-		execute: async () => {
-			// Reset commit state by creating empty commit description
-			const result = await jj.new();
-			if (result.err)
+1. Projects organize development work into structured plans with goals and constraints
+2. Tasks are individual work items that must be completed in dependent succession
+3. Use this when you need to change the order of task execution for dependencies
+4. Examples:
+   ✅ DO: Move "setup database" task before "create user table" task
+   ✅ DO: Reorder tasks so prerequisites come first in the sequence
+   ❌ DON'T: Reorder randomly - task order should reflect logical dependencies
+   ❌ DON'T: Reorder without understanding task relationships
+
+Parameters:
+- task_keys: Array of task_key strings in the desired order (must include all existing tasks, at least one required, each task key cannot be empty)
+
+If errors occur, surface them immediately to the user for manual intervention.`,
+		parameters: z.object({
+			task_keys: z
+				.array(z.string().min(1, "Task key cannot be empty"))
+				.min(1, "At least one task key is required"),
+		}),
+		execute: async (args) => {
+			return libraryQueue.enqueue(async (library) => {
+				const project = await library.project();
+				if (project.err)
+					return composeTextOutput({
+						type: "error",
+						error: project,
+					});
+
+				if (project.ok === null)
+					return composeTextOutput({
+						type: "error",
+						error: Err("Tool Error: There is no existing project to update."),
+					});
+
+				// Validate all task keys exist
+				const existingKeys = project.ok.tasks
+					.map((t) => t.task_key)
+					.filter((key): key is string => Boolean(key));
+				const providedKeys = new Set(args.task_keys);
+
+				if (
+					existingKeys.length !== providedKeys.size ||
+					!existingKeys.every((key) => providedKeys.has(key))
+				) {
+					return composeTextOutput({
+						type: "error",
+						error: {
+							err: "invalid_task_keys",
+							meta: {
+								existing: Array.from(existingKeys),
+								provided: args.task_keys,
+							},
+						} as Err<string, unknown>,
+					});
+				}
+
+				// Reorder tasks
+				const reorderedTasks = args.task_keys.map(
+					(key) => project.ok.tasks.find((t) => t.task_key === key)!,
+				);
+				project.ok.tasks = reorderedTasks as [
+					SavingPlanData["tasks"][0],
+					...SavingPlanData["tasks"],
+				];
+
+				const saveResult = await project.ok.save();
+				if (saveResult.err) {
+					return composeTextOutput({
+						type: "error",
+						error: saveResult as Err<string, unknown>,
+					});
+				}
+
 				return composeTextOutput({
-					type: "error",
-					error: result,
+					type: "success",
+					message: `Task reordering completed. VERIFY THE ORDER: ${JSON.stringify(project.ok.tasks, null, 2)}
+
+REQUIRED: You must verify the tasks are in the correct order:
+- Check that the tasks array matches the order you specified
+- If the result doesn't match your expectations, YOU MUST investigate and correct immediately.`,
 				});
+			});
+		},
+	});
 
-			return composeTextOutput({
-				type: "instruct",
-				instruct: `NEW COMMIT CREATED SUCCESSFULLY.
+	// Navigation and Context Tools
+	server.addTool({
+		name: "goto",
+		description: `Navigate to a specific task (forward-only movement).
 
-YOU MUST IMMEDIATELY CALL gather_requirements() TO BEGIN THE REQUIREMENTS PROCESS.
+1. Projects organize development work into structured plans with goals and constraints
+2. Tasks must be completed in dependent succession, moving forward only
+3. Use this to move to the next task in sequence or jump to a specific task
+4. Examples:
+   ✅ DO: Move to next task after completing current one
+   ✅ DO: Jump to specific task that is ready to be worked on
+   ❌ DON'T: Move backwards to previous tasks - workflow is forward-only
+   ❌ DON'T: Jump to tasks that depend on incomplete prerequisites
 
-DO NOT PERFORM ANY OTHER ACTIONS. DO NOT LINGER IN THIS STATE.
+Parameters:
+- task_key: Unique identifier of the task to navigate to (required, cannot be empty)
 
-CALL gather_requirements() NOW.`,
+If errors occur, surface them immediately to the user for manual intervention.`,
+		parameters: z.object({
+			task_key: z.string().min(1, "Task key cannot be empty"),
+		}),
+		execute: async (args) => {
+			return libraryQueue.enqueue(async (library) => {
+				const project = await library.project();
+				if (project.err)
+					return composeTextOutput({
+						type: "error",
+						error: project,
+					});
+
+				if (project.ok === null)
+					return composeTextOutput({
+						type: "error",
+						error: Err("Tool Error: There is no existing project to navigate."),
+					});
+
+				const gotoResult = await project.ok.goto(args.task_key);
+				if (gotoResult && gotoResult.err) {
+					return composeTextOutput({
+						type: "error",
+						error: gotoResult as Err<string, unknown>,
+					});
+				}
+
+				return composeTextOutput({
+					type: "success",
+					message: `Navigation completed. You are now positioned on ${JSON.stringify(
+						project.ok.tasks.find((task) => task.task_key === args.task_key),
+						null,
+						2,
+					)}
+
+REQUIRED: You must verify navigation was successful:
+- Confirm you are now positioned on the expected task
+- Verify the task has the expected properties
+- If the result doesn't match your expectations, YOU MUST investigate and correct immediately.`,
+				});
 			});
 		},
 	});
@@ -848,4 +931,5 @@ CALL gather_requirements() NOW.`,
 		transportType: "stdio",
 	});
 }
+
 start();

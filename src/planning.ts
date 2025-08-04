@@ -1,400 +1,125 @@
-import type {
-	LoadedPlanData,
-	PlanPersistence,
-	SavingPlanData,
-} from "./persistence/persistence";
-import type { ValidatedCommitType } from "./persistence/loader";
+import type { Jujutsu } from "./jujutsu";
+import { Loader } from "./persistence/loader";
+import { Saver, type SavingPlanData } from "./persistence/saver";
 import { Err, Ok } from "./result";
 
+function createProject(
+	project: SavingPlanData,
+	saver: Saver,
+	jujutsu: ReturnType<(typeof Jujutsu)["cwd"]>,
+) {
+	return new Proxy(project, {
+		get(target, p) {
+			if (p === "save") return () => saver.savePlan(target);
+			if (p === "drop") return () => saver.drop();
+			if (p === "goto")
+				return async (hash: string) => {
+					if (target.tasks.every((task) => task.task_key !== hash))
+						return Err("Invocation Error: Task doesn't exist");
+					jujutsu.navigate.to(hash);
+				};
+
+			return target[p as keyof typeof target];
+		},
+	}) as SavingPlanData & {
+		save(): ReturnType<typeof saver.savePlan>;
+		drop(): ReturnType<typeof saver.drop>;
+		goto(
+			taskId: string,
+		):
+			| ReturnType<typeof jujutsu.navigate.to>
+			| Promise<Err<"Task doesn't exist">>;
+	};
+}
+
 export class PlanningLibrary {
-	private persistence: PlanPersistence;
-
-	constructor({ persistence }: { persistence: PlanPersistence }) {
-		this.persistence = persistence;
-	}
-
-	private convertLoadedToSaving(loaded: LoadedPlanData): SavingPlanData {
-		// Extract type from first task (LoadedPlanData doesn't have a top-level type)
-		const firstTask = loaded.tasks[0];
-		if (!firstTask) {
-			throw new Error("Cannot convert plan with no tasks");
-		}
-
-		return {
-			scope: loaded.scope,
-			intent: loaded.intent,
-			title: loaded.title,
-			objectives: loaded.objectives,
-			constraints: loaded.constraints,
-			tasks: loaded.tasks as [typeof firstTask, ...typeof loaded.tasks],
+	private persistence;
+	constructor(private jujutsu: ReturnType<(typeof Jujutsu)["cwd"]>) {
+		const loader = new Loader(jujutsu);
+		const saver = new Saver(jujutsu, loader);
+		this.persistence = {
+			loader,
+			saver,
 		};
 	}
 
-	async update_plan({
-		intent,
-		objectives,
-		constraints,
-	}: {
-		intent?: string;
-		objectives?: string[];
-		constraints?: string[];
-	}): Promise<Ok<void> | Err<string>> {
-		// Load fresh plan data
-		const planResult = await this.persistence.load();
-		if (planResult.err) {
-			return Err(planResult.err);
-		}
-		const loadedPlan = planResult.ok;
-		if (!loadedPlan) {
-			return Err("Failed to load plan data");
-		}
-
-		// Convert to saving format
-		const savingPlan = this.convertLoadedToSaving(loadedPlan);
-
-		// Update plan data
-		if (intent !== undefined) {
-			savingPlan.intent = intent;
-			savingPlan.title = intent.toLowerCase();
-		}
-		if (objectives !== undefined) {
-			savingPlan.objectives = objectives;
-		}
-		if (constraints !== undefined) {
-			savingPlan.constraints = constraints;
-		}
-
-		// Auto-persist
-		const saveResult = await this.persistence.save(savingPlan);
-		if (saveResult.err) {
-			return Err(saveResult.err);
-		}
-
-		return Ok(undefined);
-	}
-
-	async add_task({
-		task_key,
-		type,
-		scope,
-		title,
-		intent,
-		objectives,
-		constraints,
-	}: {
-		task_key?: string;
-		type: ValidatedCommitType;
-		scope: string | null;
-		title: string;
-		intent: string;
-		objectives: string[];
-		constraints: string[];
-	}): Promise<Ok<string> | Err<"task_key_exists" | string>> {
-		// Load fresh plan data
-		const planResult = await this.persistence.load();
-		if (planResult.err) {
-			return Err(planResult.err);
-		}
-		const loadedPlan = planResult.ok;
-		if (!loadedPlan) {
-			return Err("Failed to load plan data");
-		}
-
-		// Check if task_key already exists
-		if (
-			task_key &&
-			loadedPlan.tasks.some((task) => task.task_key === task_key)
-		) {
-			return Err("task_key_exists");
-		}
-
-		// Convert to saving format
-		const savingPlan = this.convertLoadedToSaving(loadedPlan);
-
-		// Add new task
-		const newTask = {
-			task_key,
-			type,
-			scope,
-			title,
-			intent,
-			objectives,
-			constraints,
-			completed: false,
-		};
-
-		savingPlan.tasks.push(newTask);
-
-		// Auto-persist
-		const saveResult = await this.persistence.save(savingPlan);
-		if (saveResult.err) {
-			return Err(saveResult.err);
-		}
-
-		return Ok(task_key || "generated_key");
-	}
-
-	async update_task({
-		task_key,
-		intent,
-		objectives,
-		constraints,
-	}: {
-		task_key: string;
-		intent?: string;
-		objectives?: string[];
-		constraints?: string[];
-	}): Promise<Ok<void> | Err<"task_not_found" | string>> {
-		// Load fresh plan data
-		const planResult = await this.persistence.load();
-		if (planResult.err) {
-			return Err(planResult.err);
-		}
-		const loadedPlan = planResult.ok;
-		if (!loadedPlan) {
-			return Err("Failed to load plan data");
-		}
-
-		const task = loadedPlan.tasks.find((t) => t.task_key === task_key);
-
-		if (!task) {
-			return Err("task_not_found");
-		}
-
-		// Convert to saving format
-		const savingPlan = this.convertLoadedToSaving(loadedPlan);
-		const savingTask = savingPlan.tasks.find((t) => t.task_key === task_key);
-
-		if (!savingTask) {
-			return Err("task_not_found");
-		}
-
-		// Update task properties
-		if (intent !== undefined) {
-			savingTask.intent = intent;
-			savingTask.title = intent.toLowerCase();
-		}
-		if (objectives !== undefined) {
-			savingTask.objectives = objectives;
-		}
-		if (constraints !== undefined) {
-			savingTask.constraints = constraints;
-		}
-
-		// Auto-persist
-		const saveResult = await this.persistence.save(savingPlan);
-		if (saveResult.err) {
-			return Err(saveResult.err);
-		}
-
-		return Ok(undefined);
-	}
-
-	async remove_task({
-		task_key,
-	}: {
-		task_key: string;
-	}): Promise<Ok<void> | Err<"task_not_found" | string>> {
-		// Load fresh plan data
-		const planResult = await this.persistence.load();
-		if (planResult.err) {
-			return Err(planResult.err);
-		}
-		const loadedPlan = planResult.ok;
-		if (!loadedPlan) {
-			return Err("Failed to load plan data");
-		}
-
-		const taskIndex = loadedPlan.tasks.findIndex(
-			(t) => t.task_key === task_key,
-		);
-
-		if (taskIndex === -1) {
-			return Err("task_not_found");
-		}
-
-		// Convert to saving format
-		const savingPlan = this.convertLoadedToSaving(loadedPlan);
-		const savingTaskIndex = savingPlan.tasks.findIndex(
-			(t) => t.task_key === task_key,
-		);
-
-		if (savingTaskIndex === -1) {
-			return Err("task_not_found");
-		}
-
-		// Remove task
-		savingPlan.tasks.splice(savingTaskIndex, 1);
-
-		// Auto-persist
-		const saveResult = await this.persistence.save(savingPlan);
-		if (saveResult.err) {
-			return Err(saveResult.err);
-		}
-
-		return Ok(undefined);
-	}
-
-	async mark_task_complete({
-		task_key,
-		completed,
-	}: {
-		task_key: string;
-		completed: boolean;
-	}): Promise<Ok<void> | Err<"task_not_found" | string>> {
-		// Load fresh plan data
-		const planResult = await this.persistence.load();
-		if (planResult.err) {
-			return Err(planResult.err);
-		}
-		const loadedPlan = planResult.ok;
-		if (!loadedPlan) {
-			return Err("Failed to load plan data");
-		}
-
-		const task = loadedPlan.tasks.find((t) => t.task_key === task_key);
-
-		if (!task) {
-			return Err("task_not_found");
-		}
-
-		// Convert to saving format
-		const savingPlan = this.convertLoadedToSaving(loadedPlan);
-		const savingTask = savingPlan.tasks.find((t) => t.task_key === task_key);
-
-		if (!savingTask) {
-			return Err("task_not_found");
-		}
-
-		// Update completion status
-		savingTask.completed = completed;
-
-		// Auto-persist
-		const saveResult = await this.persistence.save(savingPlan);
-		if (saveResult.err) {
-			return Err(saveResult.err);
-		}
-
-		return Ok(undefined);
-	}
-
-	async get_task_status({
-		task_key,
-	}: {
-		task_key: string;
-	}): Promise<Ok<boolean> | Err<"task_not_found" | string>> {
-		// Load fresh plan data
-		const planResult = await this.persistence.load();
-		if (planResult.err) {
-			return Err(planResult.err);
-		}
-		const loadedPlan = planResult.ok;
-		if (!loadedPlan) {
-			return Err("Failed to load plan data");
-		}
-
-		const task = loadedPlan.tasks.find((t) => t.task_key === task_key);
-
-		if (!task) {
-			return Err("task_not_found");
-		}
-
-		return Ok(task.completed);
-	}
-
-	async get_plan(): Promise<Ok<LoadedPlanData> | Err<string>> {
-		// Load fresh plan data
-		const planResult = await this.persistence.load();
-		if (planResult.err) {
-			return Err(planResult.err);
-		}
-
-		const plan = planResult.ok;
-		if (!plan) {
-			return Err("Failed to load plan data");
-		}
-		return Ok(plan);
-	}
-
-	async get_task({ task_key }: { task_key: string }): Promise<
-		| Ok<{
-				task_key: string;
-				type: ValidatedCommitType;
-				scope: string | null;
-				title: string;
-				intent: string;
-				objectives: string[];
-				constraints: string[];
-				completed: boolean;
-		  }>
-		| Err<"task_not_found" | string>
+	async project(): Promise<
+		| Ok<ReturnType<typeof createProject>>
+		| Ok<null>
+		| Err<`${"VCS" | "Structure"} Error: ${string}`>
+	>;
+	async project(options: {
+		new: true;
+	}): Promise<
+		| Ok<ReturnType<typeof createProject>>
+		| Err<`${"VCS" | "Structure"} Error: ${string}`>
+	>;
+	async project(options?: {
+		new?: true;
+	}): Promise<
+		| Ok<ReturnType<typeof createProject>>
+		| Ok<null>
+		| Err<`${"VCS" | "Structure"} Error: ${string}`>
 	> {
-		// Load fresh plan data
-		const planResult = await this.persistence.load();
-		if (planResult.err) {
-			return Err(planResult.err);
+		const plan = await this.persistence.loader.loadPlan();
+		if (options?.new) {
+			return Ok(
+				createProject(
+					{
+						constraints: [],
+						intent: "",
+						objectives: [],
+						scope: "",
+						title: "",
+						new: true,
+						tasks: [
+							{
+								constraints: [],
+								intent: "",
+								objectives: [],
+								scope: "",
+								title: "",
+								completed: false,
+								type: "chore",
+							},
+						],
+					},
+					this.persistence.saver,
+					this.jujutsu,
+				),
+			);
 		}
-		const loadedPlan = planResult.ok;
-		if (!loadedPlan) {
-			return Err("Failed to load plan data");
-		}
+		if (plan.err) {
+			switch (plan.err) {
+				// VCS should not fail
+				case "VCS Error: Command failed":
+				case "VCS Error: Unexpected commit format":
+				case "VCS Error: Command non zero exit":
+				case "VCS Error: No current commit found in repository":
 
-		const task = loadedPlan.tasks.find((t) => t.task_key === task_key);
+				// Structure should not be corrupted if present.
+				case "Structure Error: Unexpected terminating header in task position":
+				case "Structure Error: Invalid LONG format plan: insufficient commits":
+				case "Structure Error: Invalid LONG format plan: expected end commit":
+				case "Structure Error: Invalid LONG format plan: expected begin commit":
+				case "Structure Error: Failed to find end commit":
+				case "Structure Error: There must be at least one task":
+					return plan;
 
-		if (!task) {
-			return Err("task_not_found");
-		}
-
-		return Ok(task);
-	}
-
-	async validate_plan_complete(): Promise<
-		Ok<void> | Err<"validation_failed" | string, string[]>
-	> {
-		// Load fresh plan data
-		const planResult = await this.persistence.load();
-		if (planResult.err) {
-			return Err(planResult.err);
-		}
-		const loadedPlan = planResult.ok;
-		if (!loadedPlan) {
-			return Err("Failed to load plan data");
-		}
-
-		const errors: string[] = [];
-
-		// Check plan fields
-		if (!loadedPlan.intent || loadedPlan.intent.trim() === "") {
-			errors.push("Plan intent is required");
-		}
-		if (!loadedPlan.objectives || loadedPlan.objectives.length === 0) {
-			errors.push("Plan objectives are required");
-		}
-		if (!loadedPlan.constraints || loadedPlan.constraints.length === 0) {
-			errors.push("Plan constraints are required");
-		}
-
-		// Check tasks
-		if (loadedPlan.tasks.length === 0) {
-			errors.push("At least one task is required");
-		}
-
-		for (const task of loadedPlan.tasks) {
-			if (!task.intent || task.intent.trim() === "") {
-				errors.push(`Task '${task.task_key}' intent is required`);
-			}
-			if (!task.objectives || task.objectives.length === 0) {
-				errors.push(`Task '${task.task_key}' objectives are required`);
-			}
-			if (!task.constraints || task.constraints.length === 0) {
-				errors.push(`Task '${task.task_key}' constraints are required`);
+				// Parse errors on load indicate inability to detect current structure
+				// or that it doesn't exist
+				case "Parse Error: Begin commit title exceeds maximum length":
+				case "Parse Error: End commit title exceeds maximum length":
+				case "Parse Error: Invalid commit type":
+				case "Parse Error: Task commit title exceeds maximum length":
+				case "Parse Error: Single task commit title exceeds maximum length":
+				case "Parse Error: Invalid header format":
+				case "Parse Error: Invalid constraint format":
+				case "Parse Error: Invalid objective format":
+					return Ok(null);
 			}
 		}
 
-		if (errors.length > 0) {
-			return Err("validation_failed", errors);
-		}
-
-		return Ok(undefined);
+		return Ok(createProject(plan.ok, this.persistence.saver, this.jujutsu));
 	}
 }

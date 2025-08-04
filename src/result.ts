@@ -24,14 +24,17 @@ export function Ok<OkVal>(ok: OkVal): Ok<OkVal> {
 	return { ok };
 }
 
+type ErrorClasses =
+	`${"Parse" | "VCS" | "Structure" | "Safety" | "Invocation" | "Tool"} Error: ${string}`;
+
 // biome-ignore lint/suspicious/noRedeclare: overload
-export function Err<ErrStr extends string>(err: ErrStr): Err<ErrStr>;
+export function Err<ErrStr extends ErrorClasses>(err: ErrStr): Err<ErrStr>;
 // biome-ignore lint/suspicious/noRedeclare: overload
-export function Err<ErrStr extends string, Meta>(
+export function Err<ErrStr extends ErrorClasses, Meta>(
 	err: ErrStr,
 	meta: Meta,
 ): Err<ErrStr, Meta>;
-export function Err<ErrStr extends string, Meta = undefined>(
+export function Err<ErrStr extends ErrorClasses, Meta = undefined>(
 	err: ErrStr,
 	meta?: Meta,
 ): Err<ErrStr, Meta> {
