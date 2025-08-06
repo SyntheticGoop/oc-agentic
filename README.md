@@ -1,77 +1,76 @@
-# planner-mcp
+# opencode-agentic
 
-## Cyclical Workflow
+A collection of tools and utilities designed to enable agentic workflows for opencode, providing structured approaches to software development tasks.
 
-The requirements enforcer implements a cyclical development workflow that enables continuous development cycles:
+## Overview
 
-### 5-Step Process
+This project provides MCP (Model Context Protocol) servers that implement agentic workflow patterns for software development. It includes tools for planning, task management, and workflow orchestration that help AI agents work more effectively on complex development tasks.
 
-1. **gather_requirements()** - Assess current state and get appropriate guidance
-2. **Follow guided workflow** - Progress through: goal → detailed → plan → execute
-3. **Automatic completion detection** - When all tasks complete, gather_requirements() detects completion
-4. **new_commit()** - Start fresh cycle and reset state
-5. **Return to step 1** - Begin new requirements cycle
+## Components
 
-### Workflow Stages
+### Planner MCP Server
+Located in `planner/`, this component provides:
+- Task planning and management capabilities
+- Persistent state management for development workflows
+- Integration with version control systems (Jujutsu)
 
-1. **Intent Declaration** - Before any change is made, when declaring the intent to change
-2. **Planning Stage** - During the planning stage of a change when deciding on requirements
-3. **Execution Stage** - During the execution stage of a change when implementing requirements
-4. **Automatic Completion** - When all tasks are done
-5. **Fresh Cycle Initiation** - For continuous development
+### Workflow MCP Server  
+Located in `workflow/`, this component provides:
+- Workflow definition and execution
+- Structured development process management
+- Customizable workflow patterns
 
-### Usage
+## Getting Started
 
-Always start with `gather_requirements()` to begin or continue the workflow. The system will guide you through each stage and automatically detect when it's time to start a new cycle.
+### Prerequisites
+- Node.js and Yarn package manager
+- TypeScript support
 
-#### Example Workflow Cycle
-
-```
-1. gather_requirements() 
-   → "You need to define or update the overarching goal..."
-
-2. set_overarching_goal({type: "feat", scope: "api", breaking: false, title: "add user authentication"})
-   → "Work with the user to explore and expand the requirements..."
-
-3. set_detailed_goal({description: "Implement JWT-based authentication..."})
-   → "Present a plan of action..."
-
-4. set_plan({plan: [...]})
-   → "Execute tasks sequentially..."
-
-5. mark_task({task_id: "implement jwt", completed: true})
-   → "Continue with next task..."
-
-6. [All tasks complete]
-   gather_requirements()
-   → "WORKFLOW COMPLETED SUCCESSFULLY! Use new_commit() to start fresh cycle."
-
-7. new_commit()
-   → "NEW COMMIT CREATED SUCCESSFULLY. CALL gather_requirements() NOW."
-
-8. gather_requirements()
-   → [New cycle begins...]
+### Installation
+```bash
+yarn install
 ```
 
-### Tools
+### Running MCP Servers
 
-#### new_commit()
+**Planner Server:**
+```bash
+yarn run:mcp:planner
+```
 
-The `new_commit()` tool enables the cyclical workflow by resetting the system state and preparing for a new development cycle.
+**Workflow Server:**
+```bash
+yarn run:mcp:workflow --workflow=path/to/workflow/file
+```
 
-**Purpose:**
-- Transitions from completed workflow to fresh cycle
-- Resets all requirements, plans, and task states
-- Creates a clean slate for new development work
+### Development
 
-**When to use:**
-- After `gather_requirements()` indicates "WORKFLOW COMPLETED SUCCESSFULLY"
-- When you want to start working on a completely new change
-- To begin a fresh requirements cycle
+**Run tests:**
+```bash
+yarn test
+```
 
-**Technical behavior:**
-- Calls `jj.new()` to reset commit state
-- Clears all previous requirements and task data
-- Immediately prompts to call `gather_requirements()` to begin new cycle
+**Lint and format:**
+```bash
+yarn lint
+```
 
-**Note:** This tool should only be used when the current workflow is complete. Using it mid-workflow will lose all current progress.
+**Build:**
+```bash
+yarn build
+```
+
+## Project Structure
+
+- `planner/` - Planning and task management MCP server
+- `workflow/` - Workflow execution MCP server  
+- `src/` - Shared utilities and core functionality
+- `prompts/` - System prompts and agent guidelines
+
+## Contributing
+
+This project uses:
+- TypeScript with strict mode
+- Biome for formatting and linting
+- Vitest for testing
+- Yarn 4.9.2 for package management

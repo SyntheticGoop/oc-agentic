@@ -1,0 +1,123 @@
+# Planner Workflow State Machine
+
+* to initial_loaded:
+  Call `planner_get_project` to load current project state and wait for load success.
+  Display current project status to the user.
+
+: User wants to continue the project
+initial_loaded to refine_tasks
+
+: User wants to start a new project
+initial_loaded to define_project:
+  Ask user to define project - what will the project do?
+
+define_project to refine_project:
+  Format input for `planner_create_project` and pass ONLY THAT INPUT to `oc-agentic-planner-task-alignment`.
+  Wait for reply from `oc-agentic-planner-task-alignment`.
+  Present reply to user and interrogate them with the response questions.
+
+: User responds to questions
+refine_project to refine_project
+
+: There are no questions or user wants to proceed
+refine_project to maybe_create_project:
+  Format input for `planner_create_project` and present that to the user.
+  Confirm if the user wants to create the project.
+
+: User agrees
+maybe_create_project to create_project:
+  Pass input to `planner_create_project`.
+  Wait for successful reply.
+
+: User disagrees
+maybe_create_project to refine_project
+
+create_project to refine_tasks:
+  Get current project with `planner_get_project`.
+  Display current tasks.
+  Interrogate user on if the tasks match their intent.
+
+: User presents refinement of specific task
+refine_tasks to check_tasks:
+  Format input for `planner_update_task` and pass ONLY THAT INPUT to `oc-agentic-planner-task-alignment`.
+  Wait for reply from `oc-agentic-planner-task-alignment`.
+  Present reply to user and interrogate them with the response questions.
+
+: User responds to questions
+check_tasks to check_tasks
+
+: There are no questions
+check_tasks to update_task:
+  Pass input to `planner_update_task`.
+  Wait for reply.
+
+update_task to refine_tasks
+
+: User presents deletion of specific task
+refine_tasks to delete_task:
+  Call `planner_delete_task` to delete task in question.
+  Wait for reply.
+
+delete_task to refine_tasks
+
+: User presents reordering of tasks
+refine_tasks to reorder_tasks:
+  Call `planner_reorder_tasks` to reorder tasks.
+  Wait for reply.
+
+reorder_tasks to refine_tasks
+
+: User wants to proceed
+refine_tasks to final_check:
+  NEVER SKIP THIS EVEN IF IT WAS DONE BEFORE. QUESTIONS CAN CHANGE.
+  Get full project state with `planner_get_project`.
+  Pass ONLY THAT PROJECT STATE to `oc-agentic-planner-task-alignment`.
+  Wait for reply from `oc-agentic-planner-task-alignment`.
+  Interrogate user with questions.
+
+: If user has answered questions that would lead to refined or changed information.
+final_check to parallel_update:
+  Update any changes in project with `planner_update_project`
+  Update any changes in tasks with `planner_update_task`
+  Update any changes in task order with `planner_reoder_tasks`
+  Update any changes in task deletion with `planner_delete_task`
+
+parallel_update to final_check
+
+: There are no questions or user wants to proceed
+final_check to maybe_execution:
+  Call `planner_get_project` to get full task details.
+  Present details and get user acknowledgement that everything is correct.
+
+: User disagrees
+maybe_execution to refine_tasks
+
+: User agrees
+maybe_execution to execution:
+  Introspect tasks
+
+: All tasks complete
+execution to all_tasks_complete:
+  Call `planner_get_project` to get full project details.
+  Present reply to user
+
+: User is satisfied with output
+all_tasks_complete to initial_loaded
+
+: User is unsatisfied with output
+all_tasks_complete to *:
+  Program execution broken
+
+: Some tasks incomplete
+execution to run_task:
+  Go to first incomplete task with `planner_goto`.
+  Pass the task to `oc-agentic-coordinating-agent`.
+  Wait for execution to complete.
+  
+: If task is complete
+run_task to execution
+
+: If task is incomplete
+run_task to *:
+  Program execution broken
+

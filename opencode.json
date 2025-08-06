@@ -1,12 +1,67 @@
 {
-	"$schema": "https://opencode.ai/config.json",
-	"theme": "opencode",
-	"instructions": ["AGENTS.md", "PLANNER_SYSTEM_PROMPT.md"],
-	"mcp": {
-		"planner": {
-			"type": "local",
-			"command": ["yarn", "run:mcp"],
-			"enabled": true
-		}
-	}
+  "$schema": "https://opencode.ai/config.json",
+  "theme": "opencode",
+  "instructions": [
+    "AGENTS.md",
+    "README.md",
+    "workflow/README.md",
+    "planner/README.md"
+  ],
+  "mcp": {
+    "oc-agentic-workflow": {
+      "type": "local",
+      "command": [
+        "yarn",
+        "run:mcp:workflow",
+        "--workflow=workflow/PLANNER.flow"
+      ],
+      "enabled": true
+    },
+    "oc-agentic-planner": {
+      "type": "local",
+      "command": ["yarn", "run:mcp:planner"],
+      "enabled": true
+    }
+  },
+  "mode": {
+    "oc-agentic-flow": {
+      "model": "anthropic/claude-3-5-haiku-20241022",
+      "prompt": "{file:prompts/system/WORKFLOW_SYSTEM.md}",
+      "tools": {
+        "read": true,
+        "write": false,
+        "bash": false,
+        "edit": false,
+        "list": true,
+        "glob": true,
+        "grep": true,
+        "webfetch": true,
+        "task": true,
+        "todowrite": true,
+        "todoread": true
+      }
+    }
+  },
+  "agent": {
+    "oc-agentic-planner-task-alignment": {
+      "prompt": "{file:prompts/agent/oc-agentic-planner-task-alignment.md}",
+      "description": "Task alignment agent"
+    },
+    "oc-agentic-task-specification-agent": {
+      "prompt": "{file:prompts/agent/oc-agentic-task-specification-agent.md}",
+      "description": "Creates comprehensive task specifications and implementation plans"
+    },
+    "oc-agentic-code-review-agent": {
+      "prompt": "{file:prompts/agent/oc-agentic-code-review-agent.md}",
+      "description": "Reviews plans and code for quality assurance and standards alignment"
+    },
+    "oc-agentic-execution-agent": {
+      "prompt": "{file:prompts/agent/oc-agentic-execution-agent.md}",
+      "description": "Executes approved specifications and implements code changes"
+    },
+    "oc-agentic-coordinating-agent": {
+      "prompt": "{file:prompts/agent/oc-agentic-coordinating-agent.md}",
+      "description": "Orchestrates development workflows between specification, review, and execution agents"
+    }
+  }
 }

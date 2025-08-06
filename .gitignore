@@ -19,3 +19,4 @@ coverage
 test-temp/
 *.test-temp
 **/mock-env
+dist

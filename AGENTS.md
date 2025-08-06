@@ -11,7 +11,7 @@
 - **Run MCP Server**: `yarn run:mcp`
 
 ## Code Style Guidelines
-- **Formatting**: Use Biome with tab indentation, double quotes
+- **Formatting**: Use Biome with double space indentation, double quotes
 - **TypeScript**: Strict mode enabled, target ESNext/CommonJS
 - **Imports**: Organize imports automatically (Biome assist enabled)
 - **Naming**: Use camelCase for variables/functions, PascalCase for types/classes
@@ -24,3 +24,4 @@
 - Uses Yarn 4.9.2 package manager
 - Dependencies: fastmcp, TypeScript, Biome, Vitest
 - No existing Cursor/Copilot rules found
+- Uses `jujutsu` version control system. DO NOT USE `git`
