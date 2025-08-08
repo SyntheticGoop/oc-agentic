@@ -19,5 +19,9 @@ export default defineConfig({
     sequence: {
       concurrent: false,
     },
+    // Exclude common directories that may contain dependency tests or build artifacts
+    // This prevents tests shipped inside node_modules from being executed
+    // and keeps coverage/build folders out of test discovery.
+    exclude: ["**/node_modules/**", "**/dist/**", "**/coverage/**"],
   },
 });
