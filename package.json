@@ -7,7 +7,11 @@
     "run:lsp:workflow": "tsx workflow/lsp-server.ts",
     "test": "vitest",
     "build:workflow:lsp": "tsup -d dist/workflow workflow/lsp-server.ts",
-    "build": "tsup src/mcp.ts && cp src/PLANNER_SYSTEM_PROMPT.md dist/PLANNER_SYSTEM_PROMPT.md",
+    "build:mcp:planner": "tsup -d dist/planner planner/mcp.ts",
+    "build:mcp:workflow": "tsup -d dist/workflow-mcp workflow/mcp.ts",
+    "build:assets": "mkdir -p dist/prompts dist/workflow && cp -R prompts/* dist/prompts/ || true && cp -R workflow/*.flow dist/workflow || true",
+    "build:validate": "test -d dist/prompts/system && test -d dist/prompts/agent && test -f dist/workflow/scoped-execution.flow",
+    "build": "yarn build:mcp:planner && yarn build:mcp:workflow && yarn build:workflow:lsp && yarn build:assets && yarn build:validate",
     "lint": "biome check"
   },
   "dependencies": {
