@@ -10,8 +10,11 @@ import { PlanningLibrary } from "./planning";
 
 class PlanningLibraryQueue {
   private queue: Array<{
+    // biome-ignore lint/suspicious/noExplicitAny: Generic type definition
     operation: (library: PlanningLibrary) => Promise<any>;
+    // biome-ignore lint/suspicious/noExplicitAny: Generic type definition
     resolve: (value: any) => void;
+    // biome-ignore lint/suspicious/noExplicitAny: Generic type definition
     reject: (error: any) => void;
   }> = [];
   private processing = false;

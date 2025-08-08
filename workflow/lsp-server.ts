@@ -76,6 +76,7 @@ connection.onInitialized(() => {
     );
   }
   if (hasWorkspaceFolderCapability) {
+    // biome-ignore lint/suspicious/noExplicitAny: Ignore
     connection.workspace.onDidChangeWorkspaceFolders((_event: any) => {
       connection.console.log("Workspace folder change event received.");
     });

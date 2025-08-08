@@ -30,7 +30,7 @@
       "tools": {
         "read": true,
         "write": false,
-        "bash": false,
+        "bash": true,
         "edit": false,
         "list": true,
         "glob": true,

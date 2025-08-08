@@ -3,6 +3,7 @@
 : Do immediately
 * to initial_loaded:
   Call `planner_get_project` to load current scope of work.
+  List summary of files changed with `jj diff --summary -r @`
   Wait for scope of work.
   Display current scope of work status to the user.
 

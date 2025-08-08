@@ -6,7 +6,17 @@
     "useIgnoreFile": false
   },
   "files": {
-    "ignoreUnknown": false
+    "ignoreUnknown": false,
+    "includes": [
+      "planner/**/*.ts",
+      "src/**/*.ts",
+      "workflow/**/*.ts",
+      "!**/*.test.ts",
+      "*.md",
+      "biome.json",
+      "opencode.json",
+      "vitest.config.ts"
+    ]
   },
   "formatter": {
     "enabled": true,

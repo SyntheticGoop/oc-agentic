@@ -85,15 +85,6 @@ describe("Workflow E2E Tests", () => {
     expect(
       workflowDef.transitions.all_tasks_complete?.initial_loaded?.guidance,
     ).toBe("User is satisfied with output");
-
-    const stateCount = Object.keys(workflowDef.states).length;
-    const transitionCount = Object.values(workflowDef.transitions).reduce(
-      (sum, t) => sum + Object.keys(t || {}).length,
-      0,
-    );
-    console.log(
-      `✅ Successfully parsed scoped-execution.flow with ${stateCount} states and ${transitionCount} transitions`,
-    );
   });
 
   it("should create a Workflow instance from scoped-execution.flow", () => {
@@ -115,10 +106,6 @@ describe("Workflow E2E Tests", () => {
       expect(result1.nextState).toBe("refine_tasks");
       expect(result1.guidance).toBe(""); // refine_tasks state has empty guidance
     }
-
-    console.log(
-      "✅ Successfully created and tested Workflow instance from scoped-execution.flow",
-    );
   });
 
   it("should handle all transition types in scoped-execution.flow", () => {
@@ -134,7 +121,7 @@ describe("Workflow E2E Tests", () => {
     let transitionsWithGuidance = 0;
     let transitionsWithoutGuidance = 0;
     let selfReferencingTransitions = 0;
-    let transitionsToEndState = 0;
+    let _transitionsToEndState = 0;
 
     Object.entries(workflowDef.transitions).forEach(
       ([fromState, transitions]) => {
@@ -151,7 +138,7 @@ describe("Workflow E2E Tests", () => {
             }
 
             if (transition?.target === "*") {
-              transitionsToEndState++;
+              _transitionsToEndState++;
             }
           });
         }
@@ -162,12 +149,6 @@ describe("Workflow E2E Tests", () => {
     expect(transitionsWithoutGuidance).toBeGreaterThan(0);
     expect(selfReferencingTransitions).toBeGreaterThan(0);
     // Note: scoped-execution.flow doesn't have transitions to end state (*)
-
-    console.log(`✅ Transition analysis:
-		- With guidance: ${transitionsWithGuidance}
-		- Without guidance: ${transitionsWithoutGuidance}  
-		- Self-referencing: ${selfReferencingTransitions}
-		- To end state: ${transitionsToEndState}`);
   });
 
   it("should verify no old syntax remains in scoped-execution.flow", () => {
@@ -182,10 +163,6 @@ describe("Workflow E2E Tests", () => {
     // Check that new syntax patterns are present
     expect(content).toMatch(/\sto\s/); // "to" keywords present
     expect(content).toMatch(/^:/m); // Lines starting with ":" for guidance
-
-    console.log(
-      "✅ Verified scoped-execution.flow uses only new simplified syntax",
-    );
   });
   it("should produce consistent parsing results", () => {
     const plannerMarkovPath = join(__dirname, "scoped-execution.flow");
@@ -212,7 +189,5 @@ describe("Workflow E2E Tests", () => {
         Object.keys(firstResult.transitions),
       );
     });
-
-    console.log("✅ Parsing results are consistent across multiple runs");
   });
 });

@@ -102,11 +102,6 @@ describe("LONG Format Positioning Behavior", () => {
     expect(step1Desc.ok).toBeDefined();
     if (!step1Desc.ok) throw new Error("Failed to get description");
 
-    console.log(
-      "Step 1 - After initial LONG creation:",
-      step1Desc.ok.split("\n")[0],
-    );
-
     // Should be positioned at end commit
     expect(step1Desc.ok).toContain("end(longtest)::");
     expect(step1Desc.ok).toContain("long format positioning test");
@@ -133,10 +128,6 @@ describe("LONG Format Positioning Behavior", () => {
     expect(step2Desc.ok).toBeDefined();
     if (!step2Desc.ok) throw new Error("Failed to get description");
 
-    console.log(
-      "Step 2 - After navigating to first task:",
-      step2Desc.ok.split("\n")[0],
-    );
 
     // Should be at first task, not end commit
     expect(step2Desc.ok).toContain("feat(longtest)::");
@@ -193,10 +184,6 @@ describe("LONG Format Positioning Behavior", () => {
     expect(step3Desc.ok).toBeDefined();
     if (!step3Desc.ok) throw new Error("Failed to get description");
 
-    console.log(
-      "Step 3 - After adding third task:",
-      step3Desc.ok.split("\n")[0],
-    );
 
     // Should still be positioned at the first task where we were before adding the third task
     expect(step3Desc.ok).toContain("feat(longtest)::");
@@ -227,10 +214,6 @@ describe("LONG Format Positioning Behavior", () => {
       ...historyResult.ok.future,
     ];
 
-    console.log("Final commit history:");
-    allCommits.forEach((commit, i) => {
-      console.log(`${i + 1}: ${commit.message.split("\n")[0]}`);
-    });
 
     // Should have: begin -> empty -> first -> second -> third -> end (6 commits)
     expect(allCommits).toHaveLength(6);
@@ -289,10 +272,6 @@ describe("LONG Format Positioning Behavior", () => {
     expect(step2Desc.ok).toBeDefined();
     if (!step2Desc.ok) throw new Error("Failed to get description");
 
-    console.log(
-      "Before modification - positioned at:",
-      step2Desc.ok.split("\n")[0],
-    );
     expect(step2Desc.ok).toContain("feat(modify):");
     expect(step2Desc.ok).toContain("original task");
 
@@ -326,10 +305,6 @@ describe("LONG Format Positioning Behavior", () => {
     expect(step3Desc.ok).toBeDefined();
     if (!step3Desc.ok) throw new Error("Failed to get description");
 
-    console.log(
-      "After modification - positioned at:",
-      step3Desc.ok.split("\n")[0],
-    );
 
     // Should still be at the same task where we were before modification
     expect(step3Desc.ok).toContain("feat(modify):");

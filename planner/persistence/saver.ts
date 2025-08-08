@@ -409,8 +409,11 @@ export class Saver {
       if (remainingTasks.length > 0) {
         // Prefer incomplete tasks, then any task
         const nextTask =
-          remainingTasks.find((task) => !task.completed) || remainingTasks[0];
-        const moved = await this.jj.navigate.to(nextTask.task_key!);
+          remainingTasks.find((task) => !task.completed) ??
+          remainingTasks.at(0);
+        if (typeof nextTask?.task_key !== "string")
+          throw Error("Invariant violation");
+        const moved = await this.jj.navigate.to(nextTask.task_key);
         if (moved.err) return moved;
       }
       // If no tasks remain, stay at current position

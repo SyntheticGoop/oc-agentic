@@ -92,7 +92,6 @@ describe("Task Positioning Behavior", () => {
     expect(currentDesc.ok).toBeDefined();
     if (!currentDesc.ok) throw new Error("Failed to get description");
 
-    console.log("After single task init, current description:", currentDesc.ok);
 
     // Should be positioned at the task commit, not an end commit
     expect(currentDesc.ok).toContain("feat(test):~");
@@ -142,10 +141,6 @@ describe("Task Positioning Behavior", () => {
     expect(step1Desc.ok).toBeDefined();
     if (!step1Desc.ok) throw new Error("Failed to get description");
 
-    console.log(
-      "Step 1 - After single task creation:",
-      step1Desc.ok.split("\n")[0],
-    );
     expect(step1Desc.ok).toContain("feat(test):~");
     expect(step1Desc.ok).toContain("original task");
 
@@ -196,10 +191,6 @@ describe("Task Positioning Behavior", () => {
     expect(step2Desc.ok).toBeDefined();
     if (!step2Desc.ok) throw new Error("Failed to get description");
 
-    console.log(
-      "Step 2 - After adding second task:",
-      step2Desc.ok.split("\n")[0],
-    );
 
     // Should still be at the original task, not moved to end commit
     expect(step2Desc.ok).toContain("feat(test)::~");
@@ -233,10 +224,6 @@ describe("Task Positioning Behavior", () => {
       ...(historyResult.ok as any).future.map((h: any) => h.message),
     ].filter((msg: string) => msg.trim() !== "");
 
-    console.log("Step 2 - Full commit history:");
-    allCommits.forEach((msg: string, i: number) =>
-      console.log(`${i + 1}: ${msg}`),
-    );
 
     // Should have: begin, original task, new task, end
     expect(allCommits).toHaveLength(4);
@@ -370,10 +357,6 @@ describe("Task Positioning Behavior", () => {
     expect(step3Desc.err).toBeUndefined();
     if (!step3Desc.ok) throw new Error("Failed to get description");
 
-    console.log(
-      "Step 3 - After adding third task:",
-      step3Desc.ok.split("\n")[0],
-    );
     expect(step3Desc.ok).toContain("base task");
     expect(step3Desc.ok).not.toContain("end(multi):");
 
@@ -510,10 +493,6 @@ describe("Task Positioning Behavior", () => {
     if (!step3Load.ok) throw new Error("Failed to load plan");
     const thirdTaskKey = step3Load.ok.tasks[2]?.task_key;
 
-    console.log(
-      "Step 3 - After adding third task, positioned at:",
-      (await jj.description.get()).ok?.split("\n")[0],
-    );
 
     // Step 4: Move to the first task
     const moveToFirstResult = await jj.navigate.to(firstTaskKey);
@@ -524,10 +503,6 @@ describe("Task Positioning Behavior", () => {
     expect(step4Desc.err).toBeUndefined();
     if (!step4Desc.ok) throw new Error("Failed to get description");
 
-    console.log(
-      "Step 4 - After moving to first task:",
-      step4Desc.ok.split("\n")[0],
-    );
     expect(step4Desc.ok).toContain("first task");
 
     // Step 5: Set the second task to complete
@@ -579,10 +554,6 @@ describe("Task Positioning Behavior", () => {
     expect(step5Desc.err).toBeUndefined();
     if (!step5Desc.ok) throw new Error("Failed to get description");
 
-    console.log(
-      "Step 5 - After completing second task:",
-      step5Desc.ok.split("\n")[0],
-    );
     expect(step5Desc.ok).toContain("first task");
 
     // Step 6: Delete the first task (the one we're currently on)
@@ -618,47 +589,25 @@ describe("Task Positioning Behavior", () => {
     };
 
     const step6Result = await saver.savePlan(deleteFirstPlan);
-    console.log(
-      "Step 6 - Save result:",
-      step6Result.err ? `Error: ${step6Result.err}` : "Success",
-    );
     expect(step6Result.err).toBeUndefined();
 
     // Check where we're positioned after the delete
     const currentChangeId = await jj.changeId();
-    console.log("Step 6 - Current change ID:", currentChangeId.ok);
+
 
     // CRITICAL: After deleting the first task (which we were positioned on),
     // we should be moved to the third task (since second is complete)
     const step6Desc = await jj.description.get();
-    console.log(
-      "Step 6 - Description result:",
-      step6Desc.err ? `Error: ${step6Desc.err}` : "Success",
-    );
-    console.log("Step 6 - Description content:", JSON.stringify(step6Desc.ok));
 
     // If description is empty, we might be at the root commit - let's debug
     if (!step6Desc.ok || step6Desc.ok.trim() === "") {
-      console.log("Empty description detected, debugging...");
       const emergencyLoad = await loader.loadPlan();
-      console.log(
-        "Emergency load result:",
-        emergencyLoad.err
-          ? `Error: ${emergencyLoad.err}`
-          : `Success: ${emergencyLoad.ok?.tasks.length} tasks`,
-      );
 
       // Try to navigate to the third task manually
-      console.log("Attempting to navigate to third task:", thirdTaskKey);
-      const navResult = await jj.navigate.to(thirdTaskKey);
-      console.log(
-        "Navigation result:",
-        navResult.err ? `Error: ${navResult.err}` : "Success",
-      );
+      const navResult = await jj.navigate.to(thirdTaskKey!);
 
       // Try getting description again
       const retryDesc = await jj.description.get();
-      console.log("Retry description:", JSON.stringify(retryDesc.ok));
 
       // For now, let's just return to avoid the test failure
       return;
@@ -666,10 +615,6 @@ describe("Task Positioning Behavior", () => {
 
     expect(step6Desc.err).toBeUndefined();
 
-    console.log(
-      "Step 6 - After deleting first task:",
-      step6Desc.ok.split("\n")[0],
-    );
 
     // Should be positioned at the third task now
     expect(step6Desc.ok).toContain("third task");
@@ -697,10 +642,6 @@ describe("Task Positioning Behavior", () => {
       ...(historyResult.ok as any).future.map((h: any) => h.message),
     ].filter((msg: string) => msg.trim() !== "");
 
-    console.log("Final commit history:");
-    allCommits.forEach((msg: string, i: number) =>
-      console.log(`${i + 1}: ${msg}`),
-    );
 
     // Should have: begin, second task (no ~), third task (~), end
     expect(allCommits).toHaveLength(4);

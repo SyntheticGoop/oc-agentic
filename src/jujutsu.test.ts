@@ -801,9 +801,7 @@ describe("Jujutsu.cwd().new() with options", () => {
     const jj = Jujutsu.cwd(testRepoPath);
 
     const result = await jj.new({ noEdit: true });
-    if (result.err) {
-      console.log("Error:", result.err, result);
-    }
+
     expect(result.ok).toBeDefined();
     expect(result.ok?.change).toMatch(/^[a-z0-9]{8}$/);
 
@@ -1134,9 +1132,6 @@ describe("Jujutsu new and abandon integration", () => {
     } else {
       // If we couldn't find the new commit, that's also a valid test result
       // since the commit might have been created in a different way than expected
-      console.log(
-        "Could not find the new empty commit to abandon - this may be expected behavior",
-      );
     }
   });
 });

@@ -161,10 +161,6 @@ describe("Positioning Bug Reproduction", () => {
     const secondTaskKey = step2Load.ok.tasks[1]?.task_key;
     const thirdTaskKey = step2Load.ok.tasks[2]?.task_key;
 
-    console.log("Original task keys from step 2:");
-    console.log("First:", firstTaskKey);
-    console.log("Second:", secondTaskKey);
-    console.log("Third:", thirdTaskKey);
     // Verify all tasks are in the same tree structure
     const step2History = await jj.history.linear();
     expect(step2History.err).toBeUndefined();
@@ -176,13 +172,10 @@ describe("Positioning Bug Reproduction", () => {
       (step2History.ok as any).current.message,
       ...(step2History.ok as any).future.map((h: any) => h.message),
     ];
-    console.log("Step 2 commit history:");
-    step2Messages.forEach((msg, i) => console.log(`${i + 1}: ${msg}`));
 
     expect(step2Messages.some((m) => m.includes("begin(workflow)"))).toBe(true);
     expect(step2Messages.some((m) => m.includes("end(workflow)"))).toBe(true);
     // Step 3: Move jj position to first task
-    console.log("Moving to first task with key:", firstTaskKey);
     const moveToFirstResult = await jj.navigate.to(firstTaskKey);
     expect(moveToFirstResult.err).toBeUndefined();
 
@@ -192,24 +185,11 @@ describe("Positioning Bug Reproduction", () => {
     expect(currentDesc.ok).toBeDefined();
     if (!currentDesc.ok) throw new Error("Failed to get description");
 
-    console.log("Current description after move:", currentDesc.ok);
     expect(currentDesc.ok).toContain("feat(workflow)::~");
     expect(currentDesc.ok).toContain("first task");
 
     // Check what the loader sees from this position
     const step3Load = await loader.loadPlan();
-    console.log(
-      "Step 3 load result:",
-      step3Load.err
-        ? `Error: ${step3Load.err}`
-        : `Success: ${step3Load.ok?.tasks.length} tasks`,
-    );
-    if (step3Load.ok) {
-      console.log(
-        "Step 3 task keys:",
-        step3Load.ok.tasks.map((t) => t.task_key),
-      );
-    } // Step 4: Update first task to be complete
     const step4Plan: SavingPlanData = {
       scope: "workflow",
       intent: "test complete workflow positioning",
@@ -424,8 +404,6 @@ describe("Positioning Bug Reproduction", () => {
       (msg: string) => msg.trim() !== "",
     );
 
-    console.log("Final commit history:");
-    finalMessages.forEach((msg, i) => console.log(`${i + 1}: ${msg}`));
 
     // Should have: begin, task1 (no ~), task2 (no ~), task3 (no ~), end (5 commits)
     expect(finalMessages).toHaveLength(5);
@@ -450,7 +428,5 @@ describe("Positioning Bug Reproduction", () => {
     // Verify no orphaned commits or broken tree structure
     expect(finalMessages.filter((m) => m.includes("~"))).toHaveLength(0); // No incomplete tasks
 
-    console.log("Final commit history:");
-    finalMessages.forEach((msg, i) => console.log(`${i + 1}: ${msg}`));
   });
 });

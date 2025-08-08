@@ -17,14 +17,8 @@ start to end: Final state`;
       const lexer = new WorkflowLexer(input);
       const tokens = lexer.tokenize();
 
-      console.log("Tokens:");
-      tokens.forEach((t, i) => console.log(`${i}: ${t.type} "${t.value}"`));
-
       const parser = new WorkflowParser(tokens);
-      const workflow = parser.parse();
-
-      console.log("States:", Object.keys(workflow.states));
-      console.log("Transitions:", workflow.transitions);
+      parser.parse();
     });
   });
 

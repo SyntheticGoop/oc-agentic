@@ -176,9 +176,6 @@ initial intent
     const finalHistory = await jj.history.linear();
     expect(finalHistory.err).toBeUndefined();
     const finalMessages = finalHistory.ok?.history.map((h) => h.message) ?? [];
-    // DEBUG: print finalMessages
-    // eslint-disable-next-line no-console
-    console.log("[TEST DEBUG] saver finalMessages:", finalMessages);
 
     // Verify that saver created some commits (exact structure may vary due to loader issues)
     expect(finalMessages).toBeDefined();
@@ -477,9 +474,6 @@ initial intent
     const finalHistory = await jj.history.linear();
     expect(finalHistory.err).toBeUndefined();
     const finalMessages = finalHistory.ok?.history.map((h) => h.message) ?? [];
-    // DEBUG: print finalMessages
-    // eslint-disable-next-line no-console
-    console.log("[TEST DEBUG] saver finalMessages:", finalMessages);
 
     // Should have: begin, task1 (no ~), task2 (no ~), task3 (no ~) (4 commits, no end commit in transition)
     expect(finalMessages).toHaveLength(4);
