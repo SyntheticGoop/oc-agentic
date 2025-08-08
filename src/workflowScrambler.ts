@@ -1,4 +1,4 @@
-import { createHash } from "crypto";
+import { obfuscateState } from "../workflow/stateHash";
 import type {
   StateDefinition,
   TransitionDefinition,
@@ -10,35 +10,23 @@ import type {
  *
  * Deterministically obfuscates state names in a WorkflowDefinition while
  * preserving the workflow structure, guidance, and relationships. The
- * transformation is reversible only by recreating the exact hashing algorithm
- * and input names; it is intended for anonymization and test fixtures.
+ * transformation delegates to the centralized obfuscation function so tests
+ * and other consumers get a single canonical mapping.
  *
  * Behavior
  * - The special initial state token "*" is preserved and never scrambled.
- * - All other state identifiers (keys in `states`, transition keys, and
- *   transition targets) are replaced with a short deterministic hash
- *   (prefixed with "s_").
+ * - All other state identifiers are replaced with the 6-char base64url
+ *   tokens produced by obfuscateState.
  * - All references to state names inside the definition are updated to the
  *   scrambled names so the resulting definition remains consistent.
- * - The function uses a SHA-256-based hashing strategy for determinism.
  *
  * Validation
  * - This function performs runtime validation of the input shape and will
  *   throw a TypeError if the provided `definition` does not conform to the
  *   expected WorkflowDefinition structure.
- *
- * Note: The function preserves all guidance and other fields exactly as they
- * appear in the input; only state identifiers are changed.
- *
- * @param definition - A WorkflowDefinition object to be scrambled. Must be a
- *   non-null object with `states`, `transitions`, and `initialState` keys.
- * @returns A new WorkflowDefinition with scrambled state identifiers.
- * @throws {TypeError} If the input does not match the expected structure.
  */
 export function obfuscateName(name: string): string {
-  if (name === "*") return "*";
-  const h = createHash("sha256").update(name).digest("hex");
-  return `s_${h.slice(0, 10)}`;
+  return obfuscateState(name);
 }
 
 export function scrambleWorkflowDefinition(
@@ -99,32 +87,24 @@ export function scrambleWorkflowDefinition(
     }
   }
 
-  // Simple deterministic hash -> short hex string
-  const hashName = (name: string): string => {
-    if (name === "*") return "*";
-    const h = createHash("sha256").update(name).digest("hex");
-    return `s_${h.slice(0, 10)}`; // prefix to avoid starting with digit
-  };
-
   // Build mapping from original state name -> scrambled name
   const nameMap: Record<string, string> = {};
   for (const orig of Object.keys(definition.states)) {
-    nameMap[orig] = hashName(orig);
+    nameMap[orig] = obfuscateState(orig);
   }
 
   // Ensure we also map any state names that appear in transitions but not in states
-  // (defensive, though parser should have populated states for all referenced names)
   for (const from of Object.keys(definition.transitions)) {
-    if (!(from in nameMap)) nameMap[from] = hashName(from);
+    if (!(from in nameMap)) nameMap[from] = obfuscateState(from);
     const nested = definition.transitions[from] as
       | Partial<Record<string, TransitionDefinition>>
       | undefined;
     if (!nested) continue;
     for (const action of Object.keys(nested)) {
-      if (!(action in nameMap)) nameMap[action] = hashName(action);
+      if (!(action in nameMap)) nameMap[action] = obfuscateState(action);
       const t = nested[action];
       if (t && t.target && !(t.target in nameMap)) {
-        nameMap[t.target] = hashName(t.target);
+        nameMap[t.target] = obfuscateState(t.target);
       }
     }
   }

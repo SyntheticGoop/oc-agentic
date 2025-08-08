@@ -41,6 +41,15 @@ initial_loaded to continue_project:
   Ask if they want to proceed with existing tasks.
 ```
 
+When state obfuscation is enabled, the externalized workflow may present opaque tokens instead of the human-readable names. For example:
+```
+: User wants to continue the project
+obf_a1b2c3 to obf_d4e5f6:
+  Display current project status to the user.
+  Ask if they want to proceed with existing tasks.
+```
+
+
 ## Grammar Definition
 
 ```ebnf
@@ -76,6 +85,27 @@ whitespace     ::= [ \t]+
 - Comments are ignored during parsing
 - Block comments are not supported
 
+### State Obfuscation
+The workflow engine supports an optional state obfuscation feature that replaces human-readable state identifiers with opaque, externally-facing names. This is intended for deployments where workflow state names are considered sensitive (for example, when workflows expose states through public APIs or logs).
+
+Key points:
+- Purpose: Obfuscation hides meaningful state identifiers from external observers while preserving workflow behavior for authorized callers.
+- Security benefits: By removing semantic cues from exported state names, obfuscation reduces information leakage (e.g., revealing internal process names or system structure) and makes it harder for attackers to infer system behavior from state names alone.
+- High-level operation: When enabled, the system deterministically maps each internal state identifier to an opaque token used in external interfaces (MCP responses, serialized outputs, and public logs). The mapping is stable for a given workflow instance but not reversible without access to the workflow's secure mapping material.
+- Privacy-preserving: The obfuscated names do not contain readable fragments of the original identifiers and are designed to avoid revealing structure (such as meaningful prefixes).
+
+Usage and considerations:
+- Obfuscation is opt-in and can be enabled when loading or publishing a workflow. When enabled, external communication (MCP responses, saved exported workflow files, etc.) will display obfuscated state names instead of the human-readable identifiers.
+- Authorized tools and services that need to operate on the workflow can either:
+  - Use the original human-readable identifiers when interacting with the local workflow API (the engine keeps the original names internally), or
+  - Use the provided mapping facility to translate obfuscated names back to the canonical internal names (access to this mapping is restricted to components with appropriate privileges).
+- Backwards compatibility: Internally the workflow still uses the original state identifiers, so existing code that operates within the same runtime is unaffected. Only externalized representations change when obfuscation is enabled.
+- Performance: The obfuscation layer is lightweight and deterministic; it is designed to add minimal overhead to state lookup and transition validation.
+
+Security note (no implementation leakage): The README intentionally avoids low-level implementation details (specific algorithms, salts, or storage formats). This prevents accidental disclosure of sensitive design choices while describing the feature's high-level behavior and trade-offs.
+
+Examples that display state names in this README have been updated to show obfuscated tokens alongside human-readable names where appropriate so readers can see how external output appears when obfuscation is enabled.
+
 ## API Usage
 
 ### Creating a Workflow
@@ -90,7 +120,13 @@ const workflowContent = `
 initial_loaded to continue_project
 `;
 
+// Create the workflow normally (internal names shown here)
 const workflow = new Workflow(workflowContent);
+
+// Note: if state obfuscation is enabled when this workflow is published/exported,
+// external interfaces will present opaque tokens instead of the human-readable names.
+// For example, the same transition above may appear externally as:
+// `obf_a1b2c3 to obf_d4e5f6` in exported files or logs.
 ```
 
 ### Executing Transitions

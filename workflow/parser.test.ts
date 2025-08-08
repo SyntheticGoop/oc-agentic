@@ -13,15 +13,15 @@ function parseWorkflow(input: string) {
 
 // Deterministic obfuscation map used in tests to avoid depending on internal helper
 const obfuscationMap: Record<string, string> = {
-  start: "s_cced28c6dc",
-  end: "s_361e48d030",
-  only: "s_f905b19542",
-  initial: "s_ac1b5c0961",
-  middle: "s_a4888af4e4",
-  back: "s_3c482346f3",
-  option1: "s_4900e176dc",
-  option2: "s_82c787f775",
-  option3: "s_3386e996a1",
+  start: "KwIJJ9",
+  end: "epLz0m",
+  only: "-JaaGK",
+  initial: "itfSHH",
+  middle: "hcJ0kp",
+  back: "YbuNKb",
+  option1: "6B66bp",
+  option2: "XKejg6",
+  option3: "IZIELU",
 };
 
 function obfuscateNameDeterministic(name: string) {
@@ -56,17 +56,7 @@ start to end: Final state`;
   describe("basic parsing", () => {
   it("should parse initial state definition", () => {
     const workflow = parseWorkflow("* to start: Initial state");
-    const s = (n: string) => ({
-      start: "s_cced28c6dc",
-      end: "s_361e48d030",
-      only: "s_f905b19542",
-      initial: "s_ac1b5c0961",
-      middle: "s_a4888af4e4",
-      back: "s_3c482346f3",
-      option1: "s_4900e176dc",
-      option2: "s_82c787f775",
-      option3: "s_3386e996a1",
-    } as Record<string, string>)[n];
+    const s = obfuscateNameDeterministic;
 
     expect(workflow.initialState).toBe(s("start"));
     expect(workflow.states[s("start")]).toEqual({
