@@ -1,15 +1,46 @@
 import { describe, expect, it } from "vitest";
 import { WorkflowLexer } from "./lexer";
 import { WorkflowParser } from "./parser";
+import { scrambleWorkflowDefinition, obfuscateName } from "../src/workflowScrambler";
 
 function parseWorkflow(input: string) {
   const lexer = new WorkflowLexer(input);
   const tokens = lexer.tokenize();
   const parser = new WorkflowParser(tokens);
-  return parser.parse();
+  const parsed = parser.parse();
+  return scrambleWorkflowDefinition(parsed);
 }
 
+// Deterministic obfuscation map used in tests to avoid depending on internal helper
+const obfuscationMap: Record<string, string> = {
+  start: "s_cced28c6dc",
+  end: "s_361e48d030",
+  only: "s_f905b19542",
+  initial: "s_ac1b5c0961",
+  middle: "s_a4888af4e4",
+  back: "s_3c482346f3",
+  option1: "s_4900e176dc",
+  option2: "s_82c787f775",
+  option3: "s_3386e996a1",
+};
+
+function obfuscateNameDeterministic(name: string) {
+  if (name === "*") return "*";
+  return obfuscationMap[name];
+}
+
+
 describe("WorkflowParser", () => {
+  it("should validate deterministic obfuscation map against obfuscateName", () => {
+    // Ensure our hard-coded obfuscationMap values remain in sync with the
+    // real obfuscation implementation. This guards against accidental
+    // changes to the hashing algorithm used in tests.
+    for (const [plain, expected] of Object.entries(obfuscationMap)) {
+      expect(obfuscateName(plain)).toBe(expected);
+    }
+    // '*' should map to itself
+    expect(obfuscateName("*")).toBe("*");
+  });
   describe("debug", () => {
     it("should debug token parsing", () => {
       const input = `* to start: Initial state
@@ -23,49 +54,60 @@ start to end: Final state`;
   });
 
   describe("basic parsing", () => {
-    it("should parse initial state definition", () => {
-      const workflow = parseWorkflow("* to start: Initial state");
+  it("should parse initial state definition", () => {
+    const workflow = parseWorkflow("* to start: Initial state");
+    const s = (n: string) => ({
+      start: "s_cced28c6dc",
+      end: "s_361e48d030",
+      only: "s_f905b19542",
+      initial: "s_ac1b5c0961",
+      middle: "s_a4888af4e4",
+      back: "s_3c482346f3",
+      option1: "s_4900e176dc",
+      option2: "s_82c787f775",
+      option3: "s_3386e996a1",
+    } as Record<string, string>)[n];
 
-      expect(workflow.initialState).toBe("start");
-      expect(workflow.states.start).toEqual({
-        name: "start",
-        guidance: "Initial state",
-      });
-      expect(workflow.transitions).toEqual({
-        "*": { start: { target: "start", guidance: undefined } },
-        start: {},
-      });
+    expect(workflow.initialState).toBe(s("start"));
+    expect(workflow.states[s("start")]).toEqual({
+      name: s("start"),
+      guidance: "Initial state",
     });
-
+    expect(workflow.transitions).toEqual({
+      "*": { [s("start")]: { target: s("start"), guidance: undefined } },
+      [s("start")]: {},
+    });
+  });
     it("should parse simple transition", () => {
       const workflow = parseWorkflow(`* to start: Initial state
 start to end: Final state`);
+      const s = obfuscateNameDeterministic;
 
-      expect(workflow.initialState).toBe("start");
+      expect(workflow.initialState).toBe(s("start"));
       expect(workflow.states).toEqual({
         "*": { name: "*", guidance: "Initial state" },
-        start: { name: "start", guidance: "Initial state" },
-        end: { name: "end", guidance: "Final state" },
+        [s("start")]: { name: s("start"), guidance: "Initial state" },
+        [s("end")]: { name: s("end"), guidance: "Final state" },
       });
       expect(workflow.transitions).toEqual({
-        "*": { start: { target: "start", guidance: undefined } },
-        start: { end: { target: "end", guidance: undefined } },
-        end: {},
+        "*": { [s("start")]: { target: s("start"), guidance: undefined } },
+        [s("start")]: { [s("end")]: { target: s("end"), guidance: undefined } },
+        [s("end")]: {},
       });
     });
 
     it("should parse transition with colon", () => {
       const workflow = parseWorkflow(`* to start
 start to end: Some guidance`);
-
-      expect(workflow.states.end.guidance).toBe("Some guidance");
+      const s = obfuscateNameDeterministic;
+      expect(workflow.states[s("end")].guidance).toBe("Some guidance");
     });
 
     it("should parse transition without colon", () => {
       const workflow = parseWorkflow(`* to start
 start to end`);
-
-      expect(workflow.states.end.guidance).toBe("");
+      const s = obfuscateNameDeterministic;
+      expect(workflow.states[s("end")].guidance).toBe("");
     });
   });
 
@@ -74,9 +116,10 @@ start to end`);
       const workflow = parseWorkflow(`* to start: Initial state
 : User wants to continue
 start to end: Final state`);
+      const s = obfuscateNameDeterministic;
 
-      expect(workflow.transitions.start).toEqual({
-        end: { target: "end", guidance: "User wants to continue" },
+      expect(workflow.transitions[s("start")]).toEqual({
+        [s("end")]: { target: s("end"), guidance: "User wants to continue" },
       });
     });
 
@@ -84,18 +127,20 @@ start to end: Final state`);
       const workflow = parseWorkflow(`* to start: Initial state
 : User wants to continue the project
 start to end: Final state`);
+      const s = obfuscateNameDeterministic;
 
-      expect(workflow.transitions.start).toEqual({
-        end: { target: "end", guidance: "User wants to continue the project" },
+      expect(workflow.transitions[s("start")]).toEqual({
+        [s("end")]: { target: s("end"), guidance: "User wants to continue the project" },
       });
     });
 
     it("should handle transitions without guidance", () => {
       const workflow = parseWorkflow(`* to start: Initial state
 start to end: Final state`);
+      const s = obfuscateNameDeterministic;
 
-      expect(workflow.transitions.start).toEqual({
-        end: { target: "end", guidance: undefined },
+      expect(workflow.transitions[s("start")]).toEqual({
+        [s("end")]: { target: s("end"), guidance: undefined },
       });
     });
   });
@@ -104,8 +149,9 @@ start to end: Final state`);
     it("should handle transition to end state (*)", () => {
       const workflow = parseWorkflow(`* to start: Initial state
 start to *: Back to start`);
+      const s = obfuscateNameDeterministic;
 
-      expect(workflow.transitions.start).toEqual({
+      expect(workflow.transitions[s("start")]).toEqual({
         "*": { target: "*", guidance: undefined },
       });
     });
@@ -114,8 +160,9 @@ start to *: Back to start`);
       const workflow = parseWorkflow(`* to start: Initial state
 : Done condition
 start to *: Complete`);
+      const s = obfuscateNameDeterministic;
 
-      expect(workflow.transitions.start).toEqual({
+      expect(workflow.transitions[s("start")]).toEqual({
         "*": { target: "*", guidance: "Done condition" },
       });
     });
@@ -130,24 +177,25 @@ middle to end: Conditional end
 middle to back: Go back
 back to initial: Return to start
 end to *: Complete`);
+      const s = obfuscateNameDeterministic;
 
-      expect(workflow.initialState).toBe("initial");
+      expect(workflow.initialState).toBe(s("initial"));
       expect(Object.keys(workflow.states)).toEqual([
         "*",
-        "initial",
-        "middle",
-        "end",
-        "back",
+        s("initial"),
+        s("middle"),
+        s("end"),
+        s("back"),
       ]);
       expect(workflow.transitions).toEqual({
-        "*": { initial: { target: "initial", guidance: undefined } },
-        initial: { middle: { target: "middle", guidance: undefined } },
-        middle: {
-          end: { target: "end", guidance: "Condition met" },
-          back: { target: "back", guidance: undefined },
+        "*": { [s("initial")]: { target: s("initial"), guidance: undefined } },
+        [s("initial")]: { [s("middle")]: { target: s("middle"), guidance: undefined } },
+        [s("middle")]: {
+          [s("end")]: { target: s("end"), guidance: "Condition met" },
+          [s("back")]: { target: s("back"), guidance: undefined },
         },
-        back: { initial: { target: "initial", guidance: undefined } },
-        end: { "*": { target: "*", guidance: undefined } },
+        [s("back")]: { [s("initial")]: { target: s("initial"), guidance: undefined } },
+        [s("end")]: { "*": { target: "*", guidance: undefined } },
       });
     });
 
@@ -157,11 +205,12 @@ start to option1: First option
 start to option2: Second option
 : Special case
 start to option3: Third option`);
+      const s = obfuscateNameDeterministic;
 
-      expect(workflow.transitions.start).toEqual({
-        option1: { target: "option1", guidance: undefined },
-        option2: { target: "option2", guidance: undefined },
-        option3: { target: "option3", guidance: "Special case" },
+      expect(workflow.transitions[s("start")]).toEqual({
+        [s("option1")]: { target: s("option1"), guidance: undefined },
+        [s("option2")]: { target: s("option2"), guidance: undefined },
+        [s("option3")]: { target: s("option3"), guidance: "Special case" },
       });
     });
   });
@@ -175,18 +224,18 @@ start to option3: Third option`);
 start   to   end   :   Final state
 
 `);
-
-      expect(workflow.states.start.guidance).toBe("Initial state");
-      expect(workflow.states.end.guidance).toBe("Final state");
+      const s = obfuscateNameDeterministic;
+      expect(workflow.states[s("start")].guidance).toBe("Initial state");
+      expect(workflow.states[s("end")].guidance).toBe("Final state");
     });
 
     it("should handle empty lines", () => {
       const workflow = parseWorkflow(`* to start: Initial
 
 start to end: Final`);
-
-      expect(workflow.transitions.start).toEqual({
-        end: { target: "end", guidance: undefined },
+      const s = obfuscateNameDeterministic;
+      expect(workflow.transitions[s("start")]).toEqual({
+        [s("end")]: { target: s("end"), guidance: undefined },
       });
     });
   });
@@ -195,26 +244,26 @@ start to end: Final`);
     it("should handle content with special characters", () => {
       const workflow = parseWorkflow(`* to start: Content with * and if keywords
 start to end: More content with to arrows`);
-
-      expect(workflow.states.start.guidance).toBe(
+      const s = obfuscateNameDeterministic;
+      expect(workflow.states[s("start")].guidance).toBe(
         "Content with * and if keywords",
       );
-      expect(workflow.states.end.guidance).toBe("More content with to arrows");
+      expect(workflow.states[s("end")].guidance).toBe("More content with to arrows");
     });
 
     it("should handle empty content", () => {
       const workflow = parseWorkflow(`* to start:
 start to end`);
-
-      expect(workflow.states.start.guidance).toBe("");
-      expect(workflow.states.end.guidance).toBe("");
+      const s = obfuscateNameDeterministic;
+      expect(workflow.states[s("start")].guidance).toBe("");
+      expect(workflow.states[s("end")].guidance).toBe("");
     });
 
     it("should handle multi-token content", () => {
       const workflow = parseWorkflow(`* to start
 start to end: This is a long guidance message with many words`);
-
-      expect(workflow.states.end.guidance).toBe(
+      const s = obfuscateNameDeterministic;
+      expect(workflow.states[s("end")].guidance).toBe(
         "This is a long guidance message with many words",
       );
     });
@@ -245,24 +294,26 @@ start to end: This is a long guidance message with many words`);
   describe("edge cases", () => {
     it("should handle single state workflow", () => {
       const workflow = parseWorkflow("* to only: Only state");
+      const s = obfuscateNameDeterministic;
 
-      expect(workflow.initialState).toBe("only");
+      expect(workflow.initialState).toBe(s("only"));
       expect(workflow.states).toEqual({
         "*": { name: "*", guidance: "Only state" },
-        only: { name: "only", guidance: "Only state" },
+        [s("only")]: { name: s("only"), guidance: "Only state" },
       });
       expect(workflow.transitions).toEqual({
-        "*": { only: { target: "only", guidance: undefined } },
-        only: {},
+        "*": { [s("only")]: { target: s("only"), guidance: undefined } },
+        [s("only")]: {},
       });
     });
 
     it("should handle self-referencing transition", () => {
       const workflow = parseWorkflow(`* to start: Initial
 start to start: Loop back`);
+      const s = obfuscateNameDeterministic;
 
-      expect(workflow.transitions.start).toEqual({
-        start: { target: "start", guidance: undefined },
+      expect(workflow.transitions[s("start")]).toEqual({
+        [s("start")]: { target: s("start"), guidance: undefined },
       });
     });
 
@@ -270,9 +321,10 @@ start to start: Loop back`);
       const workflow = parseWorkflow(`* to start: Initial
 start to middle
 middle to end: Final`);
+      const s = obfuscateNameDeterministic;
 
-      expect(workflow.states.middle.guidance).toBe("");
-      expect(workflow.states.end.guidance).toBe("Final");
+      expect(workflow.states[s("middle")].guidance).toBe("");
+      expect(workflow.states[s("end")].guidance).toBe("Final");
     });
   });
 });

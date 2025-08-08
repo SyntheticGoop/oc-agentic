@@ -10,8 +10,8 @@ start to end: Final state
 
     const workflow = new Workflow(content);
 
-    // * is the initial state - verify it has valid actions via transition
-    const initialResult = workflow.transition("*" as any, "dummy" as any);
+    // * is the initial state - verify it has valid actions via transitionPlain
+    const initialResult = workflow.transitionPlain("*", "dummy");
     expect(initialResult.move).toBe("invalid");
     expect(initialResult.validActions).toContainEqual({
       action: "start",
@@ -28,7 +28,7 @@ middle to end: Go to end
 
     const workflow = new Workflow(content);
 
-    const result = workflow.transition("start" as any, "middle" as any);
+    const result = workflow.transitionPlain("start", "middle");
     expect(result.move).toBe("success");
     if (result.move === "success") {
       expect(result.nextState).toBe("middle");
@@ -46,7 +46,7 @@ start to end: Final state
 
     const workflow = new Workflow(content);
 
-    const result = workflow.transition("start" as any, "invalid" as any);
+    const result = workflow.transitionPlain("start", "invalid");
     expect(result.move).toBe("invalid");
     expect(result.validActions).toEqual([
       { action: "end", guidance: undefined },
@@ -64,10 +64,7 @@ start to rejected: Action was rejected
     const workflow = new Workflow(content);
 
     // Test successful transition with guidance
-    const approveResult = workflow.transition(
-      "start" as any,
-      "approved" as any,
-    );
+    const approveResult = workflow.transitionPlain("start", "approved");
     expect(approveResult.move).toBe("success");
     if (approveResult.move === "success") {
       expect(approveResult.nextState).toBe("approved");
@@ -75,7 +72,7 @@ start to rejected: Action was rejected
     }
 
     // Test other transition with guidance
-    const rejectResult = workflow.transition("start" as any, "rejected" as any);
+    const rejectResult = workflow.transitionPlain("start", "rejected");
     expect(rejectResult.move).toBe("success");
     if (rejectResult.move === "success") {
       expect(rejectResult.nextState).toBe("rejected");
@@ -83,7 +80,7 @@ start to rejected: Action was rejected
     }
 
     // Test invalid action
-    const invalidResult = workflow.transition("start" as any, "invalid" as any);
+    const invalidResult = workflow.transitionPlain("start", "invalid");
     expect(invalidResult.move).toBe("invalid");
     expect(invalidResult.validActions).toEqual([
       { action: "approved", guidance: "User approved the action" },
@@ -94,6 +91,7 @@ start to rejected: Action was rejected
     const workflow = new Workflow("* to start: Initial state");
 
     expect(workflow.isValidState("*")).toBe(true);
+    // isValidState accepts plain names (and '*' or obfuscated names)
     expect(workflow.isValidState("start")).toBe(true);
     expect(workflow.isValidState("invalid")).toBe(false);
   });
@@ -108,7 +106,7 @@ middle to end: Final state
     const workflow = new Workflow(content);
 
     // Test simple transition
-    const simpleResult = workflow.transition("start" as any, "middle" as any);
+    const simpleResult = workflow.transitionPlain("start", "middle");
     expect(simpleResult.move).toBe("success");
     if (simpleResult.move === "success") {
       expect(simpleResult.nextState).toBe("middle");
@@ -116,10 +114,7 @@ middle to end: Final state
     }
 
     // Test transition with guidance
-    const conditionalResult = workflow.transition(
-      "middle" as any,
-      "end" as any,
-    );
+    const conditionalResult = workflow.transitionPlain("middle", "end");
     expect(conditionalResult.move).toBe("success");
     if (conditionalResult.move === "success") {
       expect(conditionalResult.nextState).toBe("end");

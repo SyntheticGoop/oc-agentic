@@ -35,6 +35,12 @@ import type {
  * @returns A new WorkflowDefinition with scrambled state identifiers.
  * @throws {TypeError} If the input does not match the expected structure.
  */
+export function obfuscateName(name: string): string {
+  if (name === "*") return "*";
+  const h = createHash("sha256").update(name).digest("hex");
+  return `s_${h.slice(0, 10)}`;
+}
+
 export function scrambleWorkflowDefinition(
   definition: WorkflowDefinition,
 ): WorkflowDefinition {
