@@ -8,12 +8,12 @@
     "planner/README.md"
   ],
   "mcp": {
-    "oc-agentic-workflow": {
+    "oc-agentic-flow": {
       "type": "local",
       "command": [
         "yarn",
         "run:mcp:workflow",
-        "--workflow=workflow/PLANNER.flow"
+        "--workflow=workflow/scoped-execution.flow"
       ],
       "enabled": true
     },
@@ -40,28 +40,6 @@
         "todowrite": true,
         "todoread": true
       }
-    }
-  },
-  "agent": {
-    "oc-agentic-planner-task-alignment": {
-      "prompt": "{file:prompts/agent/oc-agentic-planner-task-alignment.md}",
-      "description": "Task alignment agent"
-    },
-    "oc-agentic-task-specification-agent": {
-      "prompt": "{file:prompts/agent/oc-agentic-task-specification-agent.md}",
-      "description": "Creates comprehensive task specifications and implementation plans"
-    },
-    "oc-agentic-code-review-agent": {
-      "prompt": "{file:prompts/agent/oc-agentic-code-review-agent.md}",
-      "description": "Reviews plans and code for quality assurance and standards alignment"
-    },
-    "oc-agentic-execution-agent": {
-      "prompt": "{file:prompts/agent/oc-agentic-execution-agent.md}",
-      "description": "Executes approved specifications and implements code changes"
-    },
-    "oc-agentic-coordinating-agent": {
-      "prompt": "{file:prompts/agent/oc-agentic-coordinating-agent.md}",
-      "description": "Orchestrates development workflows between specification, review, and execution agents"
     }
   }
 }

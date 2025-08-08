@@ -8,27 +8,18 @@ declare class StateBrand {
 
 export type WorkflowState = string & StateBrand;
 
-export type TransitionResult =
-  | {
-      move: "success";
-      nextState: WorkflowState;
-      validActions: Array<{
-        action: WorkflowState;
-        guidance: string | undefined;
-      }>;
-      guidance: string;
-    }
-  | {
-      move: "invalid";
-      validActions: Array<{
-        action: WorkflowState;
-        guidance: string | undefined;
-      }>;
-      guidance: string;
-    };
+export type TransitionResult = {
+  move: "success" | "invalid";
+  nextState: WorkflowState;
+  validActions: Array<{
+    action: WorkflowState;
+    guidance: string | undefined;
+  }>;
+  guidance: string;
+};
 
 export class Workflow {
-  private definition: WorkflowDefinition;
+  readonly definition: WorkflowDefinition;
 
   constructor(definitionContent: string) {
     this.definition = this.parseDefinition(definitionContent);
@@ -74,6 +65,7 @@ export class Workflow {
     if (!transitionDef) {
       return {
         move: "invalid",
+        nextState: currentState,
         validActions: this.getValidActions(currentState),
         guidance: this.getStateGuidance(currentState),
       };

@@ -68,7 +68,7 @@ export class WorkflowLexer {
     let content = "";
 
     // Read until newline or colon
-    while (this.peekN(1) && this.peekN(1) !== "\n" && this.peekN(1) !== ":") {
+    while (this.peekN(1) && this.peekN(1) !== "\n") {
       content += this.advance();
     }
 
@@ -97,27 +97,21 @@ export class WorkflowLexer {
           tempPos++;
         }
 
-        // Check if this looks like a workflow statement (state to state)
+        // Since this line is indented, it can never be a workflow statement
+        // (workflow statements must start at column 1)
+        // So always treat it as continuation content
         const trimmedNext = nextLineContent.trim();
-        const isWorkflowStatement = trimmedNext.match(
-          /^(\*|\w+)\s+to\s+(\*|\w+)/,
-        );
 
-        if (!isWorkflowStatement) {
-          // This is a continuation line - consume it
-          this.advance(); // consume newline
-          while (this.peekN(1) && /[ \t]/.test(this.peekN(1))) {
-            this.advance(); // consume indentation
-          }
-          content += ` ${trimmedNext}`;
+        // This is a continuation line - consume it
+        this.advance(); // consume newline
+        while (this.peekN(1) && /[ \t]/.test(this.peekN(1))) {
+          this.advance(); // consume indentation
+        }
+        content += ` ${trimmedNext}`;
 
-          // Continue reading this line
-          while (this.peekN(1) && this.peekN(1) !== "\n") {
-            this.advance(); // already added to content above
-          }
-        } else {
-          // This is a new workflow statement, stop reading content
-          break;
+        // Continue reading this line
+        while (this.peekN(1) && this.peekN(1) !== "\n") {
+          this.advance(); // already added to content above
         }
       } else {
         // No indentation or empty line, stop reading content
@@ -203,6 +197,15 @@ export class WorkflowLexer {
           line: startLine,
           column: startColumn,
         });
+
+        const content = this.readContent();
+        tokens.push({
+          type: "content",
+          value: content,
+          line: startLine,
+          column: startColumn + 1,
+        });
+
         continue;
       }
 

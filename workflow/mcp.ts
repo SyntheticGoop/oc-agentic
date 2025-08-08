@@ -2,98 +2,96 @@
 process.chdir(process.env.INIT_CWD ?? process.cwd());
 
 import { readFileSync } from "node:fs";
+import { basename } from "node:path";
 import { FastMCP } from "fastmcp";
 import { z } from "zod";
 import { Workflow } from "./workflow";
 
 function start() {
   // Parse CLI arguments for workflow file
-  const workflowArg = process.argv.find((arg) => arg.startsWith("--workflow="));
-  const workflowFile = workflowArg ? workflowArg.split("=")[1] : null;
-
-  if (workflowFile === null) throw Error("Missing workflow");
-  const workflowContent = readFileSync(workflowFile, "utf-8");
-  const WORKFLOW = new Workflow(workflowContent);
+  const workflows = Object.fromEntries(
+    process.argv
+      .filter((arg) => arg.startsWith("--workflow="))
+      .map((workflow) => workflow.split("=").at(1))
+      .filter((file) => typeof file === "string")
+      .map((file) => {
+        const workflowContent = readFileSync(file, "utf-8");
+        return [
+          basename(file, ".flow"),
+          new Workflow(workflowContent),
+        ] as const;
+      }),
+  );
 
   const server = new FastMCP({
     name: "workflow",
     version: "0.1.0",
   });
+
   server.addTool({
     name: "transition",
     description: "Validates workflow state transitions",
     parameters: z.object({
+      workflow: z.enum(Object.keys(workflows)),
       current_state: z.string(),
       next_state: z.string(),
-      planner_operation: z.string().optional(),
-      validation_result: z.string().optional(),
-      task_status: z.string().optional(),
-      user_response: z.string().optional(),
-      project_data: z.string().optional(),
     }),
     execute: async (args) => {
-      if (!WORKFLOW.isValidState(args.current_state)) {
+      const workflow = workflows[args.workflow];
+
+      if (!workflow.isValidState(args.current_state)) {
         return {
           type: "text" as const,
-          text: [
-            "status: error",
-            "reason: unknown state",
-            `state: ${args.current_state}`,
-          ].join("\n"),
+          text: `state: "${args.current_state}"; status = "error"; reason = "unknown state"`,
         };
       }
-      if (!WORKFLOW.isValidState(args.next_state)) {
+      if (!workflow.isValidState(args.next_state)) {
         return {
           type: "text" as const,
-          text: [
-            "status: error",
-            "reason: unknown state",
-            `state: ${args.next_state}`,
-          ].join("\n"),
+          text: `state: "${args.next_state}"; status = "error"; reason = "unknown state"`,
         };
       }
 
-      const transition = WORKFLOW.transition(
+      const transition = workflow.transition(
         args.current_state,
         args.next_state,
       );
 
       switch (transition.move) {
         case "invalid":
-          return {
-            type: "text" as const,
-            text: [
-              "status: error",
-              "reason: invalid transition",
-              `from state: ${args.current_state}`,
-              `invalid transition: ${args.next_state}`,
-              ...[
-                "valid transitions:",
-                ...transition.validActions.flatMap((transition) => [
-                  `  - action: ${transition.action}`,
-                  `    when: ${transition.guidance ?? "automatically"}`,
-                ]),
-              ],
-              `guidance: ${transition.guidance}`,
-            ].join("\n"),
-          };
         case "success":
           return {
             type: "text" as const,
-            text: [
-              "status: success",
-              `current state: ${transition.nextState}`,
-              ...[
-                "valid transitions:",
-                ...transition.validActions.flatMap((transition) => [
-                  `  - action: ${transition.action}`,
-                  `    when: ${transition.guidance ?? "automatically"}`,
-                ]),
-              ],
-              `guidance: ${transition.guidance}`,
-            ].join("\n"),
+            text: `state = "${transition.nextState}"; command = "${transition.guidance}"; [when]; ${transition.validActions.map((action) => `"${action.guidance}" = "${action.action}"`).join("; ")}`,
           };
       }
+    },
+  });
+
+  server.addTool({
+    name: "find",
+    description: `Get first state of flow. Flows: available = [ ${Object.keys(
+      workflows,
+    )
+      .map((key) => `"${key}"`)
+      .join(" ")} ]`,
+    parameters: z.object({
+      workflow: z.enum(Object.keys(workflows)).optional(),
+    }),
+    async execute(args) {
+      if (!args.workflow)
+        return {
+          type: "text",
+          text: `"available = [ ${Object.keys(workflows)
+            .map((key) => `"${key}"`)
+            .join(" ")} ]`,
+        };
+
+      const workflow = workflows[args.workflow];
+      return {
+        type: "text",
+        text: `start = "${workflow.definition.initialState}"`,
+      };
     },
   });
 

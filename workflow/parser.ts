@@ -118,7 +118,7 @@ export class WorkflowParser {
             this.advance(); // skip newlines
           }
         }
-        transitionGuidance = guidanceParts.join(" ").trim();
+        transitionGuidance = guidanceParts.join("\n").trim();
       }
 
       const fromState = this.parseState();
