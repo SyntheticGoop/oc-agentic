@@ -201,8 +201,8 @@ describe("Basic Interface Tests", () => {
   it("should handle SHORT format with 0 tasks correctly", async () => {
     // ENFORCEMENT: This test verifies that SHORT format commits with
     // {type}(scope): headers (no ~ marker) are parsed as plans with
-    // 0 tasks. The plan metadata comes from the commit body, plan_key
-    // is null, and the tasks array is empty.
+    // 1 task. The plan metadata comes from the commit body, plan_key
+    // is null, and the tasks array contains the single task from the commit.
 
     const jj = Jujutsu.cwd(testRepoPath);
     const loader = new Loader(jj);
@@ -596,7 +596,7 @@ intent text
 
     const loadResult2 = await loader.loadPlan();
     expect(loadResult2.err).toBeDefined();
-    expect(loadResult2.err).toBe("Invalid constraint format");
+    expect(loadResult2.err).toBe("Parse Error: Invalid constraint format");
 
     // Test invalid constraints - non-bullet line
     const newResult3 = await jj.new();
@@ -620,7 +620,7 @@ intent text
 
     const loadResult3 = await loader.loadPlan();
     expect(loadResult3.err).toBeDefined();
-    expect(loadResult3.err).toBe("Invalid constraint format");
+    expect(loadResult3.err).toBe("Parse Error: Invalid constraint format");
   });
 
   it("should enforce objectives bullet point format", async () => {
@@ -684,7 +684,7 @@ intent text
 
     const loadResult2 = await loader.loadPlan();
     expect(loadResult2.err).toBeDefined();
-    expect(loadResult2.err).toBe("Invalid objective format");
+    expect(loadResult2.err).toBe("Parse Error: Invalid objective format");
 
     // Test invalid objectives - non-bullet line
     const newResult3 = await jj.new();
@@ -708,7 +708,7 @@ not a bullet point
 
     const loadResult3 = await loader.loadPlan();
     expect(loadResult3.err).toBeDefined();
-    expect(loadResult3.err).toBe("Invalid objective format");
+    expect(loadResult3.err).toBe("Parse Error: Invalid objective format");
   });
 
   it("should handle missing sections gracefully", async () => {
@@ -803,7 +803,7 @@ intent text
 
     const loadResult = await loader.loadPlan();
     expect(loadResult.err).toBeDefined();
-    expect(loadResult.err).toBe("Invalid commit type");
+    expect(loadResult.err).toBe("Parse Error: Invalid commit type");
   });
 
   it("should validate title format requirements", async () => {
@@ -837,7 +837,7 @@ intent text
 
       const loadResult = await loader.loadPlan();
       expect(loadResult.err).toBeDefined();
-      expect(loadResult.err).toBe("Invalid header format");
+      expect(loadResult.err).toBe("Parse Error: Invalid header format");
     }
 
     // Test valid title formats
@@ -889,7 +889,7 @@ intent text
     const loadResult = await loader.loadPlan();
     expect(loadResult.err).toBeDefined();
     expect(loadResult.err).toBe(
-      "Single task commit title exceeds maximum length",
+      "Parse Error: Single task commit title exceeds maximum length",
     );
   });
 
@@ -1283,7 +1283,7 @@ task intent
     const loadResult1 = await loader.loadPlan();
     expect(loadResult1.err).toBeDefined();
     expect(loadResult1.err).toBe(
-      "Invalid LONG format plan: insufficient commits",
+      "Structure Error: Invalid LONG format plan: insufficient commits",
     );
 
     // Test invalid LONG format - wrong commit type in middle
@@ -1326,7 +1326,7 @@ end commit
     const loadResult2 = await loader.loadPlan();
     expect(loadResult2.err).toBeDefined();
     expect(loadResult2.err).toBe(
-      "Unexpected terminating header in task position",
+      "Structure Error: Unexpected terminating header in task position",
     );
   });
 
@@ -1351,7 +1351,7 @@ some content
 
     const loadResult1 = await loader.loadPlan();
     expect(loadResult1.err).toBeDefined();
-    expect(loadResult1.err).toBe("Invalid header format");
+    expect(loadResult1.err).toBe("Parse Error: Invalid header format");
 
     // Test valid header but invalid body content
     const newResult2 = await jj.new();
@@ -1373,6 +1373,6 @@ not a bullet point
 
     const loadResult2 = await loader.loadPlan();
     expect(loadResult2.err).toBeDefined();
-    expect(loadResult2.err).toBe("Invalid constraint format");
+    expect(loadResult2.err).toBe("Parse Error: Invalid constraint format");
   });
 });

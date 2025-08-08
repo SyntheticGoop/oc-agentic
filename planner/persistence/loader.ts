@@ -112,20 +112,21 @@ export function parseCommitBody(body: string) {
   const objectives: string[] = [];
   let stage: "intent" | "constraint" | "objective" = "intent";
   for (const line of lines) {
+    const trimmedLine = line.trim();
     switch (stage) {
       case "intent":
-        if (line === "## Objectives") {
+        if (trimmedLine === "## Objectives") {
           stage = "objective";
           break;
         }
-        if (line === "## Constraints") {
+        if (trimmedLine === "## Constraints") {
           stage = "constraint";
           break;
         }
         intent.push(line);
         break;
       case "objective":
-        if (line === "## Constraints") {
+        if (trimmedLine === "## Constraints") {
           stage = "constraint";
           break;
         }
