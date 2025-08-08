@@ -6,9 +6,9 @@ import { WorkflowParser } from "./parser";
 import { Workflow, type WorkflowState } from "./workflow";
 
 describe("Workflow E2E Tests", () => {
-  it("should parse PLANNER_MARKOV file with new simplified syntax", () => {
-    // Read the PLANNER_MARKOV file
-    const plannerMarkovPath = join(__dirname, "PLANNER");
+  it("should parse scoped-execution.flow file with new simplified syntax", () => {
+    // Read the scoped-execution.flow file
+    const plannerMarkovPath = join(__dirname, "scoped-execution.flow");
     const content = readFileSync(plannerMarkovPath, "utf8");
 
     // Parse the workflow
@@ -26,12 +26,10 @@ describe("Workflow E2E Tests", () => {
     const expectedStates = [
       "*",
       "initial_loaded",
-      "continue_project",
+      "refine_tasks",
       "define_project",
       "refine_project",
       "create_project",
-      "maybe_create_project",
-      "refine_tasks",
       "check_tasks",
       "update_task",
       "delete_task",
@@ -39,8 +37,11 @@ describe("Workflow E2E Tests", () => {
       "final_check",
       "parallel_update",
       "execution",
-      "all_tasks_complete",
+      "loop_tasks",
       "run_task",
+      "mark_task",
+      "redefine_task",
+      "all_tasks_complete",
     ];
 
     expectedStates.forEach((state) => {
@@ -57,19 +58,17 @@ describe("Workflow E2E Tests", () => {
 
     // Verify some key transitions with guidance
     expect(workflowDef.transitions.initial_loaded).toBeDefined();
-    expect(
-      workflowDef.transitions.initial_loaded?.continue_project,
-    ).toBeDefined();
-    expect(
-      workflowDef.transitions.initial_loaded?.continue_project?.guidance,
-    ).toBe("User wants to continue the project");
+    expect(workflowDef.transitions.initial_loaded?.refine_tasks).toBeDefined();
+    expect(workflowDef.transitions.initial_loaded?.refine_tasks?.guidance).toBe(
+      "Ask: Do you want to continue the scope of work?",
+    );
 
     expect(
       workflowDef.transitions.initial_loaded?.define_project,
     ).toBeDefined();
     expect(
       workflowDef.transitions.initial_loaded?.define_project?.guidance,
-    ).toBe("User wants to start a new project");
+    ).toBe("Ask: Do you want to start a new scope of work?");
 
     // Verify self-referencing transitions work
     expect(
@@ -77,13 +76,15 @@ describe("Workflow E2E Tests", () => {
     ).toBeDefined();
     expect(
       workflowDef.transitions.refine_project?.refine_project?.guidance,
-    ).toBe("User responds to questions");
+    ).toBe("Ask: Can you provide clarity on all the above points?");
 
-    // Verify transitions to end state work
-    expect(workflowDef.transitions.all_tasks_complete?.["*"]).toBeDefined();
-    expect(workflowDef.transitions.all_tasks_complete?.["*"]?.guidance).toBe(
-      "User is unsatisfied with output",
-    );
+    // Verify transitions to initial state work
+    expect(
+      workflowDef.transitions.all_tasks_complete?.initial_loaded,
+    ).toBeDefined();
+    expect(
+      workflowDef.transitions.all_tasks_complete?.initial_loaded?.guidance,
+    ).toBe("User is satisfied with output");
 
     const stateCount = Object.keys(workflowDef.states).length;
     const transitionCount = Object.values(workflowDef.transitions).reduce(
@@ -91,13 +92,13 @@ describe("Workflow E2E Tests", () => {
       0,
     );
     console.log(
-      `✅ Successfully parsed PLANNER_MARKOV with ${stateCount} states and ${transitionCount} transitions`,
+      `✅ Successfully parsed scoped-execution.flow with ${stateCount} states and ${transitionCount} transitions`,
     );
   });
 
-  it("should create a Workflow instance from PLANNER_MARKOV", () => {
-    // Read the PLANNER_MARKOV file
-    const plannerMarkovPath = join(__dirname, "PLANNER");
+  it("should create a Workflow instance from scoped-execution.flow", () => {
+    // Read the scoped-execution.flow file
+    const plannerMarkovPath = join(__dirname, "scoped-execution.flow");
     const content = readFileSync(plannerMarkovPath, "utf8");
 
     // Create a Workflow instance
@@ -105,23 +106,23 @@ describe("Workflow E2E Tests", () => {
 
     // Test state transitions using the correct API
     const initialState = "initial_loaded" as WorkflowState;
-    const continueProject = "continue_project" as WorkflowState;
+    const refineTasks = "refine_tasks" as WorkflowState;
 
     // Test state transitions
-    const result1 = workflow.transition(initialState, continueProject);
+    const result1 = workflow.transition(initialState, refineTasks);
     expect(result1.move).toBe("success");
     if (result1.move === "success") {
-      expect(result1.nextState).toBe("continue_project");
-      expect(result1.guidance).toBe("User wants to continue the project");
+      expect(result1.nextState).toBe("refine_tasks");
+      expect(result1.guidance).toBe(""); // refine_tasks state has empty guidance
     }
 
     console.log(
-      "✅ Successfully created and tested Workflow instance from PLANNER_MARKOV",
+      "✅ Successfully created and tested Workflow instance from scoped-execution.flow",
     );
   });
 
-  it("should handle all transition types in PLANNER_MARKOV", () => {
-    const plannerMarkovPath = join(__dirname, "PLANNER");
+  it("should handle all transition types in scoped-execution.flow", () => {
+    const plannerMarkovPath = join(__dirname, "scoped-execution.flow");
     const content = readFileSync(plannerMarkovPath, "utf8");
 
     const lexer = new WorkflowLexer(content);
@@ -160,7 +161,7 @@ describe("Workflow E2E Tests", () => {
     expect(transitionsWithGuidance).toBeGreaterThan(0);
     expect(transitionsWithoutGuidance).toBeGreaterThan(0);
     expect(selfReferencingTransitions).toBeGreaterThan(0);
-    expect(transitionsToEndState).toBeGreaterThan(0);
+    // Note: scoped-execution.flow doesn't have transitions to end state (*)
 
     console.log(`✅ Transition analysis:
 		- With guidance: ${transitionsWithGuidance}
@@ -169,8 +170,8 @@ describe("Workflow E2E Tests", () => {
 		- To end state: ${transitionsToEndState}`);
   });
 
-  it("should verify no old syntax remains in PLANNER_MARKOV", () => {
-    const plannerMarkovPath = join(__dirname, "PLANNER");
+  it("should verify no old syntax remains in scoped-execution.flow", () => {
+    const plannerMarkovPath = join(__dirname, "scoped-execution.flow");
     const content = readFileSync(plannerMarkovPath, "utf8");
 
     // Check that old syntax patterns are not present in transitions (not in guidance text)
@@ -182,10 +183,12 @@ describe("Workflow E2E Tests", () => {
     expect(content).toMatch(/\sto\s/); // "to" keywords present
     expect(content).toMatch(/^:/m); // Lines starting with ":" for guidance
 
-    console.log("✅ Verified PLANNER_MARKOV uses only new simplified syntax");
+    console.log(
+      "✅ Verified scoped-execution.flow uses only new simplified syntax",
+    );
   });
   it("should produce consistent parsing results", () => {
-    const plannerMarkovPath = join(__dirname, "PLANNER");
+    const plannerMarkovPath = join(__dirname, "scoped-execution.flow");
     const content = readFileSync(plannerMarkovPath, "utf8");
 
     // Parse the same content multiple times

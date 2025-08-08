@@ -5,8 +5,8 @@ import { WorkflowLexer } from "./lexer";
 import { WorkflowParser } from "./parser";
 
 describe("Parser E2E Tests", () => {
-  it("should parse the entire PLANNER file", () => {
-    const plannerPath = join(__dirname, "PLANNER");
+  it("should parse the entire scoped-execution.flow file", () => {
+    const plannerPath = join(__dirname, "scoped-execution.flow");
     const content = readFileSync(plannerPath, "utf8");
 
     const lexer = new WorkflowLexer(content);
@@ -19,7 +19,7 @@ describe("Parser E2E Tests", () => {
         "initialState": "initial_loaded",
         "states": {
           "*": {
-            "guidance": "Call \`planner_get_project\` to load current project state and wait for load success. Display current project status to the user.",
+            "guidance": "Call \`planner_get_project\` to load current scope of work. Wait for scope of work. Display current scope of work status to the user.",
             "name": "*",
           },
           "all_tasks_complete": {
@@ -27,19 +27,15 @@ describe("Parser E2E Tests", () => {
             "name": "all_tasks_complete",
           },
           "check_tasks": {
-            "guidance": "Format input for \`planner_update_task\` and pass ONLY THAT INPUT to \`plan-task-alignment\`. Wait for reply from \`plan-task-alignment\`. Present reply to user and interrogate them with the response questions.",
+            "guidance": "Format input for \`planner_update_task\` and pass ONLY THAT INPUT to \`oc-agentic-inquisitor\`. Your message format will be \`[requirements] This needs clarity how execution will be carried out. Execution on this task must be strictly deterministic [specification] THE_TASK_SPECIFICATION\`. Perform secondary research on any questions raised. You may use \`oc-agentic-investigator\` to research about any concerns, in parallel, that deal directly with the codebase. \`oc-agentic-investigator\` should be called with the following format: \`I am uncertain about these THE_POINT. This is my current assumption THE_ASSUMPTION. Here is the CONTEXT. This is were I would begin: INVESTIGATION_ENTRY_POINT. Can you help provide factual clarity?\`. Use your enhanced contextual understanding and ability to investigate to immediately reject or accept points, synthesizing new points, or making any other adjustments to the scope of work, leaving points with uncertainty as an exercise to the user to clarify. Present reply and interrogate them with the response questions.",
             "name": "check_tasks",
           },
-          "continue_project": {
-            "guidance": "",
-            "name": "continue_project",
-          },
           "create_project": {
-            "guidance": "Format input for \`planner_create_project\` and present that to the user. Confirm if the user wants to create the project.",
+            "guidance": "Call \`planner_create_project\` with the final synthesized project specifics from all the clarifications. Wait for successful reply.",
             "name": "create_project",
           },
           "define_project": {
-            "guidance": "Ask user to define project - what will the project do?",
+            "guidance": "Ask to define the specifics of the scope of work. These specifics will be used to fulfill the arguments to \`planner_create_project\`. Detail the specifics.",
             "name": "define_project",
           },
           "delete_task": {
@@ -47,31 +43,39 @@ describe("Parser E2E Tests", () => {
             "name": "delete_task",
           },
           "execution": {
-            "guidance": "Call \`planner_get_project\` to get full task details",
+            "guidance": "Update any scope with any points that the user clarifies. Commit these changes in project with \`planner_update_project\` Commit these changes in tasks with \`planner_update_task\` Commit these changes in task order with \`planner_reoder_tasks\` Commit these changes in task deletion with \`planner_delete_task\` Call \`planner_get_project\` to get full project details.",
             "name": "execution",
           },
           "final_check": {
-            "guidance": "Get full project state with \`planner_get_project\`. Pass ONLY THAT PROJECT STATE to \`plan-task-alignment\`. Wait for reply from \`plan-task-alignment\`. Present reply to user and interrogate them with the response questions.",
+            "guidance": "NEVER SKIP THIS EVEN IF IT WAS DONE BEFORE. QUESTIONS CAN CHANGE. Get full scope of work state with \`planner_get_project\`. Format output of \`planner_get_project\` and pass ONLY THAT INPUT to \`oc-agentic-inquisitor\`. Your message format will be \`[requirements] This is a full scope of work. Every part needs to be internally coherent and logically sound. Each part must build up to a cohesive whole and no contradictions are allowed. Work done must be atomic. Planning must be exhaustive. [specification] THE_SCOPE_OF_WORK_SPECIFICATION\`. Wait for reply from \`oc-agentic-inquisitor\`. You may use \`oc-agentic-investigator\` to research about any concerns, in parallel, that deal directly with the codebase. \`oc-agentic-investigator\` should be called with the following format: \`I am uncertain about these THE_POINT. This is my current assumption THE_ASSUMPTION. Here is the CONTEXT. This is were I would begin: INVESTIGATION_ENTRY_POINT. Can you help provide factual clarity?\`. Use your enhanced contextual understanding and ability to investigate to immediately reject or accept points, synthesizing new points, or making any other adjustments to the scope of work, leaving points with uncertainty as an exercise to the user to clarify. Present the synthesized full scope of work to the user, leaving no details out.",
             "name": "final_check",
           },
           "initial_loaded": {
-            "guidance": "Call \`planner_get_project\` to load current project state and wait for load success. Display current project status to the user.",
+            "guidance": "Call \`planner_get_project\` to load current scope of work. Wait for scope of work. Display current scope of work status to the user.",
             "name": "initial_loaded",
           },
-          "maybe_create_project": {
-            "guidance": "Format input for \`planner_create_project\` and present that to the user. Confirm if the user wants to create the project.",
-            "name": "maybe_create_project",
+          "loop_tasks": {
+            "guidance": "Find first unfinished task. Go to first incomplete task with \`planner_goto\`. Extract all current task details from \`planner_get_project\`.",
+            "name": "loop_tasks",
+          },
+          "mark_task": {
+            "guidance": "Synthesize current task specification with actual work done to produce updated task. Be precise with your editing. Call \`planner_update_task\` to update the task as completed with new details.",
+            "name": "mark_task",
           },
           "parallel_update": {
-            "guidance": "Update any changes in project with \`planner_update_project\` Update any changes in tasks with \`planner_update_task\` Update any changes in task order with \`planner_reoder_tasks\` Update any changes in task deletion with \`planner_delete_task\`",
+            "guidance": "Update any scope with any points that the user clarifies. Commit these changes in project with \`planner_update_project\` Commit these changes in tasks with \`planner_update_task\` Commit these changes in task order with \`planner_reoder_tasks\` Commit these changes in task deletion with \`planner_delete_task\`",
             "name": "parallel_update",
           },
+          "redefine_task": {
+            "guidance": "Generate new sub plan that would satisfy task requirements. Format sub plan for \`planner_update_task\` and pass ONLY THAT INPUT to \`oc-agentic-inquisitor\`. Your message format will be \`[requirements] This needs clarity how execution will be carried out. Execution on this task must be strictly deterministic [specification] THE_TASK_SPECIFICATION\`. Perform secondary research on any questions raised. You may use \`oc-agentic-investigator\` to research about any concerns, in parallel, that deal directly with the codebase. \`oc-agentic-investigator\` should be called with the following format: \`I am uncertain about these THE_POINT. This is my current assumption THE_ASSUMPTION. Here is the CONTEXT. This is were I would begin: INVESTIGATION_ENTRY_POINT. Can you help provide factual clarity?\`. Use your enhanced contextual understanding and ability to investigate to immediately reject or accept points, synthesizing new points, or making any other adjustments to the scope of work. Ensure that your plan remains within the constraints of the sub problems to solve.",
+            "name": "redefine_task",
+          },
           "refine_project": {
-            "guidance": "Format input for \`planner_create_project\` and pass ONLY THAT INPUT to \`plan-task-alignment\`. Wait for reply from \`plan-task-alignment\`. Present reply to user and interrogate them with the response questions.",
+            "guidance": "Synthesize the scope of work specifics. Pass the scope of work specifics to agent \`oc-agentic-inquisitor\`. Your message format will be \`[requirements] This needs clarity how plans will be formed during execution. Plans that derive from this must be strictly deterministic [specification] THE_PROJECT_SPECIFICATION\`. THE_SCOPE_OF_WORK_SPECIFICATION is the contents of the scope of work specifics you would have passed to \`planner_create_project\`. Wait for reply from \`oc-agentic-inquisitor\`. Perform secondary research on any questions raised. You may use \`oc-agentic-investigator\` to research about any concerns, in parallel, that deal directly with the codebase. \`oc-agentic-investigator\` should be called with the following format: \`I am uncertain about these THE_POINT. This is my current assumption THE_ASSUMPTION. Here is the CONTEXT. This is were I would begin: INVESTIGATION_ENTRY_POINT. Can you help provide factual clarity?\`. Use your enhanced contextual understanding and ability to investigate to immediately reject or accept points, synthesizing new points, or making any other adjustments to the project, leaving points with uncertainty as an exercise to the user to clarify. Present the scope of work specifics with updated points.",
             "name": "refine_project",
           },
           "refine_tasks": {
-            "guidance": "Get current project with \`planner_get_project\`. Display current tasks. Interrogate user on if the tasks match their intent.",
+            "guidance": "",
             "name": "refine_tasks",
           },
           "reorder_tasks": {
@@ -79,7 +83,7 @@ describe("Parser E2E Tests", () => {
             "name": "reorder_tasks",
           },
           "run_task": {
-            "guidance": "Go to first incomplete task with \`planner_goto\`. Execute the task.",
+            "guidance": "Pass the task to \`oc-agentic-executor\`. Your message format will be \`Do TASK_DETAILS\` where TASK_DETAILS is the full specification of the current active task verbatim. Wait for execution to complete. Pass the task to \`oc-agentic-reiviewer\`. Your message format will be \`Based on TASK_DETAILS review the current changes as reported by EXECUTION_REVIEW\` where TASK_DETAILS is the full specification of the current active task verbatim and EXECUTION_REVIEW is the output produced by the executor. Wait for review to complete.",
             "name": "run_task",
           },
           "update_task": {
@@ -90,40 +94,39 @@ describe("Parser E2E Tests", () => {
         "transitions": {
           "*": {
             "initial_loaded": {
-              "guidance": undefined,
+              "guidance": "Do immediately",
               "target": "initial_loaded",
             },
           },
           "all_tasks_complete": {
-            "*": {
-              "guidance": "User is unsatisfied with output",
-              "target": "*",
-            },
             "initial_loaded": {
               "guidance": "User is satisfied with output",
               "target": "initial_loaded",
             },
+            "refine_tasks": {
+              "guidance": "User is unsatisfied with output",
+              "target": "refine_tasks",
+            },
           },
           "check_tasks": {
             "check_tasks": {
-              "guidance": "User responds to questions",
+              "guidance": "Ask: Can you provide clarity on all the above points",
               "target": "check_tasks",
             },
             "update_task": {
-              "guidance": "There are no questions",
+              "guidance": "Ask: Would you like to proceed (anyway) to updating the task?",
               "target": "update_task",
             },
           },
-          "continue_project": {},
           "create_project": {
             "refine_tasks": {
-              "guidance": undefined,
+              "guidance": "Do immediately",
               "target": "refine_tasks",
             },
           },
           "define_project": {
             "refine_project": {
-              "guidance": undefined,
+              "guidance": "Do immediately",
               "target": "refine_project",
             },
           },
@@ -134,102 +137,106 @@ describe("Parser E2E Tests", () => {
             },
           },
           "execution": {
-            "all_tasks_complete": {
-              "guidance": "All tasks complete",
-              "target": "all_tasks_complete",
-            },
-            "run_task": {
-              "guidance": "Some tasks incomplete",
-              "target": "run_task",
+            "loop_tasks": {
+              "guidance": "Do immediately",
+              "target": "loop_tasks",
             },
           },
           "final_check": {
             "execution": {
-              "guidance": "User wants to proceed",
+              "guidance": "Ask: Do want to continue on?",
               "target": "execution",
             },
             "parallel_update": {
-              "guidance": "There are no questions",
+              "guidance": "Ask: Do you accept these changes as the full scope of work??",
               "target": "parallel_update",
             },
           },
           "initial_loaded": {
-            "continue_project": {
-              "guidance": "User wants to continue the project",
-              "target": "continue_project",
-            },
             "define_project": {
-              "guidance": "User wants to start a new project",
+              "guidance": "Ask: Do you want to start a new scope of work?",
               "target": "define_project",
             },
-          },
-          "maybe_create_project": {
-            "create_project": {
-              "guidance": "User agrees",
-              "target": "create_project",
+            "refine_tasks": {
+              "guidance": "Ask: Do you want to continue the scope of work?",
+              "target": "refine_tasks",
             },
-            "refine_project": {
-              "guidance": "User disagrees",
-              "target": "refine_project",
+          },
+          "loop_tasks": {
+            "all_tasks_complete": {
+              "guidance": "Introspect: All tasks complete",
+              "target": "all_tasks_complete",
+            },
+            "run_task": {
+              "guidance": "Introspect: Has unfinished task.",
+              "target": "run_task",
+            },
+          },
+          "mark_task": {
+            "loop_tasks": {
+              "guidance": "Do immediately",
+              "target": "loop_tasks",
             },
           },
           "parallel_update": {
             "final_check": {
-              "guidance": undefined,
+              "guidance": "Do immediately",
               "target": "final_check",
+            },
+          },
+          "redefine_task": {
+            "run_task": {
+              "guidance": "Do immediately",
+              "target": "run_task",
             },
           },
           "refine_project": {
             "create_project": {
-              "guidance": "There are no questions",
+              "guidance": "Ask: Would you like to proceed (anyway) to creating the scope of work?",
               "target": "create_project",
             },
-            "maybe_create_project": {
-              "guidance": "User wants to proceed",
-              "target": "maybe_create_project",
-            },
             "refine_project": {
-              "guidance": "User responds to questions",
+              "guidance": "Ask: Can you provide clarity on all the above points?",
               "target": "refine_project",
             },
           },
           "refine_tasks": {
             "check_tasks": {
-              "guidance": "User presents refinement of specific task",
+              "guidance": "Ask: Is there a task you want to alter? What are the details?",
               "target": "check_tasks",
             },
             "delete_task": {
-              "guidance": "User presents deletion of specific task",
+              "guidance": "Ask: Would you like to delete a specific task or tasks?",
               "target": "delete_task",
             },
             "final_check": {
-              "guidance": "User wants to proceed",
+              "guidance": "Ask: Would you like to proceed to do a final check?",
               "target": "final_check",
             },
             "reorder_tasks": {
-              "guidance": "User presents reordering of tasks",
+              "guidance": "Ask: Would you like to reorder specific tasks?",
               "target": "reorder_tasks",
             },
           },
           "reorder_tasks": {
             "refine_tasks": {
-              "guidance": undefined,
+              "guidance": "Do immediately",
               "target": "refine_tasks",
             },
           },
           "run_task": {
-            "*": {
-              "guidance": "If task is incomplete",
-              "target": "*",
+            "mark_task": {
+              "guidance": "Introspect: Task is complete. IMPORTANT: THIS IS STRICT 100% COMPLETION. YOU ARE NOT ALLOWED TO BYPASS THIS REQUIREMENT. DOING SO WILL CAUSE SERIOUS PROGRAM CORRUPTION.",
+              "target": "mark_task",
             },
-            "execution": {
-              "guidance": "If task is complete",
-              "target": "execution",
+            "redefine_task": {
+              "guidance": "Introspect: Task not yet successfully completed.",
+              "target": "redefine_task",
             },
           },
           "update_task": {
             "refine_tasks": {
-              "guidance": undefined,
+              "guidance": "Do immediately",
               "target": "refine_tasks",
             },
           },

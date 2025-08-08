@@ -54,7 +54,7 @@ describe("WorkflowLexer", () => {
     it("should tokenize colon", () => {
       const lexer = new WorkflowLexer(":");
       const tokens = lexer.tokenize();
-      expect(tokens).toHaveLength(2);
+      expect(tokens).toHaveLength(3); // colon, content (empty), eof
       expect(tokens[0]).toEqual({
         type: "colon",
         value: ":",
@@ -63,12 +63,12 @@ describe("WorkflowLexer", () => {
       });
     });
 
-    it("should tokenize if keyword", () => {
+    it("should tokenize if as state identifier", () => {
       const lexer = new WorkflowLexer("if");
       const tokens = lexer.tokenize();
       expect(tokens).toHaveLength(2);
       expect(tokens[0]).toEqual({
-        type: "if",
+        type: "state",
         value: "if",
         line: 1,
         column: 1,
@@ -147,9 +147,11 @@ describe("WorkflowLexer", () => {
     it("should handle tab continuations", () => {
       const lexer = new WorkflowLexer("content\n\tcontinued");
       const tokens = lexer.tokenize();
-      expect(tokens).toHaveLength(2);
-      expect(tokens[0].type).toBe("content");
-      expect(tokens[0].value).toBe("content continued");
+      expect(tokens).toHaveLength(4); // state, newline, content, eof
+      expect(tokens[0].type).toBe("state");
+      expect(tokens[0].value).toBe("content");
+      expect(tokens[2].type).toBe("content");
+      expect(tokens[2].value).toBe("continued");
     });
 
     it("should not treat non-indented newlines as continuations", () => {
@@ -171,7 +173,7 @@ start to end: final state`;
       const lexer = new WorkflowLexer(input);
       const tokens = lexer.tokenize();
 
-      expect(tokens).toHaveLength(11);
+      expect(tokens).toHaveLength(12); // star, to, state, colon, content, newline, state, to, state, colon, content, eof
       expect(tokens[0].type).toBe("star");
       expect(tokens[1].type).toBe("to");
       expect(tokens[2].type).toBe("state");
@@ -180,19 +182,21 @@ start to end: final state`;
       expect(tokens[4].type).toBe("content");
       expect(tokens[4].value).toBe("initial state");
     });
-    it("should handle workflow with conditional syntax", () => {
+    it("should handle workflow with guidance and to keyword", () => {
       const input = `: guidance
-start if condition to end`;
+start to end`;
       const lexer = new WorkflowLexer(input);
       const tokens = lexer.tokenize();
 
-      expect(tokens).toHaveLength(8);
+      expect(tokens).toHaveLength(7); // colon, content, newline, state, to, state, eof
       expect(tokens[0].type).toBe("colon");
       expect(tokens[1].type).toBe("content");
-      expect(tokens[1].value).toBe("guidance start if condition");
-      expect(tokens[2].type).toBe("to");
+      expect(tokens[1].value).toBe("guidance");
       expect(tokens[3].type).toBe("state");
-      expect(tokens[3].value).toBe("end");
+      expect(tokens[3].value).toBe("start");
+      expect(tokens[4].type).toBe("to");
+      expect(tokens[5].type).toBe("state");
+      expect(tokens[5].value).toBe("end");
     });
   });
 
@@ -208,27 +212,27 @@ start if condition to end`;
     });
 
     it("should handle column positions correctly", () => {
-      const lexer = new WorkflowLexer("  start  >  end");
+      const lexer = new WorkflowLexer("  start  to  end");
       const tokens = lexer.tokenize();
 
-      expect(tokens[0].column).toBe(1); // start after skipping whitespace
-      expect(tokens[1].column).toBe(8); // arrow after start and spaces
-      expect(tokens[2].column).toBe(13); // end after arrow and spaces
+      expect(tokens[0].column).toBe(1); // content starts at column 1
+      expect(tokens[0].type).toBe("content");
+      expect(tokens[0].value).toBe("start  to  end");
     });
   });
   describe("edge cases", () => {
     it("should handle mixed whitespace", () => {
       const lexer = new WorkflowLexer(" \t * \t start \t ");
       const tokens = lexer.tokenize();
-      expect(tokens).toHaveLength(3);
-      expect(tokens[0].type).toBe("star");
-      expect(tokens[1].type).toBe("state");
+      expect(tokens).toHaveLength(2); // content (everything as one token), eof
+      expect(tokens[0].type).toBe("content");
+      expect(tokens[0].value).toBe("* \t start");
     });
 
     it("should handle empty content", () => {
       const lexer = new WorkflowLexer("start:");
       const tokens = lexer.tokenize();
-      expect(tokens).toHaveLength(3);
+      expect(tokens).toHaveLength(4); // state, colon, content (empty), eof
       expect(tokens[0].type).toBe("state");
       expect(tokens[1].type).toBe("colon");
     });
@@ -244,26 +248,33 @@ start if condition to end`;
     it("should stop content at colons", () => {
       const lexer = new WorkflowLexer("some content: more content");
       const tokens = lexer.tokenize();
-      expect(tokens).toHaveLength(4);
+      expect(tokens).toHaveLength(2); // content (entire line), eof
       expect(tokens[0].type).toBe("content");
-      expect(tokens[0].value).toBe("some content");
-      expect(tokens[1].type).toBe("colon");
-      expect(tokens[2].type).toBe("content");
-      expect(tokens[2].value).toBe("more content");
+      expect(tokens[0].value).toBe("some content: more content");
     });
   });
 
   it("should handle 'if' keyword in content", () => {
-    const lexer = new WorkflowLexer("start > end: content with if keyword");
+    const lexer = new WorkflowLexer("start to end: content with if keyword");
     const tokens = lexer.tokenize();
-    expect(tokens).toHaveLength(6); // state, arrow, state, colon, content, eof
+    expect(tokens).toHaveLength(6); // state, to, state, colon, content, eof
+    expect(tokens[0].type).toBe("state");
+    expect(tokens[0].value).toBe("start");
+    expect(tokens[1].type).toBe("to");
+    expect(tokens[2].type).toBe("state");
+    expect(tokens[2].value).toBe("end");
     expect(tokens[4].type).toBe("content");
     expect(tokens[4].value).toBe("content with if keyword");
   });
   it("should handle '*' in content", () => {
-    const lexer = new WorkflowLexer("start > end: content with * asterisk");
+    const lexer = new WorkflowLexer("start to end: content with * asterisk");
     const tokens = lexer.tokenize();
-    expect(tokens).toHaveLength(6); // state, arrow, state, colon, content, eof
+    expect(tokens).toHaveLength(6); // state, to, state, colon, content, eof
+    expect(tokens[0].type).toBe("state");
+    expect(tokens[0].value).toBe("start");
+    expect(tokens[1].type).toBe("to");
+    expect(tokens[2].type).toBe("state");
+    expect(tokens[2].value).toBe("end");
     expect(tokens[4].type).toBe("content");
     expect(tokens[4].value).toBe("content with * asterisk");
   });
