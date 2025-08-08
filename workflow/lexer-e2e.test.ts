@@ -68,17 +68,10 @@ describe("Lexer E2E Tests", () => {
           "column": 21,
           "line": 4,
           "type": "content",
-          "value": "Call \`planner_get_project\` to load current scope of work. Wait for scope of work. Display current scope of work status to the user.",
+          "value": "Call \`planner_get_project\` to load current scope of work. List summary of files changed with \`jj diff --summary -r @\` Wait for scope of work. Display current scope of work status to the user.",
         },
         {
           "column": 52,
-          "line": 7,
-          "type": "newline",
-          "value": "
-      ",
-        },
-        {
-          "column": 1,
           "line": 8,
           "type": "newline",
           "value": "
@@ -87,18 +80,6 @@ describe("Lexer E2E Tests", () => {
         {
           "column": 1,
           "line": 9,
-          "type": "colon",
-          "value": ":",
-        },
-        {
-          "column": 2,
-          "line": 9,
-          "type": "content",
-          "value": "Ask: Do you want to continue the scope of work?",
-        },
-        {
-          "column": 50,
-          "line": 9,
           "type": "newline",
           "value": "
       ",
@@ -106,23 +87,17 @@ describe("Lexer E2E Tests", () => {
         {
           "column": 1,
           "line": 10,
-          "type": "state",
-          "value": "initial_loaded",
+          "type": "colon",
+          "value": ":",
         },
         {
-          "column": 15,
+          "column": 2,
           "line": 10,
-          "type": "to",
-          "value": "to",
+          "type": "content",
+          "value": "Ask: Do you want to continue the scope of work?",
         },
         {
-          "column": 18,
-          "line": 10,
-          "type": "state",
-          "value": "refine_tasks",
-        },
-        {
-          "column": 31,
+          "column": 50,
           "line": 10,
           "type": "newline",
           "value": "
@@ -131,68 +106,86 @@ describe("Lexer E2E Tests", () => {
         {
           "column": 1,
           "line": 11,
-          "type": "newline",
-          "value": "
-      ",
-        },
-        {
-          "column": 1,
-          "line": 12,
-          "type": "colon",
-          "value": ":",
-        },
-        {
-          "column": 2,
-          "line": 12,
-          "type": "content",
-          "value": "Ask: Do you want to start a new scope of work?",
-        },
-        {
-          "column": 49,
-          "line": 12,
-          "type": "newline",
-          "value": "
-      ",
-        },
-        {
-          "column": 1,
-          "line": 13,
           "type": "state",
           "value": "initial_loaded",
         },
         {
           "column": 15,
-          "line": 13,
+          "line": 11,
           "type": "to",
           "value": "to",
         },
         {
           "column": 18,
-          "line": 13,
+          "line": 11,
           "type": "state",
-          "value": "define_project",
+          "value": "refine_tasks",
         },
         {
-          "column": 33,
-          "line": 13,
-          "type": "colon",
-          "value": ":",
-        },
-        {
-          "column": 34,
-          "line": 13,
-          "type": "content",
-          "value": "Ask to define the specifics of the scope of work. These specifics will be used to fulfill the arguments to \`planner_create_project\`. Detail the specifics.",
-        },
-        {
-          "column": 24,
-          "line": 16,
+          "column": 31,
+          "line": 11,
           "type": "newline",
           "value": "
       ",
         },
         {
           "column": 1,
+          "line": 12,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 13,
+          "type": "colon",
+          "value": ":",
+        },
+        {
+          "column": 2,
+          "line": 13,
+          "type": "content",
+          "value": "Ask: Do you want to start a new scope of work?",
+        },
+        {
+          "column": 49,
+          "line": 13,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 14,
+          "type": "state",
+          "value": "initial_loaded",
+        },
+        {
+          "column": 15,
+          "line": 14,
+          "type": "to",
+          "value": "to",
+        },
+        {
+          "column": 18,
+          "line": 14,
+          "type": "state",
+          "value": "define_project",
+        },
+        {
+          "column": 33,
+          "line": 14,
+          "type": "colon",
+          "value": ":",
+        },
+        {
+          "column": 34,
+          "line": 14,
+          "type": "content",
+          "value": "Ask to define the specifics of the scope of work. These specifics will be used to fulfill the arguments to \`planner_create_project\`. Detail the specifics.",
+        },
+        {
+          "column": 24,
           "line": 17,
           "type": "newline",
           "value": "
@@ -201,61 +194,61 @@ describe("Lexer E2E Tests", () => {
         {
           "column": 1,
           "line": 18,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 19,
           "type": "colon",
           "value": ":",
         },
         {
           "column": 2,
-          "line": 18,
+          "line": 19,
           "type": "content",
           "value": "Do immediately",
         },
         {
           "column": 17,
-          "line": 18,
+          "line": 19,
           "type": "newline",
           "value": "
       ",
         },
         {
           "column": 1,
-          "line": 19,
+          "line": 20,
           "type": "state",
           "value": "define_project",
         },
         {
           "column": 15,
-          "line": 19,
+          "line": 20,
           "type": "to",
           "value": "to",
         },
         {
           "column": 18,
-          "line": 19,
+          "line": 20,
           "type": "state",
           "value": "refine_project",
         },
         {
           "column": 33,
-          "line": 19,
+          "line": 20,
           "type": "colon",
           "value": ":",
         },
         {
           "column": 34,
-          "line": 19,
+          "line": 20,
           "type": "content",
           "value": "Synthesize the scope of work specifics. Pass the scope of work specifics to agent \`oc-agentic-inquisitor\`. Your message format will be \`[requirements] This needs clarity how plans will be formed during execution. Plans that derive from this must be strictly deterministic [specification] THE_PROJECT_SPECIFICATION\`. THE_SCOPE_OF_WORK_SPECIFICATION is the contents of the scope of work specifics you would have passed to \`planner_create_project\`. Wait for reply from \`oc-agentic-inquisitor\`. Perform secondary research on any questions raised. You may use \`oc-agentic-investigator\` to research about any concerns, in parallel, that deal directly with the codebase. \`oc-agentic-investigator\` should be called with the following format: \`I am uncertain about these THE_POINT. This is my current assumption THE_ASSUMPTION. Here is the CONTEXT. This is were I would begin: INVESTIGATION_ENTRY_POINT. Can you help provide factual clarity?\`. Use your enhanced contextual understanding and ability to investigate to immediately reject or accept points, synthesizing new points, or making any other adjustments to the project, leaving points with uncertainty as an exercise to the user to clarify. Present the scope of work specifics with updated points.",
         },
         {
           "column": 59,
-          "line": 29,
-          "type": "newline",
-          "value": "
-      ",
-        },
-        {
-          "column": 1,
           "line": 30,
           "type": "newline",
           "value": "
@@ -264,18 +257,6 @@ describe("Lexer E2E Tests", () => {
         {
           "column": 1,
           "line": 31,
-          "type": "colon",
-          "value": ":",
-        },
-        {
-          "column": 2,
-          "line": 31,
-          "type": "content",
-          "value": "Ask: Can you provide clarity on all the above points?",
-        },
-        {
-          "column": 56,
-          "line": 31,
           "type": "newline",
           "value": "
       ",
@@ -283,23 +264,17 @@ describe("Lexer E2E Tests", () => {
         {
           "column": 1,
           "line": 32,
-          "type": "state",
-          "value": "refine_project",
+          "type": "colon",
+          "value": ":",
         },
         {
-          "column": 15,
+          "column": 2,
           "line": 32,
-          "type": "to",
-          "value": "to",
+          "type": "content",
+          "value": "Ask: Can you provide clarity on all the above points?",
         },
         {
-          "column": 18,
-          "line": 32,
-          "type": "state",
-          "value": "refine_project",
-        },
-        {
-          "column": 33,
+          "column": 56,
           "line": 32,
           "type": "newline",
           "value": "
@@ -308,68 +283,86 @@ describe("Lexer E2E Tests", () => {
         {
           "column": 1,
           "line": 33,
-          "type": "newline",
-          "value": "
-      ",
-        },
-        {
-          "column": 1,
-          "line": 34,
-          "type": "colon",
-          "value": ":",
-        },
-        {
-          "column": 2,
-          "line": 34,
-          "type": "content",
-          "value": "Ask: Would you like to proceed (anyway) to creating the scope of work?",
-        },
-        {
-          "column": 73,
-          "line": 34,
-          "type": "newline",
-          "value": "
-      ",
-        },
-        {
-          "column": 1,
-          "line": 35,
           "type": "state",
           "value": "refine_project",
         },
         {
           "column": 15,
-          "line": 35,
+          "line": 33,
           "type": "to",
           "value": "to",
         },
         {
           "column": 18,
-          "line": 35,
+          "line": 33,
           "type": "state",
-          "value": "create_project",
+          "value": "refine_project",
         },
         {
           "column": 33,
-          "line": 35,
-          "type": "colon",
-          "value": ":",
-        },
-        {
-          "column": 34,
-          "line": 35,
-          "type": "content",
-          "value": "Call \`planner_create_project\` with the final synthesized project specifics from all the clarifications. Wait for successful reply.",
-        },
-        {
-          "column": 29,
-          "line": 37,
+          "line": 33,
           "type": "newline",
           "value": "
       ",
         },
         {
           "column": 1,
+          "line": 34,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 35,
+          "type": "colon",
+          "value": ":",
+        },
+        {
+          "column": 2,
+          "line": 35,
+          "type": "content",
+          "value": "Ask: Would you like to proceed (anyway) to creating the scope of work?",
+        },
+        {
+          "column": 73,
+          "line": 35,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 36,
+          "type": "state",
+          "value": "refine_project",
+        },
+        {
+          "column": 15,
+          "line": 36,
+          "type": "to",
+          "value": "to",
+        },
+        {
+          "column": 18,
+          "line": 36,
+          "type": "state",
+          "value": "create_project",
+        },
+        {
+          "column": 33,
+          "line": 36,
+          "type": "colon",
+          "value": ":",
+        },
+        {
+          "column": 34,
+          "line": 36,
+          "type": "content",
+          "value": "Call \`planner_create_project\` with the final synthesized project specifics from all the clarifications. Wait for successful reply.",
+        },
+        {
+          "column": 29,
           "line": 38,
           "type": "newline",
           "value": "
@@ -378,61 +371,61 @@ describe("Lexer E2E Tests", () => {
         {
           "column": 1,
           "line": 39,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 40,
           "type": "colon",
           "value": ":",
         },
         {
           "column": 2,
-          "line": 39,
+          "line": 40,
           "type": "content",
           "value": "Do immediately",
         },
         {
           "column": 17,
-          "line": 39,
+          "line": 40,
           "type": "newline",
           "value": "
       ",
         },
         {
           "column": 1,
-          "line": 40,
+          "line": 41,
           "type": "state",
           "value": "create_project",
         },
         {
           "column": 15,
-          "line": 40,
+          "line": 41,
           "type": "to",
           "value": "to",
         },
         {
           "column": 18,
-          "line": 40,
+          "line": 41,
           "type": "state",
           "value": "refine_tasks",
         },
         {
           "column": 31,
-          "line": 40,
+          "line": 41,
           "type": "colon",
           "value": ":",
         },
         {
           "column": 32,
-          "line": 40,
+          "line": 41,
           "type": "content",
           "value": "Get current scope of work with \`planner_get_project\`. Display current tasks.",
         },
         {
           "column": 25,
-          "line": 42,
-          "type": "newline",
-          "value": "
-      ",
-        },
-        {
-          "column": 1,
           "line": 43,
           "type": "newline",
           "value": "
@@ -441,61 +434,61 @@ describe("Lexer E2E Tests", () => {
         {
           "column": 1,
           "line": 44,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 45,
           "type": "colon",
           "value": ":",
         },
         {
           "column": 2,
-          "line": 44,
+          "line": 45,
           "type": "content",
           "value": "Ask: Is there a task you want to alter? What are the details?",
         },
         {
           "column": 64,
-          "line": 44,
+          "line": 45,
           "type": "newline",
           "value": "
       ",
         },
         {
           "column": 1,
-          "line": 45,
+          "line": 46,
           "type": "state",
           "value": "refine_tasks",
         },
         {
           "column": 13,
-          "line": 45,
+          "line": 46,
           "type": "to",
           "value": "to",
         },
         {
           "column": 16,
-          "line": 45,
+          "line": 46,
           "type": "state",
           "value": "check_tasks",
         },
         {
           "column": 28,
-          "line": 45,
+          "line": 46,
           "type": "colon",
           "value": ":",
         },
         {
           "column": 29,
-          "line": 45,
+          "line": 46,
           "type": "content",
           "value": "Format input for \`planner_update_task\` and pass ONLY THAT INPUT to \`oc-agentic-inquisitor\`. Your message format will be \`[requirements] This needs clarity how execution will be carried out. Execution on this task must be strictly deterministic [specification] THE_TASK_SPECIFICATION\`. Perform secondary research on any questions raised. You may use \`oc-agentic-investigator\` to research about any concerns, in parallel, that deal directly with the codebase. \`oc-agentic-investigator\` should be called with the following format: \`I am uncertain about these THE_POINT. This is my current assumption THE_ASSUMPTION. Here is the CONTEXT. This is were I would begin: INVESTIGATION_ENTRY_POINT. Can you help provide factual clarity?\`. Use your enhanced contextual understanding and ability to investigate to immediately reject or accept points, synthesizing new points, or making any other adjustments to the scope of work, leaving points with uncertainty as an exercise to the user to clarify. Present reply and interrogate them with the response questions.",
         },
         {
           "column": 66,
-          "line": 52,
-          "type": "newline",
-          "value": "
-      ",
-        },
-        {
-          "column": 1,
           "line": 53,
           "type": "newline",
           "value": "
@@ -504,18 +497,6 @@ describe("Lexer E2E Tests", () => {
         {
           "column": 1,
           "line": 54,
-          "type": "colon",
-          "value": ":",
-        },
-        {
-          "column": 2,
-          "line": 54,
-          "type": "content",
-          "value": "Ask: Can you provide clarity on all the above points",
-        },
-        {
-          "column": 55,
-          "line": 54,
           "type": "newline",
           "value": "
       ",
@@ -523,23 +504,17 @@ describe("Lexer E2E Tests", () => {
         {
           "column": 1,
           "line": 55,
-          "type": "state",
-          "value": "check_tasks",
+          "type": "colon",
+          "value": ":",
         },
         {
-          "column": 12,
+          "column": 2,
           "line": 55,
-          "type": "to",
-          "value": "to",
+          "type": "content",
+          "value": "Ask: Can you provide clarity on all the above points",
         },
         {
-          "column": 15,
-          "line": 55,
-          "type": "state",
-          "value": "check_tasks",
-        },
-        {
-          "column": 27,
+          "column": 55,
           "line": 55,
           "type": "newline",
           "value": "
@@ -548,68 +523,86 @@ describe("Lexer E2E Tests", () => {
         {
           "column": 1,
           "line": 56,
-          "type": "newline",
-          "value": "
-      ",
-        },
-        {
-          "column": 1,
-          "line": 57,
-          "type": "colon",
-          "value": ":",
-        },
-        {
-          "column": 2,
-          "line": 57,
-          "type": "content",
-          "value": "Ask: Would you like to proceed (anyway) to updating the task?",
-        },
-        {
-          "column": 64,
-          "line": 57,
-          "type": "newline",
-          "value": "
-      ",
-        },
-        {
-          "column": 1,
-          "line": 58,
           "type": "state",
           "value": "check_tasks",
         },
         {
           "column": 12,
-          "line": 58,
+          "line": 56,
           "type": "to",
           "value": "to",
         },
         {
           "column": 15,
-          "line": 58,
+          "line": 56,
           "type": "state",
-          "value": "update_task",
+          "value": "check_tasks",
         },
         {
           "column": 27,
-          "line": 58,
-          "type": "colon",
-          "value": ":",
-        },
-        {
-          "column": 28,
-          "line": 58,
-          "type": "content",
-          "value": "Pass input to \`planner_update_task\`. Wait for reply.",
-        },
-        {
-          "column": 18,
-          "line": 60,
+          "line": 56,
           "type": "newline",
           "value": "
       ",
         },
         {
           "column": 1,
+          "line": 57,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 58,
+          "type": "colon",
+          "value": ":",
+        },
+        {
+          "column": 2,
+          "line": 58,
+          "type": "content",
+          "value": "Ask: Would you like to proceed (anyway) to updating the task?",
+        },
+        {
+          "column": 64,
+          "line": 58,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 59,
+          "type": "state",
+          "value": "check_tasks",
+        },
+        {
+          "column": 12,
+          "line": 59,
+          "type": "to",
+          "value": "to",
+        },
+        {
+          "column": 15,
+          "line": 59,
+          "type": "state",
+          "value": "update_task",
+        },
+        {
+          "column": 27,
+          "line": 59,
+          "type": "colon",
+          "value": ":",
+        },
+        {
+          "column": 28,
+          "line": 59,
+          "type": "content",
+          "value": "Pass input to \`planner_update_task\`. Wait for reply.",
+        },
+        {
+          "column": 18,
           "line": 61,
           "type": "newline",
           "value": "
@@ -618,18 +611,6 @@ describe("Lexer E2E Tests", () => {
         {
           "column": 1,
           "line": 62,
-          "type": "colon",
-          "value": ":",
-        },
-        {
-          "column": 2,
-          "line": 62,
-          "type": "content",
-          "value": "Do immediately",
-        },
-        {
-          "column": 17,
-          "line": 62,
           "type": "newline",
           "value": "
       ",
@@ -637,23 +618,17 @@ describe("Lexer E2E Tests", () => {
         {
           "column": 1,
           "line": 63,
-          "type": "state",
-          "value": "update_task",
+          "type": "colon",
+          "value": ":",
         },
         {
-          "column": 12,
+          "column": 2,
           "line": 63,
-          "type": "to",
-          "value": "to",
+          "type": "content",
+          "value": "Do immediately",
         },
         {
-          "column": 15,
-          "line": 63,
-          "type": "state",
-          "value": "refine_tasks",
-        },
-        {
-          "column": 28,
+          "column": 17,
           "line": 63,
           "type": "newline",
           "value": "
@@ -662,6 +637,24 @@ describe("Lexer E2E Tests", () => {
         {
           "column": 1,
           "line": 64,
+          "type": "state",
+          "value": "update_task",
+        },
+        {
+          "column": 12,
+          "line": 64,
+          "type": "to",
+          "value": "to",
+        },
+        {
+          "column": 15,
+          "line": 64,
+          "type": "state",
+          "value": "refine_tasks",
+        },
+        {
+          "column": 28,
+          "line": 64,
           "type": "newline",
           "value": "
       ",
@@ -669,61 +662,61 @@ describe("Lexer E2E Tests", () => {
         {
           "column": 1,
           "line": 65,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 66,
           "type": "colon",
           "value": ":",
         },
         {
           "column": 2,
-          "line": 65,
+          "line": 66,
           "type": "content",
           "value": "Ask: Would you like to delete a specific task or tasks?",
         },
         {
           "column": 58,
-          "line": 65,
+          "line": 66,
           "type": "newline",
           "value": "
       ",
         },
         {
           "column": 1,
-          "line": 66,
+          "line": 67,
           "type": "state",
           "value": "refine_tasks",
         },
         {
           "column": 13,
-          "line": 66,
+          "line": 67,
           "type": "to",
           "value": "to",
         },
         {
           "column": 16,
-          "line": 66,
+          "line": 67,
           "type": "state",
           "value": "delete_task",
         },
         {
           "column": 28,
-          "line": 66,
+          "line": 67,
           "type": "colon",
           "value": ":",
         },
         {
           "column": 29,
-          "line": 66,
+          "line": 67,
           "type": "content",
           "value": "Call \`planner_delete_task\` to delete task in question. Wait for reply.",
         },
         {
           "column": 18,
-          "line": 68,
-          "type": "newline",
-          "value": "
-      ",
-        },
-        {
-          "column": 1,
           "line": 69,
           "type": "newline",
           "value": "
@@ -732,30 +725,30 @@ describe("Lexer E2E Tests", () => {
         {
           "column": 1,
           "line": 70,
-          "type": "state",
-          "value": "delete_task",
-        },
-        {
-          "column": 12,
-          "line": 70,
-          "type": "to",
-          "value": "to",
-        },
-        {
-          "column": 15,
-          "line": 70,
-          "type": "state",
-          "value": "refine_tasks",
-        },
-        {
-          "column": 28,
-          "line": 70,
           "type": "newline",
           "value": "
       ",
         },
         {
           "column": 1,
+          "line": 71,
+          "type": "state",
+          "value": "delete_task",
+        },
+        {
+          "column": 12,
+          "line": 71,
+          "type": "to",
+          "value": "to",
+        },
+        {
+          "column": 15,
+          "line": 71,
+          "type": "state",
+          "value": "refine_tasks",
+        },
+        {
+          "column": 28,
           "line": 71,
           "type": "newline",
           "value": "
@@ -764,61 +757,61 @@ describe("Lexer E2E Tests", () => {
         {
           "column": 1,
           "line": 72,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 73,
           "type": "colon",
           "value": ":",
         },
         {
           "column": 2,
-          "line": 72,
+          "line": 73,
           "type": "content",
           "value": "Ask: Would you like to reorder specific tasks?",
         },
         {
           "column": 49,
-          "line": 72,
+          "line": 73,
           "type": "newline",
           "value": "
       ",
         },
         {
           "column": 1,
-          "line": 73,
+          "line": 74,
           "type": "state",
           "value": "refine_tasks",
         },
         {
           "column": 13,
-          "line": 73,
+          "line": 74,
           "type": "to",
           "value": "to",
         },
         {
           "column": 16,
-          "line": 73,
+          "line": 74,
           "type": "state",
           "value": "reorder_tasks",
         },
         {
           "column": 30,
-          "line": 73,
+          "line": 74,
           "type": "colon",
           "value": ":",
         },
         {
           "column": 31,
-          "line": 73,
+          "line": 74,
           "type": "content",
           "value": "Call \`planner_reorder_tasks\` to reorder tasks. Wait for reply.",
         },
         {
           "column": 18,
-          "line": 75,
-          "type": "newline",
-          "value": "
-      ",
-        },
-        {
-          "column": 1,
           "line": 76,
           "type": "newline",
           "value": "
@@ -827,18 +820,6 @@ describe("Lexer E2E Tests", () => {
         {
           "column": 1,
           "line": 77,
-          "type": "colon",
-          "value": ":",
-        },
-        {
-          "column": 2,
-          "line": 77,
-          "type": "content",
-          "value": "Do immediately",
-        },
-        {
-          "column": 17,
-          "line": 77,
           "type": "newline",
           "value": "
       ",
@@ -846,23 +827,17 @@ describe("Lexer E2E Tests", () => {
         {
           "column": 1,
           "line": 78,
-          "type": "state",
-          "value": "reorder_tasks",
+          "type": "colon",
+          "value": ":",
         },
         {
-          "column": 14,
+          "column": 2,
           "line": 78,
-          "type": "to",
-          "value": "to",
+          "type": "content",
+          "value": "Do immediately",
         },
         {
           "column": 17,
-          "line": 78,
-          "type": "state",
-          "value": "refine_tasks",
-        },
-        {
-          "column": 30,
           "line": 78,
           "type": "newline",
           "value": "
@@ -871,6 +846,24 @@ describe("Lexer E2E Tests", () => {
         {
           "column": 1,
           "line": 79,
+          "type": "state",
+          "value": "reorder_tasks",
+        },
+        {
+          "column": 14,
+          "line": 79,
+          "type": "to",
+          "value": "to",
+        },
+        {
+          "column": 17,
+          "line": 79,
+          "type": "state",
+          "value": "refine_tasks",
+        },
+        {
+          "column": 30,
+          "line": 79,
           "type": "newline",
           "value": "
       ",
@@ -878,61 +871,61 @@ describe("Lexer E2E Tests", () => {
         {
           "column": 1,
           "line": 80,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 81,
           "type": "colon",
           "value": ":",
         },
         {
           "column": 2,
-          "line": 80,
+          "line": 81,
           "type": "content",
           "value": "Ask: Would you like to proceed to do a final check?",
         },
         {
           "column": 54,
-          "line": 80,
+          "line": 81,
           "type": "newline",
           "value": "
       ",
         },
         {
           "column": 1,
-          "line": 81,
+          "line": 82,
           "type": "state",
           "value": "refine_tasks",
         },
         {
           "column": 13,
-          "line": 81,
+          "line": 82,
           "type": "to",
           "value": "to",
         },
         {
           "column": 16,
-          "line": 81,
+          "line": 82,
           "type": "state",
           "value": "final_check",
         },
         {
           "column": 28,
-          "line": 81,
+          "line": 82,
           "type": "colon",
           "value": ":",
         },
         {
           "column": 29,
-          "line": 81,
+          "line": 82,
           "type": "content",
           "value": "NEVER SKIP THIS EVEN IF IT WAS DONE BEFORE. QUESTIONS CAN CHANGE. Get full scope of work state with \`planner_get_project\`. Format output of \`planner_get_project\` and pass ONLY THAT INPUT to \`oc-agentic-inquisitor\`. Your message format will be \`[requirements] This is a full scope of work. Every part needs to be internally coherent and logically sound. Each part must build up to a cohesive whole and no contradictions are allowed. Work done must be atomic. Planning must be exhaustive. [specification] THE_SCOPE_OF_WORK_SPECIFICATION\`. Wait for reply from \`oc-agentic-inquisitor\`. You may use \`oc-agentic-investigator\` to research about any concerns, in parallel, that deal directly with the codebase. \`oc-agentic-investigator\` should be called with the following format: \`I am uncertain about these THE_POINT. This is my current assumption THE_ASSUMPTION. Here is the CONTEXT. This is were I would begin: INVESTIGATION_ENTRY_POINT. Can you help provide factual clarity?\`. Use your enhanced contextual understanding and ability to investigate to immediately reject or accept points, synthesizing new points, or making any other adjustments to the scope of work, leaving points with uncertainty as an exercise to the user to clarify. Present the synthesized full scope of work to the user, leaving no details out.",
         },
         {
           "column": 82,
-          "line": 90,
-          "type": "newline",
-          "value": "
-      ",
-        },
-        {
-          "column": 1,
           "line": 91,
           "type": "newline",
           "value": "
@@ -941,61 +934,61 @@ describe("Lexer E2E Tests", () => {
         {
           "column": 1,
           "line": 92,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 93,
           "type": "colon",
           "value": ":",
         },
         {
           "column": 2,
-          "line": 92,
+          "line": 93,
           "type": "content",
           "value": "Ask: Do you accept these changes as the full scope of work??",
         },
         {
           "column": 63,
-          "line": 92,
+          "line": 93,
           "type": "newline",
           "value": "
       ",
         },
         {
           "column": 1,
-          "line": 93,
+          "line": 94,
           "type": "state",
           "value": "final_check",
         },
         {
           "column": 12,
-          "line": 93,
+          "line": 94,
           "type": "to",
           "value": "to",
         },
         {
           "column": 15,
-          "line": 93,
+          "line": 94,
           "type": "state",
           "value": "parallel_update",
         },
         {
           "column": 31,
-          "line": 93,
+          "line": 94,
           "type": "colon",
           "value": ":",
         },
         {
           "column": 32,
-          "line": 93,
+          "line": 94,
           "type": "content",
           "value": "Update any scope with any points that the user clarifies. Commit these changes in project with \`planner_update_project\` Commit these changes in tasks with \`planner_update_task\` Commit these changes in task order with \`planner_reoder_tasks\` Commit these changes in task deletion with \`planner_delete_task\`",
         },
         {
           "column": 67,
-          "line": 98,
-          "type": "newline",
-          "value": "
-      ",
-        },
-        {
-          "column": 1,
           "line": 99,
           "type": "newline",
           "value": "
@@ -1004,18 +997,6 @@ describe("Lexer E2E Tests", () => {
         {
           "column": 1,
           "line": 100,
-          "type": "colon",
-          "value": ":",
-        },
-        {
-          "column": 2,
-          "line": 100,
-          "type": "content",
-          "value": "Do immediately",
-        },
-        {
-          "column": 17,
-          "line": 100,
           "type": "newline",
           "value": "
       ",
@@ -1023,23 +1004,17 @@ describe("Lexer E2E Tests", () => {
         {
           "column": 1,
           "line": 101,
-          "type": "state",
-          "value": "parallel_update",
+          "type": "colon",
+          "value": ":",
         },
         {
-          "column": 16,
+          "column": 2,
           "line": 101,
-          "type": "to",
-          "value": "to",
+          "type": "content",
+          "value": "Do immediately",
         },
         {
-          "column": 19,
-          "line": 101,
-          "type": "state",
-          "value": "final_check",
-        },
-        {
-          "column": 31,
+          "column": 17,
           "line": 101,
           "type": "newline",
           "value": "
@@ -1048,6 +1023,24 @@ describe("Lexer E2E Tests", () => {
         {
           "column": 1,
           "line": 102,
+          "type": "state",
+          "value": "parallel_update",
+        },
+        {
+          "column": 16,
+          "line": 102,
+          "type": "to",
+          "value": "to",
+        },
+        {
+          "column": 19,
+          "line": 102,
+          "type": "state",
+          "value": "final_check",
+        },
+        {
+          "column": 31,
+          "line": 102,
           "type": "newline",
           "value": "
       ",
@@ -1055,61 +1048,61 @@ describe("Lexer E2E Tests", () => {
         {
           "column": 1,
           "line": 103,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 104,
           "type": "colon",
           "value": ":",
         },
         {
           "column": 2,
-          "line": 103,
+          "line": 104,
           "type": "content",
           "value": "Ask: Do want to continue on?",
         },
         {
           "column": 31,
-          "line": 103,
+          "line": 104,
           "type": "newline",
           "value": "
       ",
         },
         {
           "column": 1,
-          "line": 104,
+          "line": 105,
           "type": "state",
           "value": "final_check",
         },
         {
           "column": 12,
-          "line": 104,
+          "line": 105,
           "type": "to",
           "value": "to",
         },
         {
           "column": 15,
-          "line": 104,
+          "line": 105,
           "type": "state",
           "value": "execution",
         },
         {
           "column": 25,
-          "line": 104,
+          "line": 105,
           "type": "colon",
           "value": ":",
         },
         {
           "column": 26,
-          "line": 104,
+          "line": 105,
           "type": "content",
           "value": "Update any scope with any points that the user clarifies. Commit these changes in project with \`planner_update_project\` Commit these changes in tasks with \`planner_update_task\` Commit these changes in task order with \`planner_reoder_tasks\` Commit these changes in task deletion with \`planner_delete_task\` Call \`planner_get_project\` to get full project details.",
         },
         {
           "column": 58,
-          "line": 110,
-          "type": "newline",
-          "value": "
-      ",
-        },
-        {
-          "column": 1,
           "line": 111,
           "type": "newline",
           "value": "
@@ -1118,61 +1111,61 @@ describe("Lexer E2E Tests", () => {
         {
           "column": 1,
           "line": 112,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 113,
           "type": "colon",
           "value": ":",
         },
         {
           "column": 2,
-          "line": 112,
+          "line": 113,
           "type": "content",
           "value": "Do immediately",
         },
         {
           "column": 17,
-          "line": 112,
+          "line": 113,
           "type": "newline",
           "value": "
       ",
         },
         {
           "column": 1,
-          "line": 113,
+          "line": 114,
           "type": "state",
           "value": "execution",
         },
         {
           "column": 10,
-          "line": 113,
+          "line": 114,
           "type": "to",
           "value": "to",
         },
         {
           "column": 13,
-          "line": 113,
+          "line": 114,
           "type": "state",
           "value": "loop_tasks",
         },
         {
           "column": 24,
-          "line": 113,
+          "line": 114,
           "type": "colon",
           "value": ":",
         },
         {
           "column": 25,
-          "line": 113,
+          "line": 114,
           "type": "content",
           "value": "Find first unfinished task. Go to first incomplete task with \`planner_goto\`. Extract all current task details from \`planner_get_project\`.",
         },
         {
           "column": 63,
-          "line": 116,
-          "type": "newline",
-          "value": "
-      ",
-        },
-        {
-          "column": 1,
           "line": 117,
           "type": "newline",
           "value": "
@@ -1181,61 +1174,61 @@ describe("Lexer E2E Tests", () => {
         {
           "column": 1,
           "line": 118,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 119,
           "type": "colon",
           "value": ":",
         },
         {
           "column": 2,
-          "line": 118,
+          "line": 119,
           "type": "content",
           "value": "Introspect: Has unfinished task.",
         },
         {
           "column": 35,
-          "line": 118,
+          "line": 119,
           "type": "newline",
           "value": "
       ",
         },
         {
           "column": 1,
-          "line": 119,
+          "line": 120,
           "type": "state",
           "value": "loop_tasks",
         },
         {
           "column": 11,
-          "line": 119,
+          "line": 120,
           "type": "to",
           "value": "to",
         },
         {
           "column": 14,
-          "line": 119,
+          "line": 120,
           "type": "state",
           "value": "run_task",
         },
         {
           "column": 23,
-          "line": 119,
+          "line": 120,
           "type": "colon",
           "value": ":",
         },
         {
           "column": 24,
-          "line": 119,
+          "line": 120,
           "type": "content",
           "value": "Pass the task to \`oc-agentic-executor\`. Your message format will be \`Do TASK_DETAILS\` where TASK_DETAILS is the full specification of the current active task verbatim. Wait for execution to complete. Pass the task to \`oc-agentic-reiviewer\`. Your message format will be \`Based on TASK_DETAILS review the current changes as reported by EXECUTION_REVIEW\` where TASK_DETAILS is the full specification of the current active task verbatim and EXECUTION_REVIEW is the output produced by the executor. Wait for review to complete.",
         },
         {
           "column": 31,
-          "line": 125,
-          "type": "newline",
-          "value": "
-      ",
-        },
-        {
-          "column": 1,
           "line": 126,
           "type": "newline",
           "value": "
@@ -1244,61 +1237,61 @@ describe("Lexer E2E Tests", () => {
         {
           "column": 1,
           "line": 127,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 128,
           "type": "colon",
           "value": ":",
         },
         {
           "column": 2,
-          "line": 127,
+          "line": 128,
           "type": "content",
           "value": "Introspect: Task is complete. IMPORTANT: THIS IS STRICT 100% COMPLETION. YOU ARE NOT ALLOWED TO BYPASS THIS REQUIREMENT. DOING SO WILL CAUSE SERIOUS PROGRAM CORRUPTION.",
         },
         {
           "column": 171,
-          "line": 127,
+          "line": 128,
           "type": "newline",
           "value": "
       ",
         },
         {
           "column": 1,
-          "line": 128,
+          "line": 129,
           "type": "state",
           "value": "run_task",
         },
         {
           "column": 9,
-          "line": 128,
+          "line": 129,
           "type": "to",
           "value": "to",
         },
         {
           "column": 12,
-          "line": 128,
+          "line": 129,
           "type": "state",
           "value": "mark_task",
         },
         {
           "column": 22,
-          "line": 128,
+          "line": 129,
           "type": "colon",
           "value": ":",
         },
         {
           "column": 23,
-          "line": 128,
+          "line": 129,
           "type": "content",
           "value": "Synthesize current task specification with actual work done to produce updated task. Be precise with your editing. Call \`planner_update_task\` to update the task as completed with new details.",
         },
         {
           "column": 79,
-          "line": 131,
-          "type": "newline",
-          "value": "
-      ",
-        },
-        {
-          "column": 1,
           "line": 132,
           "type": "newline",
           "value": "
@@ -1307,18 +1300,6 @@ describe("Lexer E2E Tests", () => {
         {
           "column": 1,
           "line": 133,
-          "type": "colon",
-          "value": ":",
-        },
-        {
-          "column": 2,
-          "line": 133,
-          "type": "content",
-          "value": "Do immediately",
-        },
-        {
-          "column": 17,
-          "line": 133,
           "type": "newline",
           "value": "
       ",
@@ -1326,23 +1307,17 @@ describe("Lexer E2E Tests", () => {
         {
           "column": 1,
           "line": 134,
-          "type": "state",
-          "value": "mark_task",
+          "type": "colon",
+          "value": ":",
         },
         {
-          "column": 10,
+          "column": 2,
           "line": 134,
-          "type": "to",
-          "value": "to",
+          "type": "content",
+          "value": "Do immediately",
         },
         {
-          "column": 13,
-          "line": 134,
-          "type": "state",
-          "value": "loop_tasks",
-        },
-        {
-          "column": 24,
+          "column": 17,
           "line": 134,
           "type": "newline",
           "value": "
@@ -1351,6 +1326,24 @@ describe("Lexer E2E Tests", () => {
         {
           "column": 1,
           "line": 135,
+          "type": "state",
+          "value": "mark_task",
+        },
+        {
+          "column": 10,
+          "line": 135,
+          "type": "to",
+          "value": "to",
+        },
+        {
+          "column": 13,
+          "line": 135,
+          "type": "state",
+          "value": "loop_tasks",
+        },
+        {
+          "column": 24,
+          "line": 135,
           "type": "newline",
           "value": "
       ",
@@ -1358,61 +1351,61 @@ describe("Lexer E2E Tests", () => {
         {
           "column": 1,
           "line": 136,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 137,
           "type": "colon",
           "value": ":",
         },
         {
           "column": 2,
-          "line": 136,
+          "line": 137,
           "type": "content",
           "value": "Introspect: Task not yet successfully completed.",
         },
         {
           "column": 51,
-          "line": 136,
+          "line": 137,
           "type": "newline",
           "value": "
       ",
         },
         {
           "column": 1,
-          "line": 137,
+          "line": 138,
           "type": "state",
           "value": "run_task",
         },
         {
           "column": 9,
-          "line": 137,
+          "line": 138,
           "type": "to",
           "value": "to",
         },
         {
           "column": 12,
-          "line": 137,
+          "line": 138,
           "type": "state",
           "value": "redefine_task",
         },
         {
           "column": 26,
-          "line": 137,
+          "line": 138,
           "type": "colon",
           "value": ":",
         },
         {
           "column": 27,
-          "line": 137,
+          "line": 138,
           "type": "content",
           "value": "Generate new sub plan that would satisfy task requirements. Format sub plan for \`planner_update_task\` and pass ONLY THAT INPUT to \`oc-agentic-inquisitor\`. Your message format will be \`[requirements] This needs clarity how execution will be carried out. Execution on this task must be strictly deterministic [specification] THE_TASK_SPECIFICATION\`. Perform secondary research on any questions raised. You may use \`oc-agentic-investigator\` to research about any concerns, in parallel, that deal directly with the codebase. \`oc-agentic-investigator\` should be called with the following format: \`I am uncertain about these THE_POINT. This is my current assumption THE_ASSUMPTION. Here is the CONTEXT. This is were I would begin: INVESTIGATION_ENTRY_POINT. Can you help provide factual clarity?\`. Use your enhanced contextual understanding and ability to investigate to immediately reject or accept points, synthesizing new points, or making any other adjustments to the scope of work. Ensure that your plan remains within the constraints of the sub problems to solve.",
         },
         {
           "column": 274,
-          "line": 144,
-          "type": "newline",
-          "value": "
-      ",
-        },
-        {
-          "column": 1,
           "line": 145,
           "type": "newline",
           "value": "
@@ -1421,18 +1414,6 @@ describe("Lexer E2E Tests", () => {
         {
           "column": 1,
           "line": 146,
-          "type": "colon",
-          "value": ":",
-        },
-        {
-          "column": 2,
-          "line": 146,
-          "type": "content",
-          "value": "Do immediately",
-        },
-        {
-          "column": 17,
-          "line": 146,
           "type": "newline",
           "value": "
       ",
@@ -1440,23 +1421,17 @@ describe("Lexer E2E Tests", () => {
         {
           "column": 1,
           "line": 147,
-          "type": "state",
-          "value": "redefine_task",
+          "type": "colon",
+          "value": ":",
         },
         {
-          "column": 14,
+          "column": 2,
           "line": 147,
-          "type": "to",
-          "value": "to",
+          "type": "content",
+          "value": "Do immediately",
         },
         {
           "column": 17,
-          "line": 147,
-          "type": "state",
-          "value": "run_task",
-        },
-        {
-          "column": 26,
           "line": 147,
           "type": "newline",
           "value": "
@@ -1465,6 +1440,24 @@ describe("Lexer E2E Tests", () => {
         {
           "column": 1,
           "line": 148,
+          "type": "state",
+          "value": "redefine_task",
+        },
+        {
+          "column": 14,
+          "line": 148,
+          "type": "to",
+          "value": "to",
+        },
+        {
+          "column": 17,
+          "line": 148,
+          "type": "state",
+          "value": "run_task",
+        },
+        {
+          "column": 26,
+          "line": 148,
           "type": "newline",
           "value": "
       ",
@@ -1472,61 +1465,61 @@ describe("Lexer E2E Tests", () => {
         {
           "column": 1,
           "line": 149,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 150,
           "type": "colon",
           "value": ":",
         },
         {
           "column": 2,
-          "line": 149,
+          "line": 150,
           "type": "content",
           "value": "Introspect: All tasks complete",
         },
         {
           "column": 33,
-          "line": 149,
+          "line": 150,
           "type": "newline",
           "value": "
       ",
         },
         {
           "column": 1,
-          "line": 150,
+          "line": 151,
           "type": "state",
           "value": "loop_tasks",
         },
         {
           "column": 11,
-          "line": 150,
+          "line": 151,
           "type": "to",
           "value": "to",
         },
         {
           "column": 14,
-          "line": 150,
+          "line": 151,
           "type": "state",
           "value": "all_tasks_complete",
         },
         {
           "column": 33,
-          "line": 150,
+          "line": 151,
           "type": "colon",
           "value": ":",
         },
         {
           "column": 34,
-          "line": 150,
+          "line": 151,
           "type": "content",
           "value": "Call \`planner_get_project\` to get full project details. Present reply to user",
         },
         {
           "column": 24,
-          "line": 152,
-          "type": "newline",
-          "value": "
-      ",
-        },
-        {
-          "column": 1,
           "line": 153,
           "type": "newline",
           "value": "
@@ -1535,18 +1528,6 @@ describe("Lexer E2E Tests", () => {
         {
           "column": 1,
           "line": 154,
-          "type": "colon",
-          "value": ":",
-        },
-        {
-          "column": 2,
-          "line": 154,
-          "type": "content",
-          "value": "User is satisfied with output",
-        },
-        {
-          "column": 32,
-          "line": 154,
           "type": "newline",
           "value": "
       ",
@@ -1554,23 +1535,17 @@ describe("Lexer E2E Tests", () => {
         {
           "column": 1,
           "line": 155,
-          "type": "state",
-          "value": "all_tasks_complete",
+          "type": "colon",
+          "value": ":",
         },
         {
-          "column": 19,
+          "column": 2,
           "line": 155,
-          "type": "to",
-          "value": "to",
+          "type": "content",
+          "value": "User is satisfied with output",
         },
         {
-          "column": 22,
-          "line": 155,
-          "type": "state",
-          "value": "initial_loaded",
-        },
-        {
-          "column": 37,
+          "column": 32,
           "line": 155,
           "type": "newline",
           "value": "
@@ -1579,49 +1554,49 @@ describe("Lexer E2E Tests", () => {
         {
           "column": 1,
           "line": 156,
-          "type": "newline",
-          "value": "
-      ",
-        },
-        {
-          "column": 1,
-          "line": 157,
-          "type": "colon",
-          "value": ":",
-        },
-        {
-          "column": 2,
-          "line": 157,
-          "type": "content",
-          "value": "User is unsatisfied with output",
-        },
-        {
-          "column": 34,
-          "line": 157,
-          "type": "newline",
-          "value": "
-      ",
-        },
-        {
-          "column": 1,
-          "line": 158,
           "type": "state",
           "value": "all_tasks_complete",
         },
         {
           "column": 19,
-          "line": 158,
+          "line": 156,
           "type": "to",
           "value": "to",
         },
         {
           "column": 22,
-          "line": 158,
+          "line": 156,
           "type": "state",
-          "value": "refine_tasks",
+          "value": "initial_loaded",
         },
         {
-          "column": 35,
+          "column": 37,
+          "line": 156,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 157,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 158,
+          "type": "colon",
+          "value": ":",
+        },
+        {
+          "column": 2,
+          "line": 158,
+          "type": "content",
+          "value": "User is unsatisfied with output",
+        },
+        {
+          "column": 34,
           "line": 158,
           "type": "newline",
           "value": "
@@ -1630,6 +1605,24 @@ describe("Lexer E2E Tests", () => {
         {
           "column": 1,
           "line": 159,
+          "type": "state",
+          "value": "all_tasks_complete",
+        },
+        {
+          "column": 19,
+          "line": 159,
+          "type": "to",
+          "value": "to",
+        },
+        {
+          "column": 22,
+          "line": 159,
+          "type": "state",
+          "value": "refine_tasks",
+        },
+        {
+          "column": 35,
+          "line": 159,
           "type": "newline",
           "value": "
       ",
@@ -1637,6 +1630,929 @@ describe("Lexer E2E Tests", () => {
         {
           "column": 1,
           "line": 160,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 161,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 162,
+          "type": "colon",
+          "value": ":",
+        },
+        {
+          "column": 2,
+          "line": 162,
+          "type": "content",
+          "value": "Ask: Do you want to run an automated one-shot scope of work (fully automated, no further human interaction)?",
+        },
+        {
+          "column": 111,
+          "line": 162,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 163,
+          "type": "state",
+          "value": "initial_loaded",
+        },
+        {
+          "column": 15,
+          "line": 163,
+          "type": "to",
+          "value": "to",
+        },
+        {
+          "column": 18,
+          "line": 163,
+          "type": "state",
+          "value": "automated_one_shot_define_project",
+        },
+        {
+          "column": 52,
+          "line": 163,
+          "type": "colon",
+          "value": ":",
+        },
+        {
+          "column": 53,
+          "line": 163,
+          "type": "content",
+          "value": "Ask to define the specifics of the single-task scope of work. These specifics will be used to fulfill the arguments to \`planner_create_project\`. This automated flow will create a single-task project and fully execute it without human interaction.",
+        },
+        {
+          "column": 104,
+          "line": 166,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 167,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 168,
+          "type": "colon",
+          "value": ":",
+        },
+        {
+          "column": 2,
+          "line": 168,
+          "type": "content",
+          "value": "Do immediately",
+        },
+        {
+          "column": 17,
+          "line": 168,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 169,
+          "type": "state",
+          "value": "automated_one_shot_define_project",
+        },
+        {
+          "column": 34,
+          "line": 169,
+          "type": "to",
+          "value": "to",
+        },
+        {
+          "column": 37,
+          "line": 169,
+          "type": "state",
+          "value": "automated_one_shot_inquisit",
+        },
+        {
+          "column": 65,
+          "line": 169,
+          "type": "colon",
+          "value": ":",
+        },
+        {
+          "column": 66,
+          "line": 169,
+          "type": "content",
+          "value": "Synthesize the single-task scope of work specifics. Pass the scope of work specifics to agent \`oc-agentic-inquisitor\`. Your message format will be \`[requirements] This needs clarity how plans will be formed during execution. Plans that derive from this must be strictly deterministic [specification] THE_PROJECT_SPECIFICATION\`. THE_SCOPE_OF_WORK_SPECIFICATION is the contents of the scope of work specifics you would have passed to \`planner_create_project\`. Wait for reply from \`oc-agentic-inquisitor\`. Perform secondary research on any questions raised. You may use \`oc-agentic-investigator\` to research about any concerns, in parallel, that deal directly with the codebase. \`oc-agentic-investigator\` should be called with the following format: \`I am uncertain about these THE_POINT. This is my current assumption THE_ASSUMPTION. Here is the CONTEXT. This is were I would begin: INVESTIGATION_ENTRY_POINT. Can you help provide factual clarity?\`. Use your enhanced contextual understanding and ability to investigate to immediately reject or accept points, synthesizing new points, or making any other adjustments to the project, leaving points with uncertainty as an exercise to the user to clarify. Present the synthesized single-task project specifics.",
+        },
+        {
+          "column": 57,
+          "line": 179,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 180,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 181,
+          "type": "colon",
+          "value": ":",
+        },
+        {
+          "column": 2,
+          "line": 181,
+          "type": "content",
+          "value": "Ask: Can you provide clarity on all the above points?",
+        },
+        {
+          "column": 56,
+          "line": 181,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 182,
+          "type": "state",
+          "value": "automated_one_shot_inquisit",
+        },
+        {
+          "column": 28,
+          "line": 182,
+          "type": "to",
+          "value": "to",
+        },
+        {
+          "column": 31,
+          "line": 182,
+          "type": "state",
+          "value": "automated_one_shot_refine",
+        },
+        {
+          "column": 57,
+          "line": 182,
+          "type": "colon",
+          "value": ":",
+        },
+        {
+          "column": 58,
+          "line": 182,
+          "type": "content",
+          "value": "",
+        },
+        {
+          "column": 58,
+          "line": 182,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 183,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 184,
+          "type": "colon",
+          "value": ":",
+        },
+        {
+          "column": 2,
+          "line": 184,
+          "type": "content",
+          "value": "Do immediately",
+        },
+        {
+          "column": 17,
+          "line": 184,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 185,
+          "type": "state",
+          "value": "automated_one_shot_refine",
+        },
+        {
+          "column": 26,
+          "line": 185,
+          "type": "to",
+          "value": "to",
+        },
+        {
+          "column": 29,
+          "line": 185,
+          "type": "state",
+          "value": "automated_one_shot_inquisit_2",
+        },
+        {
+          "column": 59,
+          "line": 185,
+          "type": "colon",
+          "value": ":",
+        },
+        {
+          "column": 60,
+          "line": 185,
+          "type": "content",
+          "value": "Update the project specifics based on the inquisitor reply. Pass the updated single-task specification to \`oc-agentic-inquisitor\` again using the same message format as above. Use \`oc-agentic-investigator\` as needed for codebase checks. Present final synthesized single-task specification ready for creation.",
+        },
+        {
+          "column": 74,
+          "line": 189,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 190,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 191,
+          "type": "colon",
+          "value": ":",
+        },
+        {
+          "column": 2,
+          "line": 191,
+          "type": "content",
+          "value": "Ask: Would you like to proceed (anyway) to creating the single-task scope of work?",
+        },
+        {
+          "column": 85,
+          "line": 191,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 192,
+          "type": "state",
+          "value": "automated_one_shot_inquisit_2",
+        },
+        {
+          "column": 30,
+          "line": 192,
+          "type": "to",
+          "value": "to",
+        },
+        {
+          "column": 33,
+          "line": 192,
+          "type": "state",
+          "value": "automated_one_shot_create_project",
+        },
+        {
+          "column": 67,
+          "line": 192,
+          "type": "colon",
+          "value": ":",
+        },
+        {
+          "column": 68,
+          "line": 192,
+          "type": "content",
+          "value": "Call \`planner_create_project\` with the final synthesized single-task project specifics ensuring the project contains exactly one task. Wait for successful reply.",
+        },
+        {
+          "column": 29,
+          "line": 194,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 195,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 196,
+          "type": "colon",
+          "value": ":",
+        },
+        {
+          "column": 2,
+          "line": 196,
+          "type": "content",
+          "value": "Do immediately",
+        },
+        {
+          "column": 17,
+          "line": 196,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 197,
+          "type": "state",
+          "value": "automated_one_shot_create_project",
+        },
+        {
+          "column": 34,
+          "line": 197,
+          "type": "to",
+          "value": "to",
+        },
+        {
+          "column": 37,
+          "line": 197,
+          "type": "state",
+          "value": "automated_one_shot_final_check",
+        },
+        {
+          "column": 68,
+          "line": 197,
+          "type": "colon",
+          "value": ":",
+        },
+        {
+          "column": 69,
+          "line": 197,
+          "type": "content",
+          "value": "Call \`planner_get_project\` to load created project and confirm it contains a single task. Format output and pass ONLY THAT INPUT to \`oc-agentic-inquisitor\` for a final internal consistency check. Your message format will be \`[requirements] This is a full single-task scope of work. Every part needs to be internally coherent and logically sound. Each part must build up to a cohesive whole and no contradictions are allowed. Work done must be atomic. Planning must be exhaustive. [specification] THE_SCOPE_OF_WORK_SPECIFICATION\`. Wait for reply. Use \`oc-agentic-investigator\` as needed. Present synthesized final single-task project.",
+        },
+        {
+          "column": 49,
+          "line": 203,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 204,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 205,
+          "type": "colon",
+          "value": ":",
+        },
+        {
+          "column": 2,
+          "line": 205,
+          "type": "content",
+          "value": "Do immediately",
+        },
+        {
+          "column": 17,
+          "line": 205,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 206,
+          "type": "state",
+          "value": "automated_one_shot_final_check",
+        },
+        {
+          "column": 31,
+          "line": 206,
+          "type": "to",
+          "value": "to",
+        },
+        {
+          "column": 34,
+          "line": 206,
+          "type": "state",
+          "value": "automated_one_shot_execution",
+        },
+        {
+          "column": 63,
+          "line": 206,
+          "type": "colon",
+          "value": ":",
+        },
+        {
+          "column": 64,
+          "line": 206,
+          "type": "content",
+          "value": "Proceed to execution of the single task without human intervention.",
+        },
+        {
+          "column": 70,
+          "line": 207,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 208,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 209,
+          "type": "colon",
+          "value": ":",
+        },
+        {
+          "column": 2,
+          "line": 209,
+          "type": "content",
+          "value": "Do immediately",
+        },
+        {
+          "column": 17,
+          "line": 209,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 210,
+          "type": "state",
+          "value": "automated_one_shot_execution",
+        },
+        {
+          "column": 29,
+          "line": 210,
+          "type": "to",
+          "value": "to",
+        },
+        {
+          "column": 32,
+          "line": 210,
+          "type": "state",
+          "value": "automated_one_shot_loop_tasks",
+        },
+        {
+          "column": 62,
+          "line": 210,
+          "type": "colon",
+          "value": ":",
+        },
+        {
+          "column": 63,
+          "line": 210,
+          "type": "content",
+          "value": "Find first (and only) unfinished task. Go to the task with \`planner_goto\`. Extract all current task details from \`planner_get_project\`.",
+        },
+        {
+          "column": 63,
+          "line": 213,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 214,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 215,
+          "type": "colon",
+          "value": ":",
+        },
+        {
+          "column": 2,
+          "line": 215,
+          "type": "content",
+          "value": "Introspect: Has unfinished task.",
+        },
+        {
+          "column": 35,
+          "line": 215,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 216,
+          "type": "state",
+          "value": "automated_one_shot_loop_tasks",
+        },
+        {
+          "column": 30,
+          "line": 216,
+          "type": "to",
+          "value": "to",
+        },
+        {
+          "column": 33,
+          "line": 216,
+          "type": "state",
+          "value": "automated_one_shot_run_task",
+        },
+        {
+          "column": 61,
+          "line": 216,
+          "type": "colon",
+          "value": ":",
+        },
+        {
+          "column": 62,
+          "line": 216,
+          "type": "content",
+          "value": "Pass the task to \`oc-agentic-executor\`. Your message format will be \`Do TASK_DETAILS\` where TASK_DETAILS is the full specification of the current active task verbatim. Wait for execution to complete. Pass the task and execution review to \`oc-agentic-reiviewer\`. Your message format will be \`Based on TASK_DETAILS review the current changes as reported by EXECUTION_REVIEW\` where TASK_DETAILS is the full specification of the current active task verbatim and EXECUTION_REVIEW is the output produced by the executor. Wait for review to complete.",
+        },
+        {
+          "column": 31,
+          "line": 222,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 223,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 224,
+          "type": "colon",
+          "value": ":",
+        },
+        {
+          "column": 2,
+          "line": 224,
+          "type": "content",
+          "value": "Introspect: Task is complete. IMPORTANT: THIS IS STRICT 100% COMPLETION. YOU ARE NOT ALLOWED TO BYPASS THIS REQUIREMENT. DOING SO WILL CAUSE SERIOUS PROGRAM CORRUPTION.",
+        },
+        {
+          "column": 171,
+          "line": 224,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 225,
+          "type": "state",
+          "value": "automated_one_shot_run_task",
+        },
+        {
+          "column": 28,
+          "line": 225,
+          "type": "to",
+          "value": "to",
+        },
+        {
+          "column": 31,
+          "line": 225,
+          "type": "state",
+          "value": "automated_one_shot_mark_task",
+        },
+        {
+          "column": 60,
+          "line": 225,
+          "type": "colon",
+          "value": ":",
+        },
+        {
+          "column": 61,
+          "line": 225,
+          "type": "content",
+          "value": "Synthesize current task specification with actual work done to produce updated task. Be precise with your editing. Call \`planner_update_task\` to update the task as completed with new details.",
+        },
+        {
+          "column": 79,
+          "line": 228,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 229,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 230,
+          "type": "colon",
+          "value": ":",
+        },
+        {
+          "column": 2,
+          "line": 230,
+          "type": "content",
+          "value": "Do immediately",
+        },
+        {
+          "column": 17,
+          "line": 230,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 231,
+          "type": "state",
+          "value": "automated_one_shot_mark_task",
+        },
+        {
+          "column": 29,
+          "line": 231,
+          "type": "to",
+          "value": "to",
+        },
+        {
+          "column": 32,
+          "line": 231,
+          "type": "state",
+          "value": "automated_one_shot_loop_tasks",
+        },
+        {
+          "column": 62,
+          "line": 231,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 232,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 233,
+          "type": "colon",
+          "value": ":",
+        },
+        {
+          "column": 2,
+          "line": 233,
+          "type": "content",
+          "value": "Introspect: Task not yet successfully completed.",
+        },
+        {
+          "column": 51,
+          "line": 233,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 234,
+          "type": "state",
+          "value": "automated_one_shot_run_task",
+        },
+        {
+          "column": 28,
+          "line": 234,
+          "type": "to",
+          "value": "to",
+        },
+        {
+          "column": 31,
+          "line": 234,
+          "type": "state",
+          "value": "automated_one_shot_redefine_task",
+        },
+        {
+          "column": 64,
+          "line": 234,
+          "type": "colon",
+          "value": ":",
+        },
+        {
+          "column": 65,
+          "line": 234,
+          "type": "content",
+          "value": "Generate new sub plan that would satisfy task requirements. Format sub plan for \`planner_update_task\` and pass ONLY THAT INPUT to \`oc-agentic-inquisitor\`. Your message format will be \`[requirements] This needs clarity how execution will be carried out. Execution on this task must be strictly deterministic [specification] THE_TASK_SPECIFICATION\`. Perform secondary research on any questions raised. You may use \`oc-agentic-investigator\` to research about any concerns, in parallel, that deal directly with the codebase. \`oc-agentic-investigator\` should be called with the following format: \`I am uncertain about these THE_POINT. This is my current assumption THE_ASSUMPTION. Here is the CONTEXT. This is were I would begin: INVESTIGATION_ENTRY_POINT. Can you help provide factual clarity?\`. Use your enhanced contextual understanding and ability to investigate to immediately reject or accept points, synthesizing new points, or making any other adjustments to the task plan. Ensure that your plan remains within the constraints of the sub problems to solve.",
+        },
+        {
+          "column": 270,
+          "line": 241,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 242,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 243,
+          "type": "colon",
+          "value": ":",
+        },
+        {
+          "column": 2,
+          "line": 243,
+          "type": "content",
+          "value": "Do immediately",
+        },
+        {
+          "column": 17,
+          "line": 243,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 244,
+          "type": "state",
+          "value": "automated_one_shot_redefine_task",
+        },
+        {
+          "column": 33,
+          "line": 244,
+          "type": "to",
+          "value": "to",
+        },
+        {
+          "column": 36,
+          "line": 244,
+          "type": "state",
+          "value": "automated_one_shot_run_task",
+        },
+        {
+          "column": 64,
+          "line": 244,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 245,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 246,
+          "type": "colon",
+          "value": ":",
+        },
+        {
+          "column": 2,
+          "line": 246,
+          "type": "content",
+          "value": "Introspect: All tasks complete",
+        },
+        {
+          "column": 33,
+          "line": 246,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 247,
+          "type": "state",
+          "value": "automated_one_shot_loop_tasks",
+        },
+        {
+          "column": 30,
+          "line": 247,
+          "type": "to",
+          "value": "to",
+        },
+        {
+          "column": 33,
+          "line": 247,
+          "type": "state",
+          "value": "automated_one_shot_all_tasks_complete",
+        },
+        {
+          "column": 71,
+          "line": 247,
+          "type": "colon",
+          "value": ":",
+        },
+        {
+          "column": 72,
+          "line": 247,
+          "type": "content",
+          "value": "Call \`planner_get_project\` to get full project details. Present reply to agent (no human). Decide acceptability automatically using previously gathered validation results.",
+        },
+        {
+          "column": 83,
+          "line": 250,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 251,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 252,
+          "type": "colon",
+          "value": ":",
+        },
+        {
+          "column": 2,
+          "line": 252,
+          "type": "content",
+          "value": "Do immediately",
+        },
+        {
+          "column": 17,
+          "line": 252,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 253,
+          "type": "state",
+          "value": "automated_one_shot_all_tasks_complete",
+        },
+        {
+          "column": 38,
+          "line": 253,
+          "type": "to",
+          "value": "to",
+        },
+        {
+          "column": 41,
+          "line": 253,
+          "type": "state",
+          "value": "initial_loaded",
+        },
+        {
+          "column": 56,
+          "line": 253,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 254,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 255,
           "type": "eof",
           "value": "",
         },
