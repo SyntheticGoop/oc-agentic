@@ -54,17 +54,13 @@ describe("Jujutsu.cwd().new()", () => {
   });
 
   it("should return error for invalid directory", async () => {
-    await expect(
-      Jujutsu.cwd(`${testRepoPath}.never`).new(),
-    ).resolves.toMatchInlineSnapshot(`
-      {
-        "err": "command non zero exit",
-        "meta": {
-          "cmd": "jj new -R ${testRepoPath}.never",
-          "code": 1,
-        },
-      }
-    `);
+    const result = await Jujutsu.cwd(`${testRepoPath}.never`).new();
+    expect(result.err).toBe("VCS Error: Command non zero exit");
+    if (result.err === "VCS Error: Command non zero exit") {
+      expect(result.meta.code).toBe(1);
+      expect(result.meta.cmd).toContain("jj new -R");
+      expect(result.meta.cmd).toContain(".never");
+    }
   });
 
   it("should return error for non-jj repository", async () => {
@@ -113,7 +109,7 @@ describe("Jujutsu.cwd().description.get()", () => {
       Jujutsu.cwd("/nonexistent/directory").description.get(),
     ).resolves.toMatchInlineSnapshot(`
       {
-        "err": "command non zero exit",
+        "err": "VCS Error: Command non zero exit",
         "meta": {
           "cmd": "jj log -r @ -T description --no-graph -R /nonexistent/directory",
           "code": 1,
@@ -126,17 +122,15 @@ describe("Jujutsu.cwd().description.get()", () => {
     const nonJjPath = join(MOCK_ENV_DIR, `non-jj-desc-${Date.now()}`);
     await fs.mkdir(nonJjPath, { recursive: true });
 
-    await expect(
-      Jujutsu.cwd(nonJjPath).description.get(),
-    ).resolves.toMatchInlineSnapshot(`
-      {
-        "err": "command non zero exit",
-        "meta": {
-          "cmd": "jj log -r @ -T description --no-graph -R ${nonJjPath}",
-          "code": 1,
-        },
-      }
-    `);
+    const result = await Jujutsu.cwd(nonJjPath).description.get();
+    expect(result.err).toBe("VCS Error: Command non zero exit");
+    if (result.err === "VCS Error: Command non zero exit") {
+      expect(result.meta.code).toBe(1);
+      expect(result.meta.cmd).toContain(
+        "jj log -r @ -T description --no-graph -R",
+      );
+      expect(result.meta.cmd).toContain("non-jj-desc-");
+    }
 
     await cleanupTestRepo(nonJjPath);
   });
@@ -256,7 +250,7 @@ describe("Jujutsu.cwd().description.replace()", () => {
       Jujutsu.cwd("/nonexistent/directory").description.get(),
     ).resolves.toMatchInlineSnapshot(`
       {
-        "err": "command non zero exit",
+        "err": "VCS Error: Command non zero exit",
         "meta": {
           "cmd": "jj log -r @ -T description --no-graph -R /nonexistent/directory",
           "code": 1,
@@ -269,17 +263,15 @@ describe("Jujutsu.cwd().description.replace()", () => {
     const nonJjPath = join(MOCK_ENV_DIR, `non-jj-desc-${Math.random()}`);
     await fs.mkdir(nonJjPath, { recursive: true });
 
-    await expect(
-      Jujutsu.cwd(nonJjPath).description.get(),
-    ).resolves.toMatchInlineSnapshot(`
-      {
-        "err": "command non zero exit",
-        "meta": {
-          "cmd": "jj log -r @ -T description --no-graph -R ${nonJjPath}",
-          "code": 1,
-        },
-      }
-    `);
+    const result = await Jujutsu.cwd(nonJjPath).description.get();
+    expect(result.err).toBe("VCS Error: Command non zero exit");
+    if (result.err === "VCS Error: Command non zero exit") {
+      expect(result.meta.code).toBe(1);
+      expect(result.meta.cmd).toContain(
+        "jj log -r @ -T description --no-graph -R",
+      );
+      expect(result.meta.cmd).toContain("non-jj-desc-");
+    }
 
     await cleanupTestRepo(nonJjPath);
   });
@@ -288,15 +280,13 @@ describe("Jujutsu.cwd().description.replace()", () => {
     const nonJjPath = join(MOCK_ENV_DIR, `non-jj-${Math.random()}`);
     await fs.mkdir(nonJjPath, { recursive: true });
 
-    await expect(Jujutsu.cwd(nonJjPath).new()).resolves.toMatchInlineSnapshot(`
-      {
-        "err": "command non zero exit",
-        "meta": {
-          "cmd": "jj new -R ${nonJjPath}",
-          "code": 1,
-        },
-      }
-    `);
+    const result = await Jujutsu.cwd(nonJjPath).new();
+    expect(result.err).toBe("VCS Error: Command non zero exit");
+    if (result.err === "VCS Error: Command non zero exit") {
+      expect(result.meta.code).toBe(1);
+      expect(result.meta.cmd).toContain("jj new -R");
+      expect(result.meta.cmd).toContain("non-jj-");
+    }
 
     await cleanupTestRepo(nonJjPath);
   });
@@ -307,8 +297,8 @@ describe("Jujutsu.cwd().description.replace()", () => {
 
     const result =
       await Jujutsu.cwd(nonJjPath).description.replace("test message");
-    expect(result.err).toBe("command non zero exit");
-    if (result.err === "command non zero exit") {
+    expect(result.err).toBe("VCS Error: Command non zero exit");
+    if (result.err === "VCS Error: Command non zero exit") {
       expect(result.meta.code).toBe(1);
       expect(result.meta.cmd).toContain("jj desc -R");
       expect(result.meta.cmd).toContain("non-jj-replace-");
@@ -633,7 +623,7 @@ describe("Jujutsu.cwd().history.linear()", () => {
   });
   it("should return error for invalid directory", async () => {
     const result = await Jujutsu.cwd("/nonexistent/directory").history.linear();
-    expect(result.err).toBe("command non zero exit");
+    expect(result.err).toBe("VCS Error: Command non zero exit");
   });
 });
 
@@ -677,14 +667,14 @@ describe("Jujutsu.cwd().navigate.to()", () => {
     const jj = Jujutsu.cwd(testRepoPath);
 
     const result = await jj.navigate.to("invalid_hash_123");
-    expect(result.err).toBe("command non zero exit");
+    expect(result.err).toBe("VCS Error: Command non zero exit");
   });
 
   it("should return error for invalid directory", async () => {
     const result = await Jujutsu.cwd("/nonexistent/directory").navigate.to(
       "abc123",
     );
-    expect(result.err).toBe("command non zero exit");
+    expect(result.err).toBe("VCS Error: Command non zero exit");
   });
 });
 
@@ -853,7 +843,7 @@ describe("Jujutsu.cwd().new() with options", () => {
     const jj = Jujutsu.cwd(testRepoPath);
 
     const result = await jj.new({ after: "invalid_hash_123" });
-    expect(result.err).toBe("command non zero exit");
+    expect(result.err).toBe("VCS Error: Command non zero exit");
   });
 
   it("should create a new commit before a specific commit", async () => {
@@ -932,7 +922,7 @@ describe("Jujutsu.cwd().new() with options", () => {
     const jj = Jujutsu.cwd(testRepoPath);
 
     const result = await jj.new({ before: "invalid_hash_123" });
-    expect(result.err).toBe("command non zero exit");
+    expect(result.err).toBe("VCS Error: Command non zero exit");
   });
 });
 
@@ -1040,7 +1030,7 @@ describe("Jujutsu.cwd().abandon()", () => {
     const jj = Jujutsu.cwd(testRepoPath);
 
     const result = await jj.abandon("invalid_hash_123");
-    expect(result.err).toBe("command non zero exit");
+    expect(result.err).toBe("VCS Error: Command non zero exit");
   });
 
   it("should return error for non-existent commit", async () => {
@@ -1048,14 +1038,14 @@ describe("Jujutsu.cwd().abandon()", () => {
 
     // Use a valid-looking but non-existent hash
     const result = await jj.abandon("1234567890abcdef1234567890abcdef12345678");
-    expect(result.err).toBe("command non zero exit");
+    expect(result.err).toBe("VCS Error: Command non zero exit");
   });
 
   it("should return error for invalid directory", async () => {
     const result = await Jujutsu.cwd("/nonexistent/directory").abandon(
       "abc123",
     );
-    expect(result.err).toBe("command non zero exit");
+    expect(result.err).toBe("VCS Error: Command non zero exit");
   });
 });
 
@@ -1213,14 +1203,14 @@ describe("Jujutsu.cwd().empty()", () => {
 
   it("should return error for invalid directory", async () => {
     const result = await Jujutsu.cwd("/nonexistent/directory").empty();
-    expect(result.err).toBe("command non zero exit");
+    expect(result.err).toBe("VCS Error: Command non zero exit");
   });
 
   it("should return error for invalid commit hash", async () => {
     const jj = Jujutsu.cwd(testRepoPath);
 
     const result = await jj.empty("invalid_hash_123");
-    expect(result.err).toBe("command non zero exit");
+    expect(result.err).toBe("VCS Error: Command non zero exit");
   });
 });
 
@@ -1274,7 +1264,7 @@ describe("Jujutsu.cwd().changeId()", () => {
 
   it("should return error for invalid directory", async () => {
     const result = await Jujutsu.cwd("/nonexistent/directory").changeId();
-    expect(result.err).toBe("command non zero exit");
+    expect(result.err).toBe("VCS Error: Command non zero exit");
   });
 });
 
@@ -1364,14 +1354,14 @@ describe("Jujutsu.cwd().diff.summary()", () => {
 
   it("should return error for invalid directory", async () => {
     const result = await Jujutsu.cwd("/nonexistent/directory").diff.summary();
-    expect(result.err).toBe("command non zero exit");
+    expect(result.err).toBe("VCS Error: Command non zero exit");
   });
 
   it("should return error for invalid commit hash", async () => {
     const jj = Jujutsu.cwd(testRepoPath);
 
     const result = await jj.diff.summary("invalid_hash_123");
-    expect(result.err).toBe("command non zero exit");
+    expect(result.err).toBe("VCS Error: Command non zero exit");
   });
 });
 
@@ -1468,7 +1458,7 @@ describe("Jujutsu.cwd().diff.files()", () => {
 
   it("should return error for invalid directory", async () => {
     const result = await Jujutsu.cwd("/nonexistent/directory").diff.files();
-    expect(result.err).toBe("command non zero exit");
+    expect(result.err).toBe("VCS Error: Command non zero exit");
   });
 });
 
@@ -1587,7 +1577,7 @@ describe("Jujutsu.cwd().rebase.slideCommit()", () => {
       after: "@",
     });
 
-    expect(result.err).toBe("command non zero exit");
+    expect(result.err).toBe("VCS Error: Command non zero exit");
   });
 
   it("should return error for invalid target commit", async () => {
@@ -1609,7 +1599,7 @@ describe("Jujutsu.cwd().rebase.slideCommit()", () => {
       after: "invalid_target_123",
     });
 
-    expect(result.err).toBe("command non zero exit");
+    expect(result.err).toBe("VCS Error: Command non zero exit");
   });
 
   it("should return error for invalid directory", async () => {
@@ -1620,7 +1610,7 @@ describe("Jujutsu.cwd().rebase.slideCommit()", () => {
       after: "def456",
     });
 
-    expect(result.err).toBe("command non zero exit");
+    expect(result.err).toBe("VCS Error: Command non zero exit");
   });
 
   it("should handle both before and after options", async () => {
