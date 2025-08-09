@@ -30,6 +30,7 @@ type Task = {
 export type LoadedPlanData = {
   scope: string | null;
   plan_key: [string, string] | null;
+  tag: string | null;
   title: string;
   intent: string;
   objectives: string[];
@@ -38,12 +39,14 @@ export type LoadedPlanData = {
 };
 
 export function parseCommitHeader(header: string) {
-  const begin = /^begin(\((?<scope>[a-z0-9/.-]+)\))?:: (?<title>[a-z0-9].*)$/;
-  const end = /^end(\((?<scope>[a-z0-9/.-]+)\))?:: (?<title>[a-z0-9].*)$/;
+  const begin =
+    /^begin\((?<scope>[a-z0-9/.-]+)?:(?<tag>[a-z0-9]{4})\):: (?<title>[a-z0-9].*)$/;
+  const end =
+    /^end\((?<scope>[a-z0-9/.-]+)?:(?<tag>[a-z0-9]{4})\):: (?<title>[a-z0-9].*)$/;
   const task =
-    /^(?<type>[a-z]+)(\((?<scope>[a-z0-9/.-]+)\))?::(?<not>~)? (?<title>[a-z0-9].*)$/;
+    /^(?<type>[a-z]+)\((?<scope>[a-z0-9/.-]+)?:(?<tag>[a-z0-9]{4})\)::(?<not>~)? (?<title>[a-z0-9].*)$/;
   const singletask =
-    /^(?<type>[a-z]+)(\((?<scope>[a-z0-9/.-]+)\))?:(?<not>~)? (?<title>[a-z0-9].*)$/;
+    /^(?<type>[a-z]+)\((?<scope>[a-z0-9/.-]+)?:(?<tag>[a-z0-9]{4})\):(?<not>~)? (?<title>[a-z0-9].*)$/;
 
   const beginMatch = begin.exec(header);
   const endMatch = end.exec(header);
@@ -56,6 +59,7 @@ export function parseCommitHeader(header: string) {
     return Ok({
       class: "multi" as const,
       type: "begin" as const,
+      tag: beginMatch.groups.tag,
       scope: beginMatch.groups.scope ?? null,
       title,
     });
@@ -67,6 +71,7 @@ export function parseCommitHeader(header: string) {
     return Ok({
       class: "multi" as const,
       type: "end" as const,
+      tag: endMatch.groups.tag,
       scope: endMatch.groups.scope ?? null,
       title,
     });
@@ -242,6 +247,7 @@ export class Loader {
         scope: linearHistory.ok.current.header.scope,
         title: linearHistory.ok.current.header.title,
         plan_key: null,
+        tag: null,
         intent: body.ok.intent,
         constraints: body.ok.constraints,
         objectives: body.ok.objectives,
@@ -346,6 +352,10 @@ export class Loader {
       intent: body.ok.intent,
       constraints: body.ok.constraints,
       plan_key: [startCommit.changeId, endCommit.changeId],
+      tag:
+        endCommit.header.type === "end" && "tag" in endCommit.header
+          ? endCommit.header.tag
+          : null,
       objectives: body.ok.objectives,
       tasks: taskCommits.map((taskCommit) => ({
         task_key: taskCommit.entry.changeId,

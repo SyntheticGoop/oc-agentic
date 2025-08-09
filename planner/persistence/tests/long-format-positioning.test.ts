@@ -65,7 +65,7 @@ describe("LONG Format Positioning Behavior", () => {
     const initialPlan: SavingPlanData = {
       new: true,
       scope: "longtest",
-      title: "long format positioning test",
+      tag: "test", title: "long format positioning test",
       intent: "test positioning behavior in long format",
       objectives: ["verify end positioning"],
       constraints: [],
@@ -103,7 +103,7 @@ describe("LONG Format Positioning Behavior", () => {
     if (!step1Desc.ok) throw new Error("Failed to get description");
 
     // Should be positioned at end commit
-    expect(step1Desc.ok).toContain("end(longtest)::");
+    expect(step1Desc.ok).toContain("end(longtest:test)::");
     expect(step1Desc.ok).toContain("long format positioning test");
 
     // Step 2: Load the plan to get task keys
@@ -130,15 +130,15 @@ describe("LONG Format Positioning Behavior", () => {
 
 
     // Should be at first task, not end commit
-    expect(step2Desc.ok).toContain("feat(longtest)::");
+    expect(step2Desc.ok).toContain("feat(longtest:test)::");
     expect(step2Desc.ok).toContain("first task");
-    expect(step2Desc.ok).not.toContain("end(longtest)::");
+    expect(step2Desc.ok).not.toContain("end(longtest:test)::");
 
     // Step 4: Add a third task to the existing LONG format plan
     const expandedPlan: SavingPlanData = {
       scope: "longtest",
       title: "long format positioning test",
-      intent: "test positioning behavior in long format",
+      tag: "test", intent: "test positioning behavior in long format",
       objectives: ["verify end positioning"],
       constraints: [],
       tasks: [
@@ -186,9 +186,9 @@ describe("LONG Format Positioning Behavior", () => {
 
 
     // Should still be positioned at the first task where we were before adding the third task
-    expect(step3Desc.ok).toContain("feat(longtest)::");
+    expect(step3Desc.ok).toContain("feat(longtest:test)::");
     expect(step3Desc.ok).toContain("first task");
-    expect(step3Desc.ok).not.toContain("end(longtest)::");
+    expect(step3Desc.ok).not.toContain("end(longtest:test)::");
     expect(step3Desc.ok).not.toContain("third task");
 
     // Step 6: Verify the plan structure is correct
@@ -217,15 +217,15 @@ describe("LONG Format Positioning Behavior", () => {
 
     // Should have: begin -> first -> second -> third -> end (5 commits, empty commit reused)
     expect(allCommits).toHaveLength(5);
-    expect(allCommits[0]?.message).toContain("begin(longtest)::");
+    expect(allCommits[0]?.message).toContain("begin(longtest:test)::");
     // Empty commit was reused as begin commit
-    expect(allCommits[1]?.message).toContain("feat(longtest)::");
+    expect(allCommits[1]?.message).toContain("feat(longtest:test)::");
     expect(allCommits[1]?.message).toContain("first task");
-    expect(allCommits[2]?.message).toContain("fix(longtest)::");
+    expect(allCommits[2]?.message).toContain("fix(longtest:test)::");
     expect(allCommits[2]?.message).toContain("second task");
-    expect(allCommits[3]?.message).toContain("refactor(longtest)::");
+    expect(allCommits[3]?.message).toContain("refactor(longtest:test)::");
     expect(allCommits[3]?.message).toContain("third task");
-    expect(allCommits[4]?.message).toContain("end(longtest)::");
+    expect(allCommits[4]?.message).toContain("end(longtest:test)::");
   });
 
   it("should stay at current task when modifying existing task in LONG format", async () => {
@@ -234,7 +234,7 @@ describe("LONG Format Positioning Behavior", () => {
       new: true,
       scope: "modify",
       title: "task modification test",
-      intent: "test positioning when modifying tasks",
+      tag: "test", intent: "test positioning when modifying tasks",
       objectives: ["verify end positioning on modification"],
       constraints: [],
       tasks: [
@@ -272,14 +272,14 @@ describe("LONG Format Positioning Behavior", () => {
     expect(step2Desc.ok).toBeDefined();
     if (!step2Desc.ok) throw new Error("Failed to get description");
 
-    expect(step2Desc.ok).toContain("feat(modify):");
+    expect(step2Desc.ok).toContain("feat(modify:test):");
     expect(step2Desc.ok).toContain("original task");
 
     // Step 3: Modify the task (change title and mark as completed)
     const modifiedPlan: SavingPlanData = {
       scope: "modify",
       title: "task modification test",
-      intent: "test positioning when modifying tasks",
+      tag: "test", intent: "test positioning when modifying tasks",
       objectives: ["verify end positioning on modification"],
       constraints: [],
       tasks: [
@@ -307,9 +307,9 @@ describe("LONG Format Positioning Behavior", () => {
 
 
     // Should still be at the same task where we were before modification
-    expect(step3Desc.ok).toContain("feat(modify):");
+    expect(step3Desc.ok).toContain("feat(modify:test):");
     expect(step3Desc.ok).toContain("modified task"); // Content should be updated
-    expect(step3Desc.ok).not.toContain("end(modify)::");
+    expect(step3Desc.ok).not.toContain("end(modify:test)::");
     expect(step3Desc.ok).not.toContain("original task"); // Old content should be gone
 
     // Step 5: Verify the task was actually modified

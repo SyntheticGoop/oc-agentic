@@ -21,6 +21,7 @@ type Task = {
 export type SavingPlanData = {
   new?: boolean;
   scope: string | null;
+  tag: string;
   intent: string;
   title: string;
   objectives: string[];
@@ -31,14 +32,20 @@ export type SavingPlanData = {
 function formatBegin(data: SavingPlanData) {
   data.title = data.title.trim();
   data.intent = data.intent.trim();
-  const head = `begin${data.scope === null ? "" : `(${data.scope})`}:: ${data.title}`;
+  if (!data.tag) {
+    return Err("Structure Error: Tag is required for begin commit");
+  }
+  const head = `begin(${data.scope ?? ""}:${data.tag}):: ${data.title}`;
   const parsed = parseCommitHeader(head);
   if (parsed.err) return parsed;
   return Ok(head);
 }
 
 function formatEnd(data: SavingPlanData) {
-  const head = `end${data.scope === null ? "" : `(${data.scope})`}:: ${data.title}`;
+  if (!data.tag) {
+    return Err("Structure Error: Tag is required for end commit");
+  }
+  const head = `end(${data.scope ?? ""}:${data.tag}):: ${data.title}`;
   const body = `${
     data.intent.trim().length === 0 ? "" : `\n\n${data.intent.trim()}`
   }${
@@ -63,10 +70,11 @@ function formatEnd(data: SavingPlanData) {
 }
 
 function formatTask(
+  tag: string,
   data: SavingPlanData["tasks"][number],
   isMulti: "multi" | "single",
 ) {
-  const head = `${data.type}${data.scope === null ? "" : `(${data.scope})`}${isMulti === "single" ? ":" : "::"}${data.completed ? "" : "~"} ${data.title.trim()}`;
+  const head = `${data.type}(${data.scope ?? ""}:${tag})${isMulti === "single" ? ":" : "::"}${data.completed ? "" : "~"} ${data.title.trim()}`;
   const body = `${
     data.intent.trim().length === 0 ? "" : `\n\n${data.intent.trim()}`
   }${
@@ -154,7 +162,7 @@ export class Saver {
         const isEmpty = await this.jj.empty(currentChange.ok);
         if (isEmpty.err) return isEmpty;
         if (isEmpty.ok) {
-          const taskMsg = formatTask(plan.tasks[0], isMulti);
+          const taskMsg = formatTask(plan.tag, plan.tasks[0], isMulti);
           if (taskMsg.err) return taskMsg;
 
           const update = await this.jj.description.replace(
@@ -177,7 +185,7 @@ export class Saver {
       const create = await this.jj.new(createOptions);
       if (create.err) return create;
 
-      const taskMsg = formatTask(plan.tasks[0], isMulti);
+      const taskMsg = formatTask(plan.tag, plan.tasks[0], isMulti);
       if (taskMsg.err) return taskMsg;
 
       const update = await this.jj.description.replace(
@@ -223,19 +231,23 @@ export class Saver {
     const begin = formatBegin(plan);
     if (begin.err) return begin;
 
+    if (!createBegin) {
+      return Err("Structure Error: Failed to create begin commit");
+    }
+    if (createBegin.err) return createBegin;
+
     const updateBegin = await this.jj.description.replace(
       begin.ok,
-      createBegin!.ok.change,
+      createBegin.ok.change,
     );
     if (updateBegin.err) return updateBegin;
-    active = createBegin!.ok.change;
-
+    active = createBegin.ok.change;
     // Create task commits - each anchored to the previous commit
     for (const task of plan.tasks) {
       const create = await this.jj.new({ after: active, noEdit: true });
       if (create.err) return create;
 
-      const taskMsg = formatTask(task, isMulti);
+      const taskMsg = formatTask(plan.tag, task, isMulti);
       if (taskMsg.err) return taskMsg;
 
       const update = await this.jj.description.replace(
@@ -374,7 +386,7 @@ export class Saver {
           commit: task.task_key,
         });
         if (move.err) return move;
-        const taskMsg = formatTask(task, isMulti);
+        const taskMsg = formatTask(plan.tag, task, isMulti);
         if (taskMsg.err) return taskMsg;
         const update = await this.jj.description.replace(
           taskMsg.ok,
@@ -390,7 +402,7 @@ export class Saver {
         });
         if (create.err) return create;
 
-        const taskMsg = formatTask(task, isMulti);
+        const taskMsg = formatTask(plan.tag, task, isMulti);
         if (taskMsg.err) return taskMsg;
         const update = await this.jj.description.replace(
           taskMsg.ok,

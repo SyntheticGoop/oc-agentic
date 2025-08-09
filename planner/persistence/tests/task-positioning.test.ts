@@ -66,6 +66,7 @@ describe("Task Positioning Behavior", () => {
     const singleTaskPlan: SavingPlanData = {
       new: true,
       scope: "test",
+      tag: "test",
       intent: "test single task positioning",
       title: "single task test",
       objectives: ["verify positioning"],
@@ -94,7 +95,7 @@ describe("Task Positioning Behavior", () => {
 
 
     // Should be positioned at the task commit, not an end commit
-    expect(currentDesc.ok).toContain("feat(test):~");
+    expect(currentDesc.ok).toContain("feat(test:test):~");
     expect(currentDesc.ok).toContain("initial task");
     expect(currentDesc.ok).toContain("initial task intent");
 
@@ -115,6 +116,7 @@ describe("Task Positioning Behavior", () => {
     const singleTaskPlan: SavingPlanData = {
       new: true,
       scope: "test",
+      tag: "test",
       intent: "test task addition positioning",
       title: "task addition test",
       objectives: ["verify positioning during expansion"],
@@ -141,7 +143,7 @@ describe("Task Positioning Behavior", () => {
     expect(step1Desc.ok).toBeDefined();
     if (!step1Desc.ok) throw new Error("Failed to get description");
 
-    expect(step1Desc.ok).toContain("feat(test):~");
+    expect(step1Desc.ok).toContain("feat(test:test):~");
     expect(step1Desc.ok).toContain("original task");
 
     // Load to get the task key
@@ -155,6 +157,7 @@ describe("Task Positioning Behavior", () => {
     // Step 2: Add a second task (should transition to LONG format)
     const expandedPlan: SavingPlanData = {
       scope: "test",
+      tag: "test",
       intent: "test task addition positioning",
       title: "task addition test",
       objectives: ["verify positioning during expansion"],
@@ -193,11 +196,11 @@ describe("Task Positioning Behavior", () => {
 
 
     // Should still be at the original task, not moved to end commit
-    expect(step2Desc.ok).toContain("feat(test)::~");
+    expect(step2Desc.ok).toContain("feat(test:test)::~");
     expect(step2Desc.ok).toContain("original task");
 
     // Should NOT be at the end commit
-    expect(step2Desc.ok).not.toContain("end(test):");
+    expect(step2Desc.ok).not.toContain("end(test:test):");
 
     // Verify the plan loads correctly and shows both tasks
     const step2Load = await loader.loadPlan();
@@ -227,10 +230,10 @@ describe("Task Positioning Behavior", () => {
 
     // Should have: begin, original task, new task, end
     expect(allCommits).toHaveLength(4);
-    expect(allCommits.some((m) => m.includes("begin(test):"))).toBe(true);
-    expect(allCommits.some((m) => m.includes("feat(test)::~"))).toBe(true);
-    expect(allCommits.some((m) => m.includes("fix(test)::~"))).toBe(true);
-    expect(allCommits.some((m) => m.includes("end(test):"))).toBe(true);
+    expect(allCommits.some((m) => m.includes("begin(test:test):"))).toBe(true);
+    expect(allCommits.some((m) => m.includes("feat(test:test)::~"))).toBe(true);
+    expect(allCommits.some((m) => m.includes("fix(test:test)::~"))).toBe(true);
+    expect(allCommits.some((m) => m.includes("end(test:test):"))).toBe(true);
   });
 
   it("should handle multiple task additions while maintaining position", async () => {
@@ -238,6 +241,7 @@ describe("Task Positioning Behavior", () => {
     const singleTaskPlan: SavingPlanData = {
       new: true,
       scope: "multi",
+      tag: "test",
       intent: "test multiple task additions",
       title: "multiple additions test",
       objectives: ["verify positioning through multiple additions"],
@@ -267,6 +271,7 @@ describe("Task Positioning Behavior", () => {
     // Step 2: Add second task
     const twoTaskPlan: SavingPlanData = {
       scope: "multi",
+      tag: "test",
       intent: "test multiple task additions",
       title: "multiple additions test",
       objectives: ["verify positioning through multiple additions"],
@@ -312,6 +317,7 @@ describe("Task Positioning Behavior", () => {
     // Step 3: Add third task
     const threeTaskPlan: SavingPlanData = {
       scope: "multi",
+      tag: "test",
       intent: "test multiple task additions",
       title: "multiple additions test",
       objectives: ["verify positioning through multiple additions"],
@@ -379,6 +385,7 @@ describe("Task Positioning Behavior", () => {
     const singleTaskPlan: SavingPlanData = {
       new: true,
       scope: "complex",
+      tag: "test",
       intent: "test complex positioning scenario",
       title: "complex positioning test",
       objectives: ["verify complex positioning behavior"],
@@ -408,6 +415,7 @@ describe("Task Positioning Behavior", () => {
     // Step 2: Add second task (transition to LONG format)
     const twoTaskPlan: SavingPlanData = {
       scope: "complex",
+      tag: "test",
       intent: "test complex positioning scenario",
       title: "complex positioning test",
       objectives: ["verify complex positioning behavior"],
@@ -447,6 +455,7 @@ describe("Task Positioning Behavior", () => {
     // Step 3: Add third task at the end
     const threeTaskPlan: SavingPlanData = {
       scope: "complex",
+      tag: "test",
       intent: "test complex positioning scenario",
       title: "complex positioning test",
       objectives: ["verify complex positioning behavior"],
@@ -508,6 +517,7 @@ describe("Task Positioning Behavior", () => {
     // Step 5: Set the second task to complete
     const completeSecondPlan: SavingPlanData = {
       scope: "complex",
+      tag: "test",
       intent: "test complex positioning scenario",
       title: "complex positioning test",
       objectives: ["verify complex positioning behavior"],
@@ -559,6 +569,7 @@ describe("Task Positioning Behavior", () => {
     // Step 6: Delete the first task (the one we're currently on)
     const deleteFirstPlan: SavingPlanData = {
       scope: "complex",
+      tag: "test",
       intent: "test complex positioning scenario",
       title: "complex positioning test",
       objectives: ["verify complex positioning behavior"],
@@ -618,7 +629,7 @@ describe("Task Positioning Behavior", () => {
 
     // Should be positioned at the third task now
     expect(step6Desc.ok).toContain("third task");
-    expect(step6Desc.ok).toContain("refactor(complex)::~");
+    expect(step6Desc.ok).toContain("refactor(complex:test)::~");
 
     // Verify the plan structure is correct
     const finalLoad = await loader.loadPlan();
@@ -645,14 +656,14 @@ describe("Task Positioning Behavior", () => {
 
     // Should have: begin, second task (no ~), third task (~), end
     expect(allCommits).toHaveLength(4);
-    expect(allCommits.some((m) => m.includes("begin(complex):"))).toBe(true);
+    expect(allCommits.some((m) => m.includes("begin(complex:test):"))).toBe(true);
     expect(
-      allCommits.some((m) => m.includes("fix(complex)::") && !m.includes("~")),
+      allCommits.some((m) => m.includes("fix(complex:test)::") && !m.includes("~")),
     ).toBe(true); // completed
-    expect(allCommits.some((m) => m.includes("refactor(complex)::~"))).toBe(
+    expect(allCommits.some((m) => m.includes("refactor(complex:test)::~"))).toBe(
       true,
     ); // incomplete
-    expect(allCommits.some((m) => m.includes("end(complex):"))).toBe(true);
+    expect(allCommits.some((m) => m.includes("end(complex:test):"))).toBe(true);
 
     // Should NOT have the first task anymore
     expect(allCommits.some((m) => m.includes("first task"))).toBe(false);

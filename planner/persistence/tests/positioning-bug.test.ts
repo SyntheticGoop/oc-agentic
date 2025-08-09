@@ -72,6 +72,7 @@ describe("Positioning Bug Reproduction", () => {
     const singlePlan: SavingPlanData = {
       new: true,
       scope: "workflow",
+      tag: "test",
       intent: "test complete workflow positioning",
       title: "workflow positioning test",
       objectives: ["track positioning throughout workflow"],
@@ -106,6 +107,7 @@ describe("Positioning Bug Reproduction", () => {
     // Step 2: Add 2 more tasks in a single save (should transition to LONG format)
     const expandedPlan: SavingPlanData = {
       scope: "workflow",
+      tag: "test",
       intent: "test complete workflow positioning",
       title: "workflow positioning test",
       objectives: ["track positioning throughout workflow"],
@@ -173,8 +175,8 @@ describe("Positioning Bug Reproduction", () => {
       ...(step2History.ok as any).future.map((h: any) => h.message),
     ];
 
-    expect(step2Messages.some((m) => m.includes("begin(workflow)"))).toBe(true);
-    expect(step2Messages.some((m) => m.includes("end(workflow)"))).toBe(true);
+    expect(step2Messages.some((m) => m.includes("begin(workflow:test)"))).toBe(true);
+    expect(step2Messages.some((m) => m.includes("end(workflow:test)"))).toBe(true);
     // Step 3: Move jj position to first task
     const moveToFirstResult = await jj.navigate.to(firstTaskKey);
     expect(moveToFirstResult.err).toBeUndefined();
@@ -185,13 +187,14 @@ describe("Positioning Bug Reproduction", () => {
     expect(currentDesc.ok).toBeDefined();
     if (!currentDesc.ok) throw new Error("Failed to get description");
 
-    expect(currentDesc.ok).toContain("feat(workflow)::~");
+    expect(currentDesc.ok).toContain("feat(workflow:test)::~");
     expect(currentDesc.ok).toContain("first task");
 
     // Check what the loader sees from this position
     const step3Load = await loader.loadPlan();
     const step4Plan: SavingPlanData = {
       scope: "workflow",
+      tag: "test",
       intent: "test complete workflow positioning",
       title: "workflow positioning test",
       objectives: ["track positioning throughout workflow"],
@@ -257,11 +260,12 @@ describe("Positioning Bug Reproduction", () => {
     expect(step5Desc.ok).toBeDefined();
     if (!step5Desc.ok) throw new Error("Failed to get description");
 
-    expect(step5Desc.ok).toContain("fix(workflow)::~");
+    expect(step5Desc.ok).toContain("fix(workflow:test)::~");
     expect(step5Desc.ok).toContain("second task");
     // Step 6: Update next task to be complete
     const step6Plan: SavingPlanData = {
       scope: "workflow",
+      tag: "test",
       intent: "test complete workflow positioning",
       title: "workflow positioning test",
       objectives: ["track positioning throughout workflow"],
@@ -327,11 +331,12 @@ describe("Positioning Bug Reproduction", () => {
     expect(step7Desc.ok).toBeDefined();
     if (!step7Desc.ok) throw new Error("Failed to get description");
 
-    expect(step7Desc.ok).toContain("refactor(workflow)::~");
+    expect(step7Desc.ok).toContain("refactor(workflow:test)::~");
     expect(step7Desc.ok).toContain("third task");
     // Step 8: Update final task to be complete
     const step8Plan: SavingPlanData = {
       scope: "workflow",
+      tag: "test",
       intent: "test complete workflow positioning",
       title: "workflow positioning test",
       objectives: ["track positioning throughout workflow"],
@@ -407,21 +412,21 @@ describe("Positioning Bug Reproduction", () => {
 
     // Should have: begin, task1 (no ~), task2 (no ~), task3 (no ~), end (5 commits)
     expect(finalMessages).toHaveLength(5);
-    expect(finalMessages.some((m) => m.includes("begin(workflow)"))).toBe(true);
-    expect(finalMessages.some((m) => m.includes("end(workflow)"))).toBe(true);
+    expect(finalMessages.some((m) => m.includes("begin(workflow:test)"))).toBe(true);
+    expect(finalMessages.some((m) => m.includes("end(workflow:test)"))).toBe(true);
     expect(
       finalMessages.some(
-        (m) => m.includes("feat(workflow)::") && !m.includes("~"),
+        (m) => m.includes("feat(workflow:test)::") && !m.includes("~"),
       ),
     ).toBe(true);
     expect(
       finalMessages.some(
-        (m) => m.includes("fix(workflow)::") && !m.includes("~"),
+        (m) => m.includes("fix(workflow:test)::") && !m.includes("~"),
       ),
     ).toBe(true);
     expect(
       finalMessages.some(
-        (m) => m.includes("refactor(workflow)::") && !m.includes("~"),
+        (m) => m.includes("refactor(workflow:test)::") && !m.includes("~"),
       ),
     ).toBe(true);
 

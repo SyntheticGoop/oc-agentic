@@ -89,7 +89,7 @@ User authentication is required to protect user data and enable personalized fea
 
 **LONG Format** (Multiple Tasks):
 ```
-begin(auth):: implement user authentication system
+begin(auth)(auth):: implement user authentication system
   ↓
 feat(auth/login):: implement login form
   ↓
@@ -97,8 +97,10 @@ feat(auth/signup):: implement registration form
   ↓
 fix(auth/validation):: fix password validation
   ↓
-end(auth):: implement user authentication system
+end(auth)(auth):: implement user authentication system
 ```
+
+**Note**: The new format requires a mandatory 4-character lowercase tag (e.g., `auth`) in the first parentheses, followed by an optional scope in the second parentheses. The tag applies to all tasks in the plan for grouping purposes.
 
 #### Atomic Operations
 - All project changes are atomic through Jujutsu commits
