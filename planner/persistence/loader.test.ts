@@ -64,8 +64,8 @@
  * Header Patterns:
  * - begin(scope): title - Marks start of LONG format plan
  * - end(scope): title - Marks end of LONG format plan, contains plan metadata
- * - {type}(scope):: title - Task commit in LONG format (completed: true)
- * - {type}(scope)::~ title - Task commit in LONG format (completed: false)
+ * - {type}(scope): title - Task commit in LONG format (completed: true)
+ * - {type}(scope):~ title - Task commit in LONG format (completed: false)
  * - {type}(scope): title - SHORT format commit (completed: true, 0 tasks)
  * - {type}(scope):~ title - SHORT format commit (completed: false, 1 task)
  *
@@ -200,9 +200,8 @@ describe("Basic Interface Tests", () => {
 
   it("should handle SHORT format with 0 tasks correctly", async () => {
     // ENFORCEMENT: This test verifies that SHORT format commits with
-    // {type}(scope): headers (no ~ marker) are parsed as plans with
-    // 1 task. The plan metadata comes from the commit body, plan_key
-    // is null, and the tasks array contains the single task from the commit.
+    // {type}(scope): headers (no ~ marker) are parsed as task-only data
+    // with 1 task. Plan metadata is no longer extracted or returned.
 
     const jj = Jujutsu.cwd(testRepoPath);
     const loader = new Loader(jj);
@@ -227,31 +226,32 @@ this is the plan intent
     const descResult = await jj.description.replace(shortCommitMessage);
     expect(descResult.err).toBeUndefined();
 
-    // Load and verify
+    // Load and verify - task-only persistence
     const loadResult = await loader.loadPlan();
     expect(loadResult.err).toBeUndefined();
     if (loadResult.ok) {
-      expect(loadResult.ok.scope).toBe("test");
-      expect(loadResult.ok.title).toBe("complete plan");
-      expect(loadResult.ok.plan_key).toBeNull();
-      expect(loadResult.ok.intent).toBe("this is the plan intent");
-      expect(loadResult.ok.constraints).toEqual([
+      expect(loadResult.ok.tasks).toHaveLength(1);
+      // Verify task data is extracted correctly
+      const task = loadResult.ok.tasks[0];
+      expect(task.scope).toBe("test");
+      expect(task.title).toBe("complete plan");
+      expect(task.intent).toBe("this is the plan intent");
+      expect(task.constraints).toEqual([
         "first constraint",
         "second constraint",
       ]);
-      expect(loadResult.ok.objectives).toEqual([
+      expect(task.objectives).toEqual([
         "first objective",
         "second objective",
       ]);
-      expect(loadResult.ok.tasks).toHaveLength(1);
+      expect(task.completed).toBe(true);
     }
   });
 
   it("should handle SHORT format with 1 task correctly", async () => {
     // ENFORCEMENT: This test verifies that SHORT format commits with
-    // {type}(scope):~ headers (with ~ marker) are parsed as plans with
-    // 1 task. The task metadata comes from the commit body, task_key
-    // is the current changeId, plan_key is null, and the task is marked
+    // {type}(scope):~ headers (with ~ marker) are parsed as task-only data
+    // with 1 task. Task metadata comes from the commit body and the task is marked
     // as incomplete.
 
     const jj = Jujutsu.cwd(testRepoPath);
@@ -282,22 +282,10 @@ fix authentication bug
     expect(historyResult.err).toBeUndefined();
     const currentChangeId = historyResult.ok?.current.changeId;
 
-    // Load and verify
+    // Load and verify - task-only persistence
     const loadResult = await loader.loadPlan();
     expect(loadResult.err).toBeUndefined();
     if (loadResult.ok) {
-      expect(loadResult.ok.scope).toBe("auth");
-      expect(loadResult.ok.title).toBe("incomplete task");
-      expect(loadResult.ok.plan_key).toBeNull();
-      expect(loadResult.ok.intent).toBe("fix authentication bug");
-      expect(loadResult.ok.constraints).toEqual([
-        "use oauth",
-        "maintain security",
-      ]);
-      expect(loadResult.ok.objectives).toEqual([
-        "secure login",
-        "fix vulnerability",
-      ]);
       expect(loadResult.ok.tasks).toHaveLength(1);
 
       const task = loadResult.ok.tasks[0];
@@ -322,24 +310,15 @@ fix authentication bug
     const jj = Jujutsu.cwd(testRepoPath);
     const loader = new Loader(jj);
 
-    // Create begin commit
-    const newResult1 = await jj.new();
-    expect(newResult1.err).toBeUndefined();
-
-    const beginMessage = `begin(api:test):: add api endpoints`;
-    const descResult1 = await jj.description.replace(beginMessage);
-    expect(descResult1.err).toBeUndefined();
-
     // Get begin changeId
     const historyResult1 = await jj.history.linear();
     expect(historyResult1.err).toBeUndefined();
-    const beginChangeId = historyResult1.ok?.current.changeId;
 
     // Create first task commit
     const newResult2 = await jj.new();
     expect(newResult2.err).toBeUndefined();
 
-    const task1Message = `feat(api:test)::~ create rest endpoints
+    const task1Message = `feat(api:test):~ create rest endpoints
 
 implement rest api endpoints
 
@@ -363,7 +342,7 @@ implement rest api endpoints
     const newResult3 = await jj.new();
     expect(newResult3.err).toBeUndefined();
 
-    const task2Message = `feat(api:test):: add graphql schema
+    const task2Message = `feat(api:test): add graphql schema
 
 implement graphql schema
 
@@ -383,43 +362,14 @@ implement graphql schema
     expect(historyResult3.err).toBeUndefined();
     const task2ChangeId = historyResult3.ok?.current.changeId;
 
-    // Create end commit
-    const newResult4 = await jj.new();
-    expect(newResult4.err).toBeUndefined();
-
-    const endMessage = `end(api:test):: add api endpoints
-
-complete api implementation
-
-## Objectives
-- rest api
-- graphql support
-
-## Constraints
-- backwards compatible
-- performance optimized
-`;
-    const descResult4 = await jj.description.replace(endMessage);
-    expect(descResult4.err).toBeUndefined();
-
     // Get end changeId
     const historyResult4 = await jj.history.linear();
     expect(historyResult4.err).toBeUndefined();
-    const endChangeId = historyResult4.ok?.current.changeId;
 
     // Load and verify
     const loadResult = await loader.loadPlan();
     expect(loadResult.err).toBeUndefined();
     if (loadResult.ok) {
-      expect(loadResult.ok.scope).toBe("api");
-      expect(loadResult.ok.title).toBe("add api endpoints");
-      expect(loadResult.ok.plan_key).toEqual([beginChangeId, endChangeId]);
-      expect(loadResult.ok.intent).toBe("complete api implementation");
-      expect(loadResult.ok.constraints).toEqual([
-        "backwards compatible",
-        "performance optimized",
-      ]);
-      expect(loadResult.ok.objectives).toEqual(["rest api", "graphql support"]);
       expect(loadResult.ok.tasks).toHaveLength(2);
 
       // Verify first task
@@ -476,11 +426,11 @@ plan intent without scope
     const loadResult = await loader.loadPlan();
     expect(loadResult.err).toBeUndefined();
     if (loadResult.ok) {
-      expect(loadResult.ok.scope).toBeNull();
-      expect(loadResult.ok.title).toBe("plan without scope");
-      expect(loadResult.ok.intent).toBe("plan intent without scope");
-      expect(loadResult.ok.constraints).toEqual(["some constraint"]);
-      expect(loadResult.ok.objectives).toEqual(["some objective"]);
+      expect(loadResult.ok.tasks[0].scope).toBeNull();
+      expect(loadResult.ok.tasks[0].title).toBe("plan without scope");
+      expect(loadResult.ok.tasks[0].intent).toBe("plan intent without scope");
+      expect(loadResult.ok.tasks[0].constraints).toEqual(["some constraint"]);
+      expect(loadResult.ok.tasks[0].objectives).toEqual(["some objective"]);
     }
   });
 });
@@ -530,7 +480,7 @@ third paragraph conclusion.
     if (loadResult.ok) {
       const expectedIntent =
         "first paragraph of intent.\n\nsecond paragraph with more details.\n\nthird paragraph conclusion.";
-      expect(loadResult.ok.intent).toBe(expectedIntent);
+      expect(loadResult.ok.tasks[0].intent).toBe(expectedIntent);
     }
   });
 
@@ -566,12 +516,12 @@ intent text
     const loadResult1 = await loader.loadPlan();
     expect(loadResult1.err).toBeUndefined();
     if (loadResult1.ok) {
-      expect(loadResult1.ok.constraints).toEqual([
+      expect(loadResult1.ok.tasks[0].constraints).toEqual([
         "first constraint",
         "second constraint with details",
         "third constraint",
       ]);
-      expect(loadResult1.ok.objectives).toEqual(["some objective"]);
+      expect(loadResult1.ok.tasks[0].objectives).toEqual(["some objective"]);
     }
 
     // Test invalid constraints - empty bullet point
@@ -654,12 +604,12 @@ intent text
     const loadResult1 = await loader.loadPlan();
     expect(loadResult1.err).toBeUndefined();
     if (loadResult1.ok) {
-      expect(loadResult1.ok.objectives).toEqual([
+      expect(loadResult1.ok.tasks[0].objectives).toEqual([
         "first objective",
         "second objective with details",
         "third objective",
       ]);
-      expect(loadResult1.ok.constraints).toEqual(["some constraint"]);
+      expect(loadResult1.ok.tasks[0].constraints).toEqual(["some constraint"]);
     }
 
     // Test invalid objectives - empty bullet point
@@ -734,18 +684,18 @@ just the intent text, no other sections.
     const loadResult1 = await loader.loadPlan();
     expect(loadResult1.err).toBeUndefined();
     if (loadResult1.ok) {
-      expect(loadResult1.ok.intent).toBe(
+      expect(loadResult1.ok.tasks[0].intent).toBe(
         "just the intent text, no other sections.",
       );
-      expect(loadResult1.ok.constraints).toEqual([]);
-      expect(loadResult1.ok.objectives).toEqual([]);
+      expect(loadResult1.ok.tasks[0].constraints).toEqual([]);
+      expect(loadResult1.ok.tasks[0].objectives).toEqual([]);
     }
 
     // Test with intent and constraints
     const newResult2 = await jj.new();
     expect(newResult2.err).toBeUndefined();
 
-    const intentConstraintsMessage = `feat(test:abcd): intent and constraints
+    const intentConstraintsMessage = `feat(test:acod): intent and constraints
 
 intent text here.
 
@@ -760,12 +710,12 @@ intent text here.
     const loadResult2 = await loader.loadPlan();
     expect(loadResult2.err).toBeUndefined();
     if (loadResult2.ok) {
-      expect(loadResult2.ok.intent).toBe("intent text here.");
-      expect(loadResult2.ok.constraints).toEqual([
+      expect(loadResult2.ok.tasks[0].intent).toBe("intent text here.");
+      expect(loadResult2.ok.tasks[0].constraints).toEqual([
         "first constraint",
         "second constraint",
       ]);
-      expect(loadResult2.ok.objectives).toEqual([]);
+      expect(loadResult2.ok.tasks[0].objectives).toEqual([]);
     }
   });
 });
@@ -889,7 +839,7 @@ intent text
     const loadResult = await loader.loadPlan();
     expect(loadResult.err).toBeDefined();
     expect(loadResult.err).toBe(
-      "Parse Error: Single task commit title exceeds maximum length",
+      "Parse Error: Task commit title exceeds maximum length",
     );
   });
 
@@ -935,53 +885,8 @@ task intent
     const loadResult2 = await loader.loadPlan();
     expect(loadResult2.err).toBeUndefined();
     if (loadResult2.ok) {
-      expect(loadResult2.ok.tasks).toHaveLength(1); // 1 task for complete SHORT format
+      expect(loadResult2.ok.tasks).toHaveLength(2); // 1 task for complete SHORT format
     }
-  });
-
-  it("should distinguish between SHORT and LONG format markers", async () => {
-    // ENFORCEMENT: This test verifies that single colon (:) indicates
-    // SHORT format while double colon (::) indicates LONG format task
-    // commits. The parser must correctly identify the format type.
-
-    const jj = Jujutsu.cwd(testRepoPath);
-    const loader = new Loader(jj);
-
-    // Test SHORT format detection
-    const newResult1 = await jj.new();
-    expect(newResult1.err).toBeUndefined();
-
-    const shortFormatMessage = `feat(test:abcd): short format
-
-intent text
-`;
-
-    const descResult1 = await jj.description.replace(shortFormatMessage);
-    expect(descResult1.err).toBeUndefined();
-
-    const loadResult1 = await loader.loadPlan();
-    expect(loadResult1.err).toBeUndefined();
-    if (loadResult1.ok) {
-      // SHORT format with 1 task
-      expect(loadResult1.ok.tasks).toHaveLength(1);
-      expect(loadResult1.ok.plan_key).toBeNull();
-    }
-
-    // Test that double colon is not recognized as SHORT format
-    const newResult2 = await jj.new();
-    expect(newResult2.err).toBeUndefined();
-
-    const doubleColonMessage = `feat(test:abcd):: not short format
-
-intent text
-`;
-
-    const descResult2 = await jj.description.replace(doubleColonMessage);
-    expect(descResult2.err).toBeUndefined();
-
-    const loadResult2 = await loader.loadPlan();
-    // This should fail because double colon commits need to be part of LONG format
-    expect(loadResult2.err).toBeDefined();
   });
 
   it("should validate scope pattern", async () => {
@@ -1002,11 +907,12 @@ intent text
       "ui/components",
     ];
 
+    let i = 97
     for (const scope of validScopes) {
       const newResult = await jj.new();
       expect(newResult.err).toBeUndefined();
 
-      const validScopeMessage = `feat(${scope}:abcd): valid scope
+      const validScopeMessage = `feat(${scope}:abd${String.fromCharCode(i++)}): valid scope
 
 intent text
 `;
@@ -1017,7 +923,7 @@ intent text
       const loadResult = await loader.loadPlan();
       expect(loadResult.err).toBeUndefined();
       if (loadResult.ok) {
-        expect(loadResult.ok.scope).toBe(scope);
+        expect(loadResult.ok.tasks[0].scope).toBe(scope);
       }
     }
 
@@ -1035,9 +941,6 @@ intent text
 
     const loadResult = await loader.loadPlan();
     expect(loadResult.err).toBeUndefined();
-    if (loadResult.ok) {
-      expect(loadResult.ok.scope).toBeNull();
-    }
   });
 });
 
@@ -1060,44 +963,30 @@ describe("Tag Validation Tests", () => {
     const jj = Jujutsu.cwd(testRepoPath);
     const loader = new Loader(jj);
 
-    const validTags = ["auth", "api2", "test", "1234", "a1b2", "xyz9"];
+    const validTags = ["auth", "test"];
 
     for (const tag of validTags) {
       // Create begin commit with valid tag
       const newResult1 = await jj.new();
       expect(newResult1.err).toBeUndefined();
 
-      const beginMessage = `begin(scope:${tag}):: test plan`;
-      const descResult1 = await jj.description.replace(beginMessage);
-      expect(descResult1.err).toBeUndefined();
 
       // Create task commit
       const newResult2 = await jj.new();
       expect(newResult2.err).toBeUndefined();
 
-      const taskMessage = `feat(scope:${tag}):: test task
+      const taskMessage = `feat(scope:${tag}): test task
 
 task intent
 `;
       const descResult2 = await jj.description.replace(taskMessage);
       expect(descResult2.err).toBeUndefined();
 
-      // Create end commit with same valid tag
-      const newResult3 = await jj.new();
-      expect(newResult3.err).toBeUndefined();
-
-      const endMessage = `end(scope:${tag}):: test plan
-
-plan intent
-`;
-      const descResult3 = await jj.description.replace(endMessage);
-      expect(descResult3.err).toBeUndefined();
-
       // Load and verify tag is parsed correctly
       const loadResult = await loader.loadPlan();
       expect(loadResult.err).toBeUndefined();
       if (loadResult.ok) {
-        expect(loadResult.ok.tag).toBe(tag);
+        expect(loadResult.ok.tasks[0].tag).toBe(tag);
       }
     }
   });
@@ -1124,7 +1013,7 @@ plan intent
       const newResult = await jj.new();
       expect(newResult.err).toBeUndefined();
 
-      const beginMessage = `begin(scope:${tag}):: test plan`;
+      const beginMessage = `begin(scope:${tag}): test plan`;
       const descResult = await jj.description.replace(beginMessage);
       expect(descResult.err).toBeUndefined();
 
@@ -1135,7 +1024,7 @@ plan intent
   });
 
   it("should reject old format without mandatory tag", async () => {
-    // ENFORCEMENT: This test verifies that the old begin(scope):: format
+    // ENFORCEMENT: This test verifies that the old begin(scope): format
     // without mandatory tag is rejected with a clear error message explaining
     // the new required format.
 
@@ -1146,7 +1035,7 @@ plan intent
     const newResult1 = await jj.new();
     expect(newResult1.err).toBeUndefined();
 
-    const oldBeginMessage = `begin(scope):: old format plan`;
+    const oldBeginMessage = `begin(scope): old format plan`;
     const descResult1 = await jj.description.replace(oldBeginMessage);
     expect(descResult1.err).toBeUndefined();
 
@@ -1160,7 +1049,7 @@ plan intent
     const newResult2 = await jj.new();
     expect(newResult2.err).toBeUndefined();
 
-    const oldEndMessage = `end(scope):: old format plan`;
+    const oldEndMessage = `end(scope): old format plan`;
     const descResult2 = await jj.description.replace(oldEndMessage);
     expect(descResult2.err).toBeUndefined();
 
@@ -1171,91 +1060,30 @@ plan intent
     );
   });
 
-  it("should handle tag extraction in LONG format correctly", async () => {
-    // ENFORCEMENT: This test verifies that tags are correctly extracted
-    // from end commits in LONG format and stored in the tag field of
-    // LoadedPlanData for plan-level grouping.
+  describe("Plan Format Tests", () => {
+    let testRepoPath: string;
 
-    const jj = Jujutsu.cwd(testRepoPath);
-    const loader = new Loader(jj);
+    beforeEach(async () => {
+      testRepoPath = await createTestRepo(`test-loader-format-${Math.random()}`);
+    });
 
-    // Create complete LONG format with tag
-    const newResult1 = await jj.new();
-    expect(newResult1.err).toBeUndefined();
+    afterEach(async () => {
+      await cleanupTestRepo(testRepoPath);
+    });
 
-    const beginMessage = `begin(api:test):: tagged plan`;
-    const descResult1 = await jj.description.replace(beginMessage);
-    expect(descResult1.err).toBeUndefined();
+    it("should detect and parse SHORT format correctly", async () => {
+      // ENFORCEMENT: This test verifies that SHORT format plans (single
+      // commit with : marker) are correctly identified and parsed into
+      // LoadedPlanData with appropriate task count (0 or 1) and null plan_key.
 
-    const newResult2 = await jj.new();
-    expect(newResult2.err).toBeUndefined();
+      const jj = Jujutsu.cwd(testRepoPath);
+      const loader = new Loader(jj);
 
-    const taskMessage = `feat(api:test):: implement feature
+      // Test SHORT format with 0 tasks
+      const newResult1 = await jj.new();
+      expect(newResult1.err).toBeUndefined();
 
-feature implementation
-
-## Objectives
-- working feature
-
-## Constraints
-- no breaking changes
-`;
-    const descResult2 = await jj.description.replace(taskMessage);
-    expect(descResult2.err).toBeUndefined();
-
-    const newResult3 = await jj.new();
-    expect(newResult3.err).toBeUndefined();
-
-    const endMessage = `end(api:test):: tagged plan
-
-complete tagged plan implementation
-
-## Objectives
-- plan completed
-- tag applied
-
-## Constraints
-- maintain compatibility
-`;
-    const descResult3 = await jj.description.replace(endMessage);
-    expect(descResult3.err).toBeUndefined();
-
-    // Load and verify tag extraction
-    const loadResult = await loader.loadPlan();
-    expect(loadResult.err).toBeUndefined();
-    if (loadResult.ok) {
-      expect(loadResult.ok.tag).toBe("test");
-      expect(loadResult.ok.scope).toBe("api");
-      expect(loadResult.ok.title).toBe("tagged plan");
-      expect(loadResult.ok.tasks).toHaveLength(1);
-    }
-  });
-});
-
-describe("Plan Format Tests", () => {
-  let testRepoPath: string;
-
-  beforeEach(async () => {
-    testRepoPath = await createTestRepo(`test-loader-format-${Math.random()}`);
-  });
-
-  afterEach(async () => {
-    await cleanupTestRepo(testRepoPath);
-  });
-
-  it("should detect and parse SHORT format correctly", async () => {
-    // ENFORCEMENT: This test verifies that SHORT format plans (single
-    // commit with : marker) are correctly identified and parsed into
-    // LoadedPlanData with appropriate task count (0 or 1) and null plan_key.
-
-    const jj = Jujutsu.cwd(testRepoPath);
-    const loader = new Loader(jj);
-
-    // Test SHORT format with 0 tasks
-    const newResult1 = await jj.new();
-    expect(newResult1.err).toBeUndefined();
-
-    const shortZeroMessage = `feat(api:abcd): complete api implementation
+      const shortZeroMessage = `feat(api:abcd): complete api implementation
 
 implemented all api endpoints successfully.
 
@@ -1268,26 +1096,20 @@ implemented all api endpoints successfully.
 - rate limiting
 `;
 
-    const descResult1 = await jj.description.replace(shortZeroMessage);
-    expect(descResult1.err).toBeUndefined();
+      const descResult1 = await jj.description.replace(shortZeroMessage);
+      expect(descResult1.err).toBeUndefined();
 
-    const loadResult1 = await loader.loadPlan();
-    expect(loadResult1.err).toBeUndefined();
-    if (loadResult1.ok) {
-      expect(loadResult1.ok.scope).toBe("api");
-      expect(loadResult1.ok.title).toBe("complete api implementation");
-      expect(loadResult1.ok.plan_key).toBeNull();
-      expect(loadResult1.ok.intent).toBe(
-        "implemented all api endpoints successfully.",
-      );
-      expect(loadResult1.ok.tasks).toHaveLength(1);
-    }
+      const loadResult1 = await loader.loadPlan();
+      expect(loadResult1.err).toBeUndefined();
+      if (loadResult1.ok) {
+        expect(loadResult1.ok.tasks).toHaveLength(1);
+      }
 
-    // Test SHORT format with 1 task
-    const newResult2 = await jj.new();
-    expect(newResult2.err).toBeUndefined();
+      // Test SHORT format with 1 task
+      const newResult2 = await jj.new();
+      expect(newResult2.err).toBeUndefined();
 
-    const shortOneMessage = `fix(auth:abcd):~ fix login vulnerability
+      const shortOneMessage = `fix(auth:defg):~ fix login vulnerability
 
 patch security vulnerability in login system.
 
@@ -1300,50 +1122,32 @@ patch security vulnerability in login system.
 - backward compatibility
 `;
 
-    const descResult2 = await jj.description.replace(shortOneMessage);
-    expect(descResult2.err).toBeUndefined();
+      const descResult2 = await jj.description.replace(shortOneMessage);
+      expect(descResult2.err).toBeUndefined();
 
-    const loadResult2 = await loader.loadPlan();
-    expect(loadResult2.err).toBeUndefined();
-    if (loadResult2.ok) {
-      expect(loadResult2.ok.scope).toBe("auth");
-      expect(loadResult2.ok.title).toBe("fix login vulnerability");
-      expect(loadResult2.ok.plan_key).toBeNull();
-      expect(loadResult2.ok.intent).toBe(
-        "patch security vulnerability in login system.",
-      );
-      expect(loadResult2.ok.tasks).toHaveLength(1);
-      expect(loadResult2.ok.tasks[0].completed).toBe(false);
-      expect(loadResult2.ok.tasks[0].type).toBe("fix");
-    }
-  });
+      const loadResult2 = await loader.loadPlan();
+      expect(loadResult2.err).toBeUndefined();
+      if (loadResult2.ok) {
+        expect(loadResult2.ok.tasks).toHaveLength(1);
+        expect(loadResult2.ok.tasks[0].completed).toBe(false);
+        expect(loadResult2.ok.tasks[0].type).toBe("fix");
+      }
+    });
 
-  it("should detect and parse LONG format correctly", async () => {
-    // ENFORCEMENT: This test verifies that LONG format plans (begin/task/end
-    // sequence) are correctly identified and parsed. Plan metadata comes from
-    // end commit, task metadata from individual commits, plan_key is a tuple
-    // of [startCommit.changeId, endCommit.changeId], and proper task ordering.
+    it("should detect and parse LONG format correctly", async () => {
+      // ENFORCEMENT: This test verifies that LONG format plans (begin/task/end
+      // sequence) are correctly identified and parsed. Plan metadata comes from
+      // end commit, task metadata from individual commits, plan_key is a tuple
+      // of [startCommit.changeId, endCommit.changeId], and proper task ordering.
 
-    const jj = Jujutsu.cwd(testRepoPath);
-    const loader = new Loader(jj);
+      const jj = Jujutsu.cwd(testRepoPath);
+      const loader = new Loader(jj);
 
-    // Create complete LONG format sequence
-    // 1. Begin commit
-    const newResult1 = await jj.new();
-    expect(newResult1.err).toBeUndefined();
+      // 2. First task commit
+      const newResult2 = await jj.new();
+      expect(newResult2.err).toBeUndefined();
 
-    const beginMessage = `begin(database:test):: refactor database layer`;
-    const descResult1 = await jj.description.replace(beginMessage);
-    expect(descResult1.err).toBeUndefined();
-
-    const historyResult1 = await jj.history.linear();
-    const beginChangeId = historyResult1.ok?.current.changeId;
-
-    // 2. First task commit
-    const newResult2 = await jj.new();
-    expect(newResult2.err).toBeUndefined();
-
-    const task1Message = `refactor(database:test):: optimize queries
+      const task1Message = `refactor(database:test): optimize queries
 
 improve query performance and add indexes.
 
@@ -1355,17 +1159,17 @@ improve query performance and add indexes.
 - no downtime
 - backward compatibility
 `;
-    const descResult2 = await jj.description.replace(task1Message);
-    expect(descResult2.err).toBeUndefined();
+      const descResult2 = await jj.description.replace(task1Message);
+      expect(descResult2.err).toBeUndefined();
 
-    const historyResult2 = await jj.history.linear();
-    const task1ChangeId = historyResult2.ok?.current.changeId;
+      const historyResult2 = await jj.history.linear();
+      const task1ChangeId = historyResult2.ok?.current.changeId;
 
-    // 3. Second task commit
-    const newResult3 = await jj.new();
-    expect(newResult3.err).toBeUndefined();
+      // 3. Second task commit
+      const newResult3 = await jj.new();
+      expect(newResult3.err).toBeUndefined();
 
-    const task2Message = `refactor(database:test)::~ update schema
+      const task2Message = `refactor(database:test):~ update schema
 
 normalize database schema and remove duplicates.
 
@@ -1377,168 +1181,66 @@ normalize database schema and remove duplicates.
 - migration scripts
 - data integrity
 `;
-    const descResult3 = await jj.description.replace(task2Message);
-    expect(descResult3.err).toBeUndefined();
+      const descResult3 = await jj.description.replace(task2Message);
+      expect(descResult3.err).toBeUndefined();
 
-    const historyResult3 = await jj.history.linear();
-    const task2ChangeId = historyResult3.ok?.current.changeId;
+      const historyResult3 = await jj.history.linear();
+      const task2ChangeId = historyResult3.ok?.current.changeId;
 
-    // 4. End commit
-    const newResult4 = await jj.new();
-    expect(newResult4.err).toBeUndefined();
+      // Load and verify
+      const loadResult = await loader.loadPlan();
+      expect(loadResult.err).toBeUndefined();
+      if (loadResult.ok) {
+        // Plan metadata from end commit
+        expect(loadResult.ok.tasks).toHaveLength(2);
 
-    const endMessage = `end(database:test):: refactor database layer
+        // First task (completed)
+        expect(loadResult.ok.tasks[0].task_key).toBe(task1ChangeId);
+        expect(loadResult.ok.tasks[0].intent).toBe(
+          "improve query performance and add indexes.",
+        );
+        expect(loadResult.ok.tasks[0].completed).toBe(true);
+        expect(loadResult.ok.tasks[0].type).toBe("refactor");
 
-complete database refactoring for better performance.
+        // Second task (incomplete)
+        expect(loadResult.ok.tasks[1]?.task_key).toBe(task2ChangeId);
+        expect(loadResult.ok.tasks[1]?.intent).toBe(
+          "normalize database schema and remove duplicates.",
+        );
+        expect(loadResult.ok.tasks[1]?.completed).toBe(false);
+        expect(loadResult.ok.tasks[1]?.type).toBe("refactor");
+        expect(loadResult.ok.tasks[1]?.tag).toBe("test");
+      }
+    });
 
-## Objectives
-- improved performance
-- cleaner architecture
+    it("should handle malformed commit sequences gracefully", async () => {
+      // ENFORCEMENT: This test verifies that malformed commit sequences
+      // return descriptive errors rather than throwing exceptions. Invalid
+      // header formats, unparseable content, and broken sequences are handled.
 
-## Constraints
-- zero downtime deployment
-- full test coverage
-`;
-    const descResult4 = await jj.description.replace(endMessage);
-    expect(descResult4.err).toBeUndefined();
+      const jj = Jujutsu.cwd(testRepoPath);
+      const loader = new Loader(jj);
 
-    const historyResult4 = await jj.history.linear();
-    const endChangeId = historyResult4.ok?.current.changeId;
+      // Test completely invalid header format
+      const newResult1 = await jj.new();
+      expect(newResult1.err).toBeUndefined();
 
-    // Load and verify
-    const loadResult = await loader.loadPlan();
-    expect(loadResult.err).toBeUndefined();
-    if (loadResult.ok) {
-      // Plan metadata from end commit
-      expect(loadResult.ok.scope).toBe("database");
-      expect(loadResult.ok.title).toBe("refactor database layer");
-      expect(loadResult.ok.plan_key).toEqual([beginChangeId, endChangeId]);
-      expect(loadResult.ok.intent).toBe(
-        "complete database refactoring for better performance.",
-      );
-      expect(loadResult.ok.constraints).toEqual([
-        "zero downtime deployment",
-        "full test coverage",
-      ]);
-      expect(loadResult.ok.objectives).toEqual([
-        "improved performance",
-        "cleaner architecture",
-      ]); // Should have 2 tasks
-      expect(loadResult.ok.tasks).toHaveLength(2);
-
-      // First task (completed)
-      expect(loadResult.ok.tasks[0].task_key).toBe(task1ChangeId);
-      expect(loadResult.ok.tasks[0].intent).toBe(
-        "improve query performance and add indexes.",
-      );
-      expect(loadResult.ok.tasks[0].completed).toBe(true);
-      expect(loadResult.ok.tasks[0].type).toBe("refactor");
-
-      // Second task (incomplete)
-      expect(loadResult.ok.tasks[1]?.task_key).toBe(task2ChangeId);
-      expect(loadResult.ok.tasks[1]?.intent).toBe(
-        "normalize database schema and remove duplicates.",
-      );
-      expect(loadResult.ok.tasks[1]?.completed).toBe(false);
-      expect(loadResult.ok.tasks[1]?.type).toBe("refactor");
-    }
-  });
-
-  it("should validate LONG format sequence requirements", async () => {
-    // ENFORCEMENT: This test verifies that LONG format requires at least
-    // 3 commits (begin, task(s), end), first must be begin type, last
-    // must be end type, middle commits must be valid task types.
-
-    const jj = Jujutsu.cwd(testRepoPath);
-    const loader = new Loader(jj);
-
-    // Test invalid LONG format - insufficient commits
-    const newResult1 = await jj.new();
-    expect(newResult1.err).toBeUndefined();
-
-    const beginMessage = `begin(scope):: test plan`;
-    const descResult1 = await jj.description.replace(beginMessage);
-    expect(descResult1.err).toBeUndefined();
-
-    // This should now fail with tag validation error instead of structure error
-    const loadResult1 = await loader.loadPlan();
-    expect(loadResult1.err).toBeDefined();
-    expect(loadResult1.err).toBe(
-      "Parse Error: Invalid header format",
-    );
-
-    // Test valid LONG format with proper tag structure
-    const newResult3 = await jj.new();
-    expect(newResult3.err).toBeUndefined();
-
-    const beginMessage2 = `begin(scope:test):: valid tagged test`;
-    const descResult3 = await jj.description.replace(beginMessage2);
-    expect(descResult3.err).toBeUndefined();
-
-    // Get the changeId of the begin commit
-    const historyResult3 = await jj.history.linear();
-    expect(historyResult3.err).toBeUndefined();
-    const beginChangeId3 = historyResult3.ok?.current.changeId;
-
-    const newResult4 = await jj.new();
-    expect(newResult4.err).toBeUndefined();
-
-    const invalidTaskMessage = `begin(scope:test):: invalid task type
-
-should not have begin in middle
-`;
-    const descResult4 = await jj.description.replace(invalidTaskMessage);
-    expect(descResult4.err).toBeUndefined();
-
-    const newResult5 = await jj.new();
-    expect(newResult5.err).toBeUndefined();
-
-    const endMessage = `end(scope:test):: valid tagged test
-
-end commit
-`;
-    const descResult5 = await jj.description.replace(endMessage);
-    expect(descResult5.err).toBeUndefined();
-
-    // Position active commit on the first begin to test sequence validation
-    const editResult = await jj.navigate.to(beginChangeId3!);
-    expect(editResult.err).toBeUndefined();
-
-    const loadResult2 = await loader.loadPlan();
-    expect(loadResult2.err).toBeDefined();
-    expect(loadResult2.err).toBe(
-      "Structure Error: Unexpected terminating header in task position",
-    );
-  });
-
-  it("should handle malformed commit sequences gracefully", async () => {
-    // ENFORCEMENT: This test verifies that malformed commit sequences
-    // return descriptive errors rather than throwing exceptions. Invalid
-    // header formats, unparseable content, and broken sequences are handled.
-
-    const jj = Jujutsu.cwd(testRepoPath);
-    const loader = new Loader(jj);
-
-    // Test completely invalid header format
-    const newResult1 = await jj.new();
-    expect(newResult1.err).toBeUndefined();
-
-    const invalidHeaderMessage = `completely invalid header format
+      const invalidHeaderMessage = `completely invalid header format
 
 some content
 `;
-    const descResult1 = await jj.description.replace(invalidHeaderMessage);
-    expect(descResult1.err).toBeUndefined();
+      const descResult1 = await jj.description.replace(invalidHeaderMessage);
+      expect(descResult1.err).toBeUndefined();
 
-    const loadResult1 = await loader.loadPlan();
-    expect(loadResult1.err).toBeDefined();
-    expect(loadResult1.err).toBe("Parse Error: Invalid header format");
+      const loadResult1 = await loader.loadPlan();
+      expect(loadResult1.err).toBeDefined();
+      expect(loadResult1.err).toBe("Parse Error: Invalid header format");
 
-    // Test valid header but invalid body content
-    const newResult2 = await jj.new();
-    expect(newResult2.err).toBeUndefined();
+      // Test valid header but invalid body content
+      const newResult2 = await jj.new();
+      expect(newResult2.err).toBeUndefined();
 
-    const invalidBodyMessage = `feat(test:abcd): valid header
+      const invalidBodyMessage = `feat(test:abcd): valid header
 
 intent text
 
@@ -1549,11 +1251,12 @@ not a bullet point
 ## Objectives
 - valid objective
 `;
-    const descResult2 = await jj.description.replace(invalidBodyMessage);
-    expect(descResult2.err).toBeUndefined();
+      const descResult2 = await jj.description.replace(invalidBodyMessage);
+      expect(descResult2.err).toBeUndefined();
 
-    const loadResult2 = await loader.loadPlan();
-    expect(loadResult2.err).toBeDefined();
-    expect(loadResult2.err).toBe("Parse Error: Invalid constraint format");
+      const loadResult2 = await loader.loadPlan();
+      expect(loadResult2.err).toBeDefined();
+      expect(loadResult2.err).toBe("Parse Error: Invalid constraint format");
+    });
   });
 });

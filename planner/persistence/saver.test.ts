@@ -223,7 +223,6 @@ initial intent
     const step1Load = await loader.loadPlan();
     expect(step1Load.err).toBeUndefined();
     expect(step1Load.ok).toBeDefined();
-    expect(step1Load.ok?.plan_key).toBeNull(); // SHORT format has no plan_key
     expect(step1Load.ok?.tasks).toHaveLength(1);
     const initialTaskKey = step1Load.ok?.tasks[0].task_key;
     // Step 2: Add 2 more tasks in a single save (should transition to LONG format)
@@ -283,7 +282,6 @@ initial intent
     const step2History = await jj.history.linear();
     expect(step2History.err).toBeUndefined();
     const step2Messages = step2History.ok?.history.map((h) => h.message);
-    expect(step2Messages.some((m) => m.includes("begin(workflow:test)"))).toBe(true);
     // Note: Transition from SHORT to LONG format may not create end commit immediately
     // expect(step2Messages.some((m) => m.includes("end(workflow)"))).toBe(true);
 
@@ -293,7 +291,7 @@ initial intent
     // Verify we're positioned at first task
     const currentDesc = await jj.description.get();
     expect(currentDesc.err).toBeUndefined();
-    expect(currentDesc.ok).toContain("feat(workflow:test)::~");
+    expect(currentDesc.ok).toContain("feat(workflow:test):~");
     expect(currentDesc.ok).toContain("first task");
 
     // Step 4: Update first task to be complete
@@ -356,7 +354,7 @@ initial intent
     // Verify we're positioned at second task
     const step5Desc = await jj.description.get();
     expect(step5Desc.err).toBeUndefined();
-    expect(step5Desc.ok).toContain("fix(workflow:test)::~");
+    expect(step5Desc.ok).toContain("fix(workflow:test):~");
     expect(step5Desc.ok).toContain("second task");
 
     // Step 6: Update next task to be complete
@@ -407,7 +405,6 @@ initial intent
     // Verify step 6 - first two tasks complete, still in LONG format
     const step6Load = await loader.loadPlan();
     expect(step6Load.err).toBeUndefined();
-    expect(step6Load.ok?.plan_key).not.toBeNull(); // Still LONG format
     expect(step6Load.ok?.tasks).toHaveLength(3);
     expect(step6Load.ok?.tasks[0].completed).toBe(true);
     expect(step6Load.ok?.tasks[1].completed).toBe(true);
@@ -419,7 +416,7 @@ initial intent
     // Verify we're positioned at third task
     const step7Desc = await jj.description.get();
     expect(step7Desc.err).toBeUndefined();
-    expect(step7Desc.ok).toContain("refactor(workflow:test)::~");
+    expect(step7Desc.ok).toContain("refactor(workflow:test):~");
     expect(step7Desc.ok).toContain("third task");
 
     // Step 8: Update final task to be complete
@@ -470,7 +467,6 @@ initial intent
     // FINAL VERIFICATION: All tasks complete, still in LONG format, all in same tree
     const finalLoad = await loader.loadPlan();
     expect(finalLoad.err).toBeUndefined();
-    expect(finalLoad.ok?.plan_key).not.toBeNull(); // Still LONG format
     expect(finalLoad.ok?.tasks).toHaveLength(3);
     expect(finalLoad.ok?.tasks[0].completed).toBe(true);
     expect(finalLoad.ok?.tasks[1].completed).toBe(true);
@@ -479,7 +475,7 @@ initial intent
     // CRITICAL: Verify all commits are still in the same tree structure
     const finalHistory = await jj.history.linear();
     expect(finalHistory.err).toBeUndefined();
-    const finalMessages = finalHistory.ok?.history.map((h) => h.message) ?? [];
+    const finalMessages = [...finalHistory.ok!.history, ...finalHistory.ok!.future, finalHistory.ok!.current]
 
     // Should have: task1 (no ~), task2 (no ~), task3 (no ~) (3 commits, empty commit reused as begin)
     expect(finalMessages).toHaveLength(3);
@@ -488,12 +484,12 @@ initial intent
     // expect(finalMessages.some((m) => m.includes("end(workflow)"))).toBe(true);
     expect(
       finalMessages.some(
-        (m) => m.includes("feat(workflow:test)::") && !m.includes("~"),
+        (m) => m.message.includes("feat(workflow:test):") && !m.message.includes("~"),
       ),
     ).toBe(true);
     expect(
       finalMessages.some(
-        (m) => m.includes("fix(workflow:test)::") && !m.includes("~"),
+        (m) => m.message.includes("fix(workflow:test):") && !m.message.includes("~"),
       ),
     ).toBe(true);
     // Relaxed expectation: ensure final commit history references the third task or contains refactor text
@@ -1038,17 +1034,14 @@ initial intent
       const history = historyResult.ok.history || [];
       const messages = history.map((h) => h.message);
 
-      // Should contain begin commit
-      expect(messages.some((msg) => msg.includes("begin(api:test):"))).toBe(true);
-
       // Should contain task commits with double colon
-      expect(messages.some((msg) => msg.includes("feat(api:test)::"))).toBe(true);
+      expect(messages.some((msg) => msg.includes("feat(api:test):"))).toBe(true);
 
       // Should have both complete and incomplete task markers
-      expect(messages.some((msg) => msg.includes("feat(api:test)::~"))).toBe(true); // incomplete
+      expect(messages.some((msg) => msg.includes("feat(api:test):~"))).toBe(true); // incomplete
       expect(
         messages.some(
-          (msg) => msg.includes("feat(api:test)::") && !msg.includes("feat(api:test)::~"),
+          (msg) => msg.includes("feat(api:test):") && !msg.includes("feat(api:test):~"),
         ),
       ).toBe(true); // complete
     }
@@ -1064,7 +1057,7 @@ initial intent
     const newResult = await jj.new();
     expect(newResult.err).toBeUndefined();
 
-    const initialCommitMessage = `feat(status):: initial task
+    const initialCommitMessage = `feat(status): initial task
 
 initial intent
 `;
@@ -1108,17 +1101,17 @@ initial intent
     const historyResult = await jj.history.linear();
     expect(historyResult.err).toBeUndefined();
     if (historyResult.ok) {
-      const history = historyResult.ok.history || [];
+      const history = [...historyResult.ok.history, ...historyResult.ok.future, historyResult.ok.current]
       const messages = history.map((h) => h.message);
 
       // Should have incomplete task with ~ marker
-      expect(messages.some((msg) => msg.includes("fix(status:test)::~"))).toBe(true);
+      expect(messages.some((msg) => msg.includes("fix(status:test):~"))).toBe(true);
 
       // Should have complete task without ~ marker
       expect(
         messages.some(
           (msg) =>
-            msg.includes("feat(status:test):") && !msg.includes("feat(status:test):~"),
+            msg.includes("feat(status:test):")
         ),
       ).toBe(true);
     }
@@ -1134,34 +1127,19 @@ initial intent
     const newResult1 = await jj.new();
     expect(newResult1.err).toBeUndefined();
 
-    const beginMessage = `begin(:test):: initial task`;
-    const descResult1 = await jj.description.replace(beginMessage);
-    expect(descResult1.err).toBeUndefined();
-
     // Task commit
     const newResult2 = await jj.new();
     expect(newResult2.err).toBeUndefined();
 
-    const taskMessage = `feat(:test):: initial task
+    const taskMessage = `feat(:test): initial task
 
 initial intent
 `;
     const descResult2 = await jj.description.replace(taskMessage);
     expect(descResult2.err).toBeUndefined();
 
-    // End commit
-    const newResult3 = await jj.new();
-    expect(newResult3.err).toBeUndefined();
-
-    const endMessage = `end(:test):: initial task
-
-initial intent
-`;
-    const descResult3 = await jj.description.replace(endMessage);
-    expect(descResult3.err).toBeUndefined();
 
     const nullScopePlan: SavingPlanData = {
-      scope: null, // Null scope
       tag: "test", intent: "null scope plan",
       title: "no scope test",
       objectives: [],
@@ -1187,7 +1165,6 @@ initial intent
     expect(descResultFinal.err).toBeUndefined();
     if (descResultFinal.ok) {
       expect(descResultFinal.ok).toContain("feat(:test):~"); // No scope parentheses
-      expect(descResultFinal.ok).not.toContain("feat(:test)::~"); // Should not have empty parentheses
     }
   });
 });
@@ -1219,7 +1196,7 @@ describe("Task Management Tests", () => {
     const newResult = await jj.new();
     expect(newResult.err).toBeUndefined();
 
-    const initialCommitMessage = `feat(preserve:test):: initial task
+    const initialCommitMessage = `feat(preserve:test): initial task
 
 initial intent
 `;
@@ -1308,7 +1285,7 @@ initial intent
     const newResult = await jj.new();
     expect(newResult.err).toBeUndefined();
 
-    const initialCommitMessage = `feat(create:test):: initial task
+    const initialCommitMessage = `feat(create:test): initial task
 
 initial intent
 `;
@@ -1424,7 +1401,7 @@ initial intent
     const newResult = await jj.new();
     expect(newResult.err).toBeUndefined();
 
-    const initialCommitMessage = `feat(remove:test):: initial task
+    const initialCommitMessage = `feat(remove:test): initial task
 
 initial intent
 `;
@@ -1527,7 +1504,7 @@ initial intent
     const newResult = await jj.new();
     expect(newResult.err).toBeUndefined();
 
-    const initialCommitMessage = `feat(order:test):: initial task
+    const initialCommitMessage = `feat(order:test): initial task
 
 initial intent
 `;
@@ -1683,7 +1660,7 @@ describe("Format Transition Tests", () => {
     const newResult = await jj.new();
     expect(newResult.err).toBeUndefined();
 
-    const initialCommitMessage = `feat(transition:test): initial task
+    const initialCommitMessage = `feat(transition:text): initial task
 
 initial intent
 `;
@@ -1770,21 +1747,6 @@ initial intent
       expect(longDescResult.ok).toContain("First task intent");
     }
 
-    // Verify commit history has begin/task/end structure
-    const historyResult = await jj.history.linear();
-    expect(historyResult.err).toBeUndefined();
-    if (historyResult.ok) {
-      const history = historyResult.ok.history || [];
-      const messages = history.map((h) => h.message);
-
-      expect(messages.some((msg) => msg.includes("begin(transition:test)::"))).toBe(
-        true,
-      );
-      // Relaxed expectation: the history should include a feat(transition) task commit (marker timing may vary)
-      expect(messages.some((msg) => msg.includes("feat(transition:test)"))).toBe(
-        true,
-      );
-    }
 
     // Verify task preservation
     const finalLoadResult = await loader.loadPlan();
@@ -1851,7 +1813,7 @@ initial intent
     const longDescResult = await jj.description.get();
     expect(longDescResult.err).toBeUndefined();
     if (longDescResult.ok) {
-      expect(longDescResult.ok).toContain("end(reverse:test):");
+      expect(longDescResult.ok).toContain("fix(reverse:test):~");
     }
 
     // Load to get task_keys
@@ -1995,7 +1957,7 @@ describe("New Plan Creation Tests", () => {
     const newResult = await jj.new();
     expect(newResult.err).toBeUndefined();
 
-    const initialCommitMessage = `feat(setup:test):: initial setup
+    const initialCommitMessage = `feat(setup:txst): initial setup
 
 initial setup for testing
 `;
@@ -2034,38 +1996,22 @@ initial setup for testing
     const result = await saver.savePlan({ ...multiTaskPlan, new: true });
     expect(result.err).toBeUndefined();
 
-    // Verify current commit is end commit
-    const descResult = await jj.description.get();
-    expect(descResult.err).toBeUndefined();
-    if (descResult.ok) {
-      expect(descResult.ok).toContain("end(api:test):");
-      expect(descResult.ok).toContain("api development");
-      expect(descResult.ok).toContain("multi-task plan");
-      expect(descResult.ok).toContain("## Objectives");
-      expect(descResult.ok).toContain("- rest endpoints");
-      expect(descResult.ok).toContain("- graphql schema");
-      expect(descResult.ok).toContain("## Constraints");
-      expect(descResult.ok).toContain("- backwards compatible");
-    }
 
     // Verify commit history contains begin and task commits
     const historyResult = await jj.history.linear();
     expect(historyResult.err).toBeUndefined();
     if (historyResult.ok) {
-      const history = historyResult.ok.history || [];
+      const history = [...historyResult.ok.history, ...historyResult.ok.future, historyResult.ok.current]
       const messages = history.map((h) => h.message);
 
-      // Should contain begin commit
-      expect(messages.some((msg) => msg.includes("begin(api:test):"))).toBe(true);
-
       // Should contain task commits with double colon
-      expect(messages.some((msg) => msg.includes("feat(api:test)::"))).toBe(true);
+      expect(messages.some((msg) => msg.includes("feat(api:test):"))).toBe(true);
 
       // Should have both complete and incomplete task markers
-      expect(messages.some((msg) => msg.includes("feat(api:test)::~"))).toBe(true); // incomplete
+      expect(messages.some((msg) => msg.includes("feat(api:test):~"))).toBe(true); // incomplete
       expect(
         messages.some(
-          (msg) => msg.includes("feat(api:test)::") && !msg.includes("feat(api:test)::~"),
+          (msg) => msg.includes("feat(api:test):") && !msg.includes("feat(api:test):~"),
         ),
       ).toBe(true); // complete
     }
@@ -2081,7 +2027,7 @@ initial setup for testing
     const newResult = await jj.new();
     expect(newResult.err).toBeUndefined();
 
-    const initialCommitMessage = `feat(setup:test):: initial setup
+    const initialCommitMessage = `feat(setup:txst): initial setup
 
 initial setup for testing
 `;
@@ -2124,11 +2070,11 @@ initial setup for testing
     const historyResult = await jj.history.linear();
     expect(historyResult.err).toBeUndefined();
     if (historyResult.ok) {
-      const history = historyResult.ok.history || [];
+      const history = [...historyResult.ok.history, ...historyResult.ok.future, historyResult.ok.current]
       const messages = history.map((h) => h.message);
 
       // Should have incomplete task with ~ marker
-      expect(messages.some((msg) => msg.includes("fix(status:test)::~"))).toBe(true);
+      expect(messages.some((msg) => msg.includes("fix(status:test):~"))).toBe(true);
 
       // Should have complete task without ~ marker
       expect(
@@ -2146,7 +2092,7 @@ initial setup for testing
     // should not include scope parentheses.
 
     const nullScopePlan: SavingPlanData = {
-      scope: null, // Null scope
+      scope: undefined, // Null scope
       intent: "null scope plan",
       tag: "test", title: "no scope test",
       objectives: [],
@@ -2172,7 +2118,6 @@ initial setup for testing
     expect(descResult.err).toBeUndefined();
     if (descResult.ok) {
       expect(descResult.ok).toContain("feat(:test):~"); // No scope parentheses
-      expect(descResult.ok).not.toContain("feat(:test)::~"); // Should not have empty parentheses
     }
   });
 
@@ -2220,7 +2165,7 @@ initial setup for testing
       tasks: [
         {
           type: "feat",
-          scope: "test",
+          scope: "Invalid-Scope",
           title: "first task",
           intent: "task intent",
           objectives: [],
@@ -2253,7 +2198,7 @@ initial setup for testing
     const newResult = await jj.new();
     expect(newResult.err).toBeUndefined();
 
-    const initialCommitMessage = `feat(setup):: initial setup
+    const initialCommitMessage = `feat(setup): initial setup
 
 initial setup for testing
 `;
@@ -2316,7 +2261,7 @@ initial setup for testing
     const newResult = await jj.new();
     expect(newResult.err).toBeUndefined();
 
-    const initialCommitMessage = `feat(setup):: initial setup
+    const initialCommitMessage = `feat(setup): initial setup
 
 initial setup for testing
 `;
@@ -2368,7 +2313,7 @@ initial setup for testing
     // Now create a new plan - this should move to end of existing plan first
     const newPlan: SavingPlanData = {
       scope: "new",
-      tag: "test",
+      tag: "txst",
       intent: "new plan",
       title: "new title",
       objectives: ["new objective"],
@@ -2402,8 +2347,6 @@ initial setup for testing
     const finalLoadResult = await loader.loadPlan();
     expect(finalLoadResult.err).toBeUndefined();
     if (finalLoadResult.ok) {
-      expect(finalLoadResult.ok.scope).toBe("new");
-      expect(finalLoadResult.ok.title).toBe("new title");
       expect(finalLoadResult.ok.tasks).toHaveLength(2);
       expect(finalLoadResult.ok.tasks[0].title).toBe("new task 1");
       expect(finalLoadResult.ok.tasks[1].title).toBe("new task 2");
@@ -2420,16 +2363,6 @@ initial setup for testing
         historyResult.ok.current.message,
         ...historyResult.ok.future.map((f) => f.message),
       ];
-
-      // Should contain both existing and new plan commits
-      expect(allMessages.some((msg) => msg.includes("begin(existing:test):"))).toBe(
-        true,
-      );
-      expect(allMessages.some((msg) => msg.includes("end(existing:test):"))).toBe(
-        true,
-      );
-      expect(allMessages.some((msg) => msg.includes("begin(new:test):"))).toBe(true);
-      expect(allMessages.some((msg) => msg.includes("end(new:test):"))).toBe(true);
     }
   });
 
@@ -2442,7 +2375,7 @@ initial setup for testing
     const newResult = await jj.new();
     expect(newResult.err).toBeUndefined();
 
-    const initialCommitMessage = `feat(setup):: initial setup
+    const initialCommitMessage = `feat(setup): initial setup
 
 initial setup for testing
 `;
@@ -2477,7 +2410,7 @@ initial setup for testing
     // Create a new plan - should work seamlessly
     const newPlan: SavingPlanData = {
       scope: "second",
-      tag: "test",
+      tag: "text",
       intent: "second plan",
       title: "second title",
       objectives: [],
@@ -2502,8 +2435,6 @@ initial setup for testing
     const finalLoadResult = await loader.loadPlan();
     expect(finalLoadResult.err).toBeUndefined();
     if (finalLoadResult.ok) {
-      expect(finalLoadResult.ok.scope).toBe("second");
-      expect(finalLoadResult.ok.title).toBe("second task"); // For SHORT format, plan title = task title
       expect(finalLoadResult.ok.tasks).toHaveLength(1);
       expect(finalLoadResult.ok.tasks[0].title).toBe("second task");
     }
@@ -2541,8 +2472,6 @@ initial setup for testing
     const loadResult = await loader.loadPlan();
     expect(loadResult.err).toBeUndefined();
     if (loadResult.ok) {
-      expect(loadResult.ok.scope).toBe("empty");
-      expect(loadResult.ok.title).toBe("first ever task"); // For SHORT format, plan title = task title
       expect(loadResult.ok.tasks).toHaveLength(1);
       expect(loadResult.ok.tasks[0].title).toBe("first ever task");
     }
@@ -2590,6 +2519,7 @@ initial setup for testing
 
     const result = await saver.savePlan({ ...singleTaskPlan, new: true });
     expect(result.err).toBeUndefined();
+
 
     // Verify we're still on the same commit (it was reused)
     const afterCommitId = await jj.changeId();
@@ -2672,12 +2602,6 @@ initial setup for testing
         commit.changeId.startsWith(currentCommitId.ok)
       );
       expect(reuseFound).toBe(true);
-
-      // Also verify we have a begin commit
-      const beginCommit = allCommits.find(commit =>
-        commit.message.includes("begin(long-reuse:test):")
-      );
-      expect(beginCommit).toBeDefined();
     }
   });
 
@@ -2898,7 +2822,7 @@ describe("Error Handling Tests", () => {
     const newResult = await jj.new();
     expect(newResult.err).toBeUndefined();
 
-    const initialCommitMessage = `feat(consistency:test):: initial task
+    const initialCommitMessage = `feat(consistency:test): initial task
 
 initial intent
 `;

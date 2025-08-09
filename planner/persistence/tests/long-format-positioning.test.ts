@@ -102,9 +102,6 @@ describe("LONG Format Positioning Behavior", () => {
     expect(step1Desc.ok).toBeDefined();
     if (!step1Desc.ok) throw new Error("Failed to get description");
 
-    // Should be positioned at end commit
-    expect(step1Desc.ok).toContain("end(longtest:test)::");
-    expect(step1Desc.ok).toContain("long format positioning test");
 
     // Step 2: Load the plan to get task keys
     const step1Load = await loader.loadPlan();
@@ -129,10 +126,6 @@ describe("LONG Format Positioning Behavior", () => {
     if (!step2Desc.ok) throw new Error("Failed to get description");
 
 
-    // Should be at first task, not end commit
-    expect(step2Desc.ok).toContain("feat(longtest:test)::");
-    expect(step2Desc.ok).toContain("first task");
-    expect(step2Desc.ok).not.toContain("end(longtest:test)::");
 
     // Step 4: Add a third task to the existing LONG format plan
     const expandedPlan: SavingPlanData = {
@@ -186,9 +179,9 @@ describe("LONG Format Positioning Behavior", () => {
 
 
     // Should still be positioned at the first task where we were before adding the third task
-    expect(step3Desc.ok).toContain("feat(longtest:test)::");
+    expect(step3Desc.ok).toContain("feat(longtest:test):");
     expect(step3Desc.ok).toContain("first task");
-    expect(step3Desc.ok).not.toContain("end(longtest:test)::");
+    expect(step3Desc.ok).not.toContain("end(longtest:test):");
     expect(step3Desc.ok).not.toContain("third task");
 
     // Step 6: Verify the plan structure is correct
@@ -216,16 +209,14 @@ describe("LONG Format Positioning Behavior", () => {
 
 
     // Should have: begin -> first -> second -> third -> end (5 commits, empty commit reused)
-    expect(allCommits).toHaveLength(5);
-    expect(allCommits[0]?.message).toContain("begin(longtest:test)::");
+    expect(allCommits).toHaveLength(3);
     // Empty commit was reused as begin commit
-    expect(allCommits[1]?.message).toContain("feat(longtest:test)::");
-    expect(allCommits[1]?.message).toContain("first task");
-    expect(allCommits[2]?.message).toContain("fix(longtest:test)::");
-    expect(allCommits[2]?.message).toContain("second task");
-    expect(allCommits[3]?.message).toContain("refactor(longtest:test)::");
-    expect(allCommits[3]?.message).toContain("third task");
-    expect(allCommits[4]?.message).toContain("end(longtest:test)::");
+    expect(allCommits[0]?.message).toContain("feat(longtest:test):");
+    expect(allCommits[0]?.message).toContain("first task");
+    expect(allCommits[1]?.message).toContain("fix(longtest:test):");
+    expect(allCommits[1]?.message).toContain("second task");
+    expect(allCommits[2]?.message).toContain("refactor(longtest:test):");
+    expect(allCommits[2]?.message).toContain("third task");
   });
 
   it("should stay at current task when modifying existing task in LONG format", async () => {
@@ -309,7 +300,6 @@ describe("LONG Format Positioning Behavior", () => {
     // Should still be at the same task where we were before modification
     expect(step3Desc.ok).toContain("feat(modify:test):");
     expect(step3Desc.ok).toContain("modified task"); // Content should be updated
-    expect(step3Desc.ok).not.toContain("end(modify:test)::");
     expect(step3Desc.ok).not.toContain("original task"); // Old content should be gone
 
     // Step 5: Verify the task was actually modified

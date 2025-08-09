@@ -19,6 +19,7 @@ export type ValidatedCommitType = z.infer<typeof ValidatedCommitType>;
 type Task = {
   task_key: string;
   title: string;
+  tag: string;
   type: ValidatedCommitType;
   scope: string | null;
   intent: string;
@@ -28,82 +29,28 @@ type Task = {
 };
 
 export type LoadedPlanData = {
-  scope: string | null;
-  plan_key: [string, string] | null;
-  tag: string | null;
-  title: string;
-  intent: string;
-  objectives: string[];
-  constraints: string[];
   tasks: [Task, ...Task[]];
 };
 
 export function parseCommitHeader(header: string) {
-  const begin =
-    /^begin\((?<scope>[a-z0-9/.-]+)?:(?<tag>[a-z0-9]{4})\):: (?<title>[a-z0-9].*)$/;
-  const end =
-    /^end\((?<scope>[a-z0-9/.-]+)?:(?<tag>[a-z0-9]{4})\):: (?<title>[a-z0-9].*)$/;
   const task =
-    /^(?<type>[a-z]+)\((?<scope>[a-z0-9/.-]+)?:(?<tag>[a-z0-9]{4})\)::(?<not>~)? (?<title>[a-z0-9].*)$/;
-  const singletask =
     /^(?<type>[a-z]+)\((?<scope>[a-z0-9/.-]+)?:(?<tag>[a-z0-9]{4})\):(?<not>~)? (?<title>[a-z0-9].*)$/;
 
-  const beginMatch = begin.exec(header);
-  const endMatch = end.exec(header);
   const taskMatch = task.exec(header);
-  const standaloneTaskMatch = singletask.exec(header);
-  if (beginMatch?.groups) {
-    const title = beginMatch.groups.title.trim();
-    if (title.length > 120)
-      return Err("Parse Error: Begin commit title exceeds maximum length");
-    return Ok({
-      class: "multi" as const,
-      type: "begin" as const,
-      tag: beginMatch.groups.tag,
-      scope: beginMatch.groups.scope ?? null,
-      title,
-    });
-  }
-  if (endMatch?.groups) {
-    const title = endMatch.groups.title.trim();
-    if (title.length > 120)
-      return Err("Parse Error: End commit title exceeds maximum length");
-    return Ok({
-      class: "multi" as const,
-      type: "end" as const,
-      tag: endMatch.groups.tag,
-      scope: endMatch.groups.scope ?? null,
-      title,
-    });
-  }
   if (taskMatch?.groups) {
     const type = ValidatedCommitType.safeParse(taskMatch.groups.type);
     if (type.error) return Err("Parse Error: Invalid commit type");
+
     const title = taskMatch.groups.title.trim();
     if (title.length > 120)
       return Err("Parse Error: Task commit title exceeds maximum length");
+
     return Ok({
-      class: "multi" as const,
       type: type.data,
+      tag: taskMatch.groups.tag,
       scope: taskMatch.groups.scope ?? null,
       title,
       completed: !taskMatch.groups.not,
-    });
-  }
-  if (standaloneTaskMatch?.groups) {
-    const type = ValidatedCommitType.safeParse(standaloneTaskMatch.groups.type);
-    if (type.error) return Err("Parse Error: Invalid commit type");
-    const title = standaloneTaskMatch.groups.title.trim();
-    if (title.length > 120)
-      return Err(
-        "Parse Error: Single task commit title exceeds maximum length",
-      );
-    return Ok({
-      class: "single" as const,
-      type: type.data,
-      scope: standaloneTaskMatch.groups.scope ?? null,
-      title,
-      completed: !standaloneTaskMatch.groups.not,
     });
   }
   return Err("Parse Error: Invalid header format");
@@ -180,7 +127,7 @@ export class Loader {
   constructor(private jj: ReturnType<(typeof Jujutsu)["cwd"]>) {}
 
   public async loadPlan() {
-    // Parse headers to get all possible markers
+    // Task-only persistence: Load individual task commits without plan structure
     const linearHistory = await this.jj.history
       .linear()
       .then((historyResult) => {
@@ -191,6 +138,7 @@ export class Loader {
         const header = parseCommitHeader(historyResult.ok.current.message);
         if (header.err) return header;
 
+        const tag = header.ok.tag;
         const future: Array<{
           header: typeof header.ok;
           changeId: string;
@@ -199,6 +147,7 @@ export class Loader {
         for (const commit of historyResult.ok.future) {
           const header = parseCommitHeader(commit.message);
           if (header.err) break;
+          if (header.ok.tag !== tag) break;
           future.push({
             header: header.ok,
             changeId: commit.changeId,
@@ -214,6 +163,7 @@ export class Loader {
         for (const commit of historyResult.ok.history.reverse()) {
           const header = parseCommitHeader(commit.message);
           if (header.err) break;
+          if (header.ok.tag !== tag) break;
           history.push({
             header: header.ok,
             changeId: commit.changeId,
@@ -233,132 +183,62 @@ export class Loader {
         });
       });
     if (linearHistory.err) return linearHistory;
-    // Identify if current is single
-    if (linearHistory.ok.current.header.class === "single") {
-      const commitDescription = await this.jj.description.get(
-        linearHistory.ok.current.changeId,
-      );
-      if (commitDescription.err) return commitDescription;
-      const body = parseCommitBody(
-        commitDescription.ok.split("\n").slice(1).join("\n"),
-      );
-      if (body.err) return body;
-      return Ok({
-        scope: linearHistory.ok.current.header.scope,
-        title: linearHistory.ok.current.header.title,
-        plan_key: null,
-        tag: null,
-        intent: body.ok.intent,
-        constraints: body.ok.constraints,
-        objectives: body.ok.objectives,
-        tasks: [
-          {
-            task_key: linearHistory.ok.current.changeId,
-            type: linearHistory.ok.current.header.type,
-            scope: linearHistory.ok.current.header.scope,
-            title: linearHistory.ok.current.header.title,
-            intent: body.ok.intent,
-            constraints: body.ok.constraints,
-            objectives: body.ok.objectives,
-            completed: linearHistory.ok.current.header.completed,
-          },
-        ],
-      } satisfies LoadedPlanData);
-    }
-    const planCommits: (typeof linearHistory.ok.current)[] = [];
-    if (linearHistory.ok.current.header.type === "begin") {
-      planCommits.push(linearHistory.ok.current);
-      for (const commit of linearHistory.ok.future) {
-        if (commit.header.type === "begin") {
-          return Err(
-            "Structure Error: Unexpected terminating header in task position",
-          );
-        }
-        planCommits.push(commit);
-        if (commit.header.type === "end") {
-          break;
-        }
-      }
-    } else if (linearHistory.ok.current.header.type === "end") {
-      const start = linearHistory.ok.history.findLastIndex(
-        (commit) => commit.header.type === "begin",
-      );
-      planCommits.push(...linearHistory.ok.history.slice(start));
-      planCommits.push(linearHistory.ok.current);
-    } else {
-      const start = linearHistory.ok.history.findLastIndex(
-        (commit) => commit.header.type === "begin",
-      );
-      const end = linearHistory.ok.future.findIndex(
-        (commit) => commit.header.type === "end",
-      );
-      planCommits.push(...linearHistory.ok.history.slice(start));
-      planCommits.push(linearHistory.ok.current);
-      planCommits.push(...linearHistory.ok.future.slice(0, end + 1));
-    }
-    if (planCommits.length < 3)
-      return Err(
-        "Structure Error: Invalid LONG format plan: insufficient commits",
-      );
-    if (planCommits.filter((c) => c.header.type === "end").length > 1)
-      return Err(
-        "Structure Error: Invalid LONG format plan: expected end commit",
-      );
-    if (planCommits.filter((c) => c.header.type === "begin").length > 1)
-      return Err(
-        "Structure Error: Invalid LONG format plan: expected begin commit",
-      );
-    const taskCommits = [];
-    for (const taskCommit of planCommits.slice(1, -1)) {
-      const commitDescription = await this.jj.description.get(
-        taskCommit.changeId,
-      );
-      if (commitDescription.err) return commitDescription;
-      const body = parseCommitBody(
-        commitDescription.ok.split("\n").slice(1).join("\n"),
-      );
-      if (body.err) return body;
-      if (
-        taskCommit.header.type === "begin" ||
-        taskCommit.header.type === "end"
-      )
-        return Err(
-          "Structure Error: Unexpected terminating header in task position",
-        );
-      taskCommits.push({
-        entry: taskCommit,
-        header: taskCommit.header,
-        body: body.ok,
-      });
-    }
-    const startCommit = planCommits.at(0);
-    if (!startCommit) return Err("Structure Error: Failed to find end commit");
 
-    const endCommit = planCommits.at(-1);
-    if (!endCommit) return Err("Structure Error: Failed to find end commit");
-    const commitDescription = await this.jj.description.get(endCommit.changeId);
+    // Task-only persistence: Handle multi-task commits as individual tasks
+    const taskCommits = [];
+
+    // Add current commit if it's a task
+    const commitDescription = await this.jj.description.get(
+      linearHistory.ok.current.changeId,
+    );
     if (commitDescription.err) return commitDescription;
     const body = parseCommitBody(
       commitDescription.ok.split("\n").slice(1).join("\n"),
     );
     if (body.err) return body;
+    taskCommits.push({
+      entry: linearHistory.ok.current,
+      header: linearHistory.ok.current.header,
+      body: body.ok,
+    });
+
+    // Add future task commits
+    for (const commit of linearHistory.ok.future) {
+      const commitDescription = await this.jj.description.get(commit.changeId);
+      if (commitDescription.err) return commitDescription;
+      const body = parseCommitBody(
+        commitDescription.ok.split("\n").slice(1).join("\n"),
+      );
+      if (body.err) return body;
+      taskCommits.push({
+        entry: commit,
+        header: commit.header,
+        body: body.ok,
+      });
+    }
+
+    // Add historical task commits
+    for (const commit of linearHistory.ok.history.reverse()) {
+      const commitDescription = await this.jj.description.get(commit.changeId);
+      if (commitDescription.err) return commitDescription;
+      const body = parseCommitBody(
+        commitDescription.ok.split("\n").slice(1).join("\n"),
+      );
+      if (body.err) return body;
+      taskCommits.unshift({
+        entry: commit,
+        header: commit.header,
+        body: body.ok,
+      });
+    }
 
     if (taskCommits.length === 0)
       return Err("Structure Error: There must be at least one task");
 
     return Ok({
-      scope: endCommit.header.scope,
-      title: endCommit.header.title,
-      intent: body.ok.intent,
-      constraints: body.ok.constraints,
-      plan_key: [startCommit.changeId, endCommit.changeId],
-      tag:
-        endCommit.header.type === "end" && "tag" in endCommit.header
-          ? endCommit.header.tag
-          : null,
-      objectives: body.ok.objectives,
       tasks: taskCommits.map((taskCommit) => ({
         task_key: taskCommit.entry.changeId,
+        tag: taskCommit.header.tag,
         type: taskCommit.header.type,
         scope: taskCommit.header.scope,
         title: taskCommit.header.title,

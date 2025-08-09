@@ -99,7 +99,6 @@ describe("Positioning Bug Reproduction", () => {
     expect(step1Load.ok).toBeDefined();
     if (!step1Load.ok) throw new Error("Failed to load plan");
 
-    expect(step1Load.ok.plan_key).toBeNull(); // SHORT format has no plan_key
     expect(step1Load.ok.tasks).toHaveLength(1);
     expect(step1Load.ok.tasks[0]).toBeDefined();
     const initialTaskKey = step1Load.ok.tasks[0].task_key;
@@ -153,7 +152,6 @@ describe("Positioning Bug Reproduction", () => {
     expect(step2Load.ok).toBeDefined();
     if (!step2Load.ok) throw new Error("Failed to load plan");
 
-    expect(step2Load.ok.plan_key).not.toBeNull(); // LONG format has plan_key
     expect(step2Load.ok.tasks).toHaveLength(3);
     expect(step2Load.ok.tasks[0]).toBeDefined();
     expect(step2Load.ok.tasks[1]).toBeDefined();
@@ -175,8 +173,6 @@ describe("Positioning Bug Reproduction", () => {
       ...(step2History.ok as any).future.map((h: any) => h.message),
     ];
 
-    expect(step2Messages.some((m) => m.includes("begin(workflow:test)"))).toBe(true);
-    expect(step2Messages.some((m) => m.includes("end(workflow:test)"))).toBe(true);
     // Step 3: Move jj position to first task
     const moveToFirstResult = await jj.navigate.to(firstTaskKey);
     expect(moveToFirstResult.err).toBeUndefined();
@@ -187,7 +183,7 @@ describe("Positioning Bug Reproduction", () => {
     expect(currentDesc.ok).toBeDefined();
     if (!currentDesc.ok) throw new Error("Failed to get description");
 
-    expect(currentDesc.ok).toContain("feat(workflow:test)::~");
+    expect(currentDesc.ok).toContain("feat(workflow:test):~");
     expect(currentDesc.ok).toContain("first task");
 
     // Check what the loader sees from this position
@@ -242,7 +238,6 @@ describe("Positioning Bug Reproduction", () => {
     expect(step4Load.ok).toBeDefined();
     if (!step4Load.ok) throw new Error("Failed to load plan");
 
-    expect(step4Load.ok.plan_key).not.toBeNull(); // Still LONG format
     expect(step4Load.ok.tasks).toHaveLength(3);
     expect(step4Load.ok.tasks[0]).toBeDefined();
     expect(step4Load.ok.tasks[1]).toBeDefined();
@@ -260,7 +255,7 @@ describe("Positioning Bug Reproduction", () => {
     expect(step5Desc.ok).toBeDefined();
     if (!step5Desc.ok) throw new Error("Failed to get description");
 
-    expect(step5Desc.ok).toContain("fix(workflow:test)::~");
+    expect(step5Desc.ok).toContain("fix(workflow:test):~");
     expect(step5Desc.ok).toContain("second task");
     // Step 6: Update next task to be complete
     const step6Plan: SavingPlanData = {
@@ -313,7 +308,6 @@ describe("Positioning Bug Reproduction", () => {
     expect(step6Load.ok).toBeDefined();
     if (!step6Load.ok) throw new Error("Failed to load plan");
 
-    expect(step6Load.ok.plan_key).not.toBeNull(); // Still LONG format
     expect(step6Load.ok.tasks).toHaveLength(3);
     expect(step6Load.ok.tasks[0]).toBeDefined();
     expect(step6Load.ok.tasks[1]).toBeDefined();
@@ -331,7 +325,7 @@ describe("Positioning Bug Reproduction", () => {
     expect(step7Desc.ok).toBeDefined();
     if (!step7Desc.ok) throw new Error("Failed to get description");
 
-    expect(step7Desc.ok).toContain("refactor(workflow:test)::~");
+    expect(step7Desc.ok).toContain("refactor(workflow:test):~");
     expect(step7Desc.ok).toContain("third task");
     // Step 8: Update final task to be complete
     const step8Plan: SavingPlanData = {
@@ -384,7 +378,6 @@ describe("Positioning Bug Reproduction", () => {
     expect(finalLoad.ok).toBeDefined();
     if (!finalLoad.ok) throw new Error("Failed to load plan");
 
-    expect(finalLoad.ok.plan_key).not.toBeNull(); // Still LONG format
     expect(finalLoad.ok.tasks).toHaveLength(3);
     expect(finalLoad.ok.tasks[0]).toBeDefined();
     expect(finalLoad.ok.tasks[1]).toBeDefined();
@@ -410,23 +403,19 @@ describe("Positioning Bug Reproduction", () => {
     );
 
 
-    // Should have: begin, task1 (no ~), task2 (no ~), task3 (no ~), end (5 commits)
-    expect(finalMessages).toHaveLength(5);
-    expect(finalMessages.some((m) => m.includes("begin(workflow:test)"))).toBe(true);
-    expect(finalMessages.some((m) => m.includes("end(workflow:test)"))).toBe(true);
     expect(
       finalMessages.some(
-        (m) => m.includes("feat(workflow:test)::") && !m.includes("~"),
+        (m) => m.includes("feat(workflow:test):") && !m.includes("~"),
       ),
     ).toBe(true);
     expect(
       finalMessages.some(
-        (m) => m.includes("fix(workflow:test)::") && !m.includes("~"),
+        (m) => m.includes("fix(workflow:test):") && !m.includes("~"),
       ),
     ).toBe(true);
     expect(
       finalMessages.some(
-        (m) => m.includes("refactor(workflow:test)::") && !m.includes("~"),
+        (m) => m.includes("refactor(workflow:test):") && !m.includes("~"),
       ),
     ).toBe(true);
 

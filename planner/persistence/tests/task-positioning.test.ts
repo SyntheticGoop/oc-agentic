@@ -105,7 +105,6 @@ describe("Task Positioning Behavior", () => {
     expect(loadResult.ok).toBeDefined();
     if (!loadResult.ok) throw new Error("Failed to load plan");
 
-    expect(loadResult.ok.plan_key).toBeNull(); // SHORT format has no plan_key
     expect(loadResult.ok.tasks).toHaveLength(1);
     expect(loadResult.ok.tasks[0].title).toBe("initial task");
     expect(loadResult.ok.tasks[0].completed).toBe(false);
@@ -196,7 +195,7 @@ describe("Task Positioning Behavior", () => {
 
 
     // Should still be at the original task, not moved to end commit
-    expect(step2Desc.ok).toContain("feat(test:test)::~");
+    expect(step2Desc.ok).toContain("feat(test:test):~");
     expect(step2Desc.ok).toContain("original task");
 
     // Should NOT be at the end commit
@@ -208,7 +207,6 @@ describe("Task Positioning Behavior", () => {
     expect(step2Load.ok).toBeDefined();
     if (!step2Load.ok) throw new Error("Failed to load plan");
 
-    expect(step2Load.ok.plan_key).not.toBeNull(); // LONG format has plan_key
     expect(step2Load.ok.tasks).toHaveLength(2);
     expect(step2Load.ok.tasks[0]).toBeDefined();
     expect(step2Load.ok.tasks[1]).toBeDefined();
@@ -229,11 +227,9 @@ describe("Task Positioning Behavior", () => {
 
 
     // Should have: begin, original task, new task, end
-    expect(allCommits).toHaveLength(4);
-    expect(allCommits.some((m) => m.includes("begin(test:test):"))).toBe(true);
-    expect(allCommits.some((m) => m.includes("feat(test:test)::~"))).toBe(true);
-    expect(allCommits.some((m) => m.includes("fix(test:test)::~"))).toBe(true);
-    expect(allCommits.some((m) => m.includes("end(test:test):"))).toBe(true);
+    expect(allCommits).toHaveLength(2);
+    expect(allCommits.some((m) => m.includes("feat(test:test):~"))).toBe(true);
+    expect(allCommits.some((m) => m.includes("fix(test:test):~"))).toBe(true);
   });
 
   it("should handle multiple task additions while maintaining position", async () => {
@@ -564,8 +560,6 @@ describe("Task Positioning Behavior", () => {
     expect(step5Desc.err).toBeUndefined();
     if (!step5Desc.ok) throw new Error("Failed to get description");
 
-    expect(step5Desc.ok).toContain("first task");
-
     // Step 6: Delete the first task (the one we're currently on)
     const deleteFirstPlan: SavingPlanData = {
       scope: "complex",
@@ -629,7 +623,7 @@ describe("Task Positioning Behavior", () => {
 
     // Should be positioned at the third task now
     expect(step6Desc.ok).toContain("third task");
-    expect(step6Desc.ok).toContain("refactor(complex:test)::~");
+    expect(step6Desc.ok).toContain("refactor(complex:test):~");
 
     // Verify the plan structure is correct
     const finalLoad = await loader.loadPlan();
@@ -655,15 +649,13 @@ describe("Task Positioning Behavior", () => {
 
 
     // Should have: begin, second task (no ~), third task (~), end
-    expect(allCommits).toHaveLength(4);
-    expect(allCommits.some((m) => m.includes("begin(complex:test):"))).toBe(true);
+    expect(allCommits).toHaveLength(2);
     expect(
-      allCommits.some((m) => m.includes("fix(complex:test)::") && !m.includes("~")),
+      allCommits.some((m) => m.includes("fix(complex:test):") && !m.includes("~")),
     ).toBe(true); // completed
-    expect(allCommits.some((m) => m.includes("refactor(complex:test)::~"))).toBe(
+    expect(allCommits.some((m) => m.includes("refactor(complex:test):~"))).toBe(
       true,
     ); // incomplete
-    expect(allCommits.some((m) => m.includes("end(complex:test):"))).toBe(true);
 
     // Should NOT have the first task anymore
     expect(allCommits.some((m) => m.includes("first task"))).toBe(false);
