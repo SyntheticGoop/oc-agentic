@@ -2029,10 +2029,10 @@ describe("Lexer E2E Tests", () => {
           "column": 2,
           "line": 215,
           "type": "content",
-          "value": "Introspect: Task is complete. IMPORTANT: THIS IS STRICT 100% COMPLETION. YOU ARE NOT ALLOWED TO BYPASS THIS REQUIREMENT. DOING SO WILL CAUSE SERIOUS PROGRAM CORRUPTION.",
+          "value": "Introspect: Task not yet successfully completed.",
         },
         {
-          "column": 171,
+          "column": 51,
           "line": 215,
           "type": "newline",
           "value": "
@@ -2054,80 +2054,22 @@ describe("Lexer E2E Tests", () => {
           "column": 31,
           "line": 216,
           "type": "state",
-          "value": "automated_one_shot_mark_task",
+          "value": "automated_one_shot_redefine_task",
         },
         {
-          "column": 60,
+          "column": 64,
           "line": 216,
           "type": "colon",
           "value": ":",
         },
         {
-          "column": 61,
+          "column": 65,
           "line": 216,
           "type": "content",
-          "value": "Synthesize current task specification with actual work done to produce updated task. Be precise with your editing. Call \`planner_update_task\` to update the task as completed with new details.",
+          "value": "Generate new sub plan that would satisfy task requirements. Format sub plan for \`planner_update_task\` and pass ONLY THAT INPUT to \`oc-agentic-inquisitor\`. Your message format will be \`[requirements] This needs clarity how execution will be carried out. Execution on this task must be strictly deterministic [specification] THE_TASK_SPECIFICATION\`. Perform secondary research on any questions raised. You may use \`oc-agentic-investigator\` to research about any concerns, in parallel, that deal directly with the codebase. \`oc-agentic-investigator\` should be called with the following format: \`I am uncertain about these THE_POINT. This is my current assumption THE_ASSUMPTION. Here is the CONTEXT. This is were I would begin: INVESTIGATION_ENTRY_POINT. Can you help provide factual clarity?\`. Use your enhanced contextual understanding and ability to investigate to immediately reject or accept points, synthesizing new points, or making any other adjustments to the task plan. Ensure that your plan remains within the constraints of the sub problems to solve.",
         },
         {
-          "column": 79,
-          "line": 219,
-          "type": "newline",
-          "value": "
-      ",
-        },
-        {
-          "column": 1,
-          "line": 220,
-          "type": "newline",
-          "value": "
-      ",
-        },
-        {
-          "column": 1,
-          "line": 221,
-          "type": "colon",
-          "value": ":",
-        },
-        {
-          "column": 2,
-          "line": 221,
-          "type": "content",
-          "value": "Do immediately",
-        },
-        {
-          "column": 17,
-          "line": 221,
-          "type": "newline",
-          "value": "
-      ",
-        },
-        {
-          "column": 1,
-          "line": 222,
-          "type": "state",
-          "value": "automated_one_shot_mark_task",
-        },
-        {
-          "column": 29,
-          "line": 222,
-          "type": "to",
-          "value": "to",
-        },
-        {
-          "column": 32,
-          "line": 222,
-          "type": "state",
-          "value": "automated_one_shot_loop_tasks",
-        },
-        {
-          "column": 62,
-          "line": 222,
-          "type": "newline",
-          "value": "
-      ",
-        },
-        {
-          "column": 1,
+          "column": 270,
           "line": 223,
           "type": "newline",
           "value": "
@@ -2136,105 +2078,112 @@ describe("Lexer E2E Tests", () => {
         {
           "column": 1,
           "line": 224,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 225,
           "type": "colon",
           "value": ":",
         },
         {
           "column": 2,
-          "line": 224,
-          "type": "content",
-          "value": "Introspect: Task not yet successfully completed.",
-        },
-        {
-          "column": 51,
-          "line": 224,
-          "type": "newline",
-          "value": "
-      ",
-        },
-        {
-          "column": 1,
           "line": 225,
-          "type": "state",
-          "value": "automated_one_shot_run_task",
-        },
-        {
-          "column": 28,
-          "line": 225,
-          "type": "to",
-          "value": "to",
-        },
-        {
-          "column": 31,
-          "line": 225,
-          "type": "state",
-          "value": "automated_one_shot_redefine_task",
-        },
-        {
-          "column": 64,
-          "line": 225,
-          "type": "colon",
-          "value": ":",
-        },
-        {
-          "column": 65,
-          "line": 225,
-          "type": "content",
-          "value": "Generate new sub plan that would satisfy task requirements. Format sub plan for \`planner_update_task\` and pass ONLY THAT INPUT to \`oc-agentic-inquisitor\`. Your message format will be \`[requirements] This needs clarity how execution will be carried out. Execution on this task must be strictly deterministic [specification] THE_TASK_SPECIFICATION\`. Perform secondary research on any questions raised. You may use \`oc-agentic-investigator\` to research about any concerns, in parallel, that deal directly with the codebase. \`oc-agentic-investigator\` should be called with the following format: \`I am uncertain about these THE_POINT. This is my current assumption THE_ASSUMPTION. Here is the CONTEXT. This is were I would begin: INVESTIGATION_ENTRY_POINT. Can you help provide factual clarity?\`. Use your enhanced contextual understanding and ability to investigate to immediately reject or accept points, synthesizing new points, or making any other adjustments to the task plan. Ensure that your plan remains within the constraints of the sub problems to solve.",
-        },
-        {
-          "column": 270,
-          "line": 232,
-          "type": "newline",
-          "value": "
-      ",
-        },
-        {
-          "column": 1,
-          "line": 233,
-          "type": "newline",
-          "value": "
-      ",
-        },
-        {
-          "column": 1,
-          "line": 234,
-          "type": "colon",
-          "value": ":",
-        },
-        {
-          "column": 2,
-          "line": 234,
           "type": "content",
           "value": "Do immediately",
         },
         {
           "column": 17,
-          "line": 234,
+          "line": 225,
           "type": "newline",
           "value": "
       ",
         },
         {
           "column": 1,
-          "line": 235,
+          "line": 226,
           "type": "state",
           "value": "automated_one_shot_redefine_task",
         },
         {
           "column": 33,
-          "line": 235,
+          "line": 226,
           "type": "to",
           "value": "to",
         },
         {
           "column": 36,
-          "line": 235,
+          "line": 226,
           "type": "state",
           "value": "automated_one_shot_run_task",
         },
         {
           "column": 64,
+          "line": 226,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 227,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 228,
+          "type": "colon",
+          "value": ":",
+        },
+        {
+          "column": 2,
+          "line": 228,
+          "type": "content",
+          "value": "Introspect: Task is complete. IMPORTANT: THIS IS STRICT 100% COMPLETION. YOU ARE NOT ALLOWED TO BYPASS THIS REQUIREMENT. DOING SO WILL CAUSE SERIOUS PROGRAM CORRUPTION.",
+        },
+        {
+          "column": 171,
+          "line": 228,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 229,
+          "type": "state",
+          "value": "automated_one_shot_run_task",
+        },
+        {
+          "column": 28,
+          "line": 229,
+          "type": "to",
+          "value": "to",
+        },
+        {
+          "column": 31,
+          "line": 229,
+          "type": "state",
+          "value": "automated_one_shot_all_tasks_complete",
+        },
+        {
+          "column": 69,
+          "line": 229,
+          "type": "colon",
+          "value": ":",
+        },
+        {
+          "column": 70,
+          "line": 229,
+          "type": "content",
+          "value": "Call \`planner_get_project\` to get full project details. Decide acceptability automatically using previously gathered validation results. Present completed work to human for review. Show synthesized execution summary and diffs. Provide the user with three choices: - Quick review: human inspects, provides concise feedback; system will synthesize comments and attempt automated fixes then resume automated execution. - Precise review: human will hand off to the main review chain for deeper human-driven acceptance and possible merge into the main workflow (all_tasks_complete). - Finish: accept and return to initial_loaded.",
+        },
+        {
+          "column": 49,
           "line": 235,
           "type": "newline",
           "value": "
@@ -2257,10 +2206,10 @@ describe("Lexer E2E Tests", () => {
           "column": 2,
           "line": 237,
           "type": "content",
-          "value": "Introspect: All tasks complete",
+          "value": "Ask: Do you want to perform a quick review?",
         },
         {
-          "column": 33,
+          "column": 47,
           "line": 237,
           "type": "newline",
           "value": "
@@ -2270,34 +2219,34 @@ describe("Lexer E2E Tests", () => {
           "column": 1,
           "line": 238,
           "type": "state",
-          "value": "automated_one_shot_loop_tasks",
+          "value": "automated_one_shot_all_tasks_complete",
         },
         {
-          "column": 30,
+          "column": 38,
           "line": 238,
           "type": "to",
           "value": "to",
         },
         {
-          "column": 33,
+          "column": 41,
           "line": 238,
           "type": "state",
-          "value": "automated_one_shot_all_tasks_complete",
+          "value": "human_review_quick",
         },
         {
-          "column": 71,
+          "column": 60,
           "line": 238,
           "type": "colon",
           "value": ":",
         },
         {
-          "column": 72,
+          "column": 61,
           "line": 238,
           "type": "content",
-          "value": "Call \`planner_get_project\` to get full project details. Present reply to agent (no human). Decide acceptability automatically using previously gathered validation results.",
+          "value": "Collect human feedback. Ask the user for explicit review notes and any blockers. Wait for user input. Synthesize feedback into concrete changelist This list will be used in the next task execution",
         },
         {
-          "column": 83,
+          "column": 52,
           "line": 241,
           "type": "newline",
           "value": "
@@ -2333,22 +2282,22 @@ describe("Lexer E2E Tests", () => {
           "column": 1,
           "line": 244,
           "type": "state",
-          "value": "automated_one_shot_all_tasks_complete",
+          "value": "human_review_quick",
         },
         {
-          "column": 38,
+          "column": 19,
           "line": 244,
           "type": "to",
           "value": "to",
         },
         {
-          "column": 41,
+          "column": 22,
           "line": 244,
           "type": "state",
-          "value": "initial_loaded",
+          "value": "automated_one_shot_loop_tasks",
         },
         {
-          "column": 56,
+          "column": 52,
           "line": 244,
           "type": "newline",
           "value": "
@@ -2364,6 +2313,164 @@ describe("Lexer E2E Tests", () => {
         {
           "column": 1,
           "line": 246,
+          "type": "colon",
+          "value": ":",
+        },
+        {
+          "column": 2,
+          "line": 246,
+          "type": "content",
+          "value": "Ask: Do you want to perform a detailed review?",
+        },
+        {
+          "column": 49,
+          "line": 246,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 247,
+          "type": "state",
+          "value": "automated_one_shot_all_tasks_complete",
+        },
+        {
+          "column": 38,
+          "line": 247,
+          "type": "to",
+          "value": "to",
+        },
+        {
+          "column": 41,
+          "line": 247,
+          "type": "state",
+          "value": "human_review_detailed",
+        },
+        {
+          "column": 63,
+          "line": 247,
+          "type": "colon",
+          "value": ":",
+        },
+        {
+          "column": 64,
+          "line": 247,
+          "type": "content",
+          "value": "Collect human feedback. Ask the user for explicit review notes and any blockers. Wait for user input. Synthesize feedback into concrete changelist This list will be used in the next task execution",
+        },
+        {
+          "column": 52,
+          "line": 250,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 251,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 252,
+          "type": "colon",
+          "value": ":",
+        },
+        {
+          "column": 2,
+          "line": 252,
+          "type": "content",
+          "value": "Do immediately",
+        },
+        {
+          "column": 17,
+          "line": 252,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 253,
+          "type": "state",
+          "value": "human_review_detailed",
+        },
+        {
+          "column": 22,
+          "line": 253,
+          "type": "to",
+          "value": "to",
+        },
+        {
+          "column": 25,
+          "line": 253,
+          "type": "state",
+          "value": "run_task",
+        },
+        {
+          "column": 34,
+          "line": 253,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 254,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 255,
+          "type": "colon",
+          "value": ":",
+        },
+        {
+          "column": 2,
+          "line": 255,
+          "type": "content",
+          "value": "Ask: Do you want to finish?",
+        },
+        {
+          "column": 30,
+          "line": 255,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 256,
+          "type": "state",
+          "value": "automated_one_shot_all_tasks_complete",
+        },
+        {
+          "column": 38,
+          "line": 256,
+          "type": "to",
+          "value": "to",
+        },
+        {
+          "column": 41,
+          "line": 256,
+          "type": "state",
+          "value": "initial_loaded",
+        },
+        {
+          "column": 56,
+          "line": 256,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 257,
           "type": "eof",
           "value": "",
         },

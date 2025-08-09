@@ -39,6 +39,7 @@ function start() {
     execute: async (args) => {
       const workflow = workflows[args.workflow];
 
+      // Validate states (accept plain names)
       if (!workflow.isValidState(args.current_state)) {
         return {
           type: "text" as const,
@@ -52,7 +53,7 @@ function start() {
         };
       }
 
-      const transition = workflow.transition(
+      const transition = workflow.transitionPlain(
         args.current_state,
         args.next_state,
       );
@@ -90,7 +91,8 @@ function start() {
       const workflow = workflows[args.workflow];
       return {
         type: "text",
-        text: `start = "${workflow.definition.initialState}"`,
+        // Return plain (unobfuscated) initial state for external callers
+        text: `start = "${workflow.getInitialStatePlain()}"`,
       };
     },
   });

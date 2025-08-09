@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { WorkflowLexer } from "./lexer";
 import { WorkflowParser } from "./parser";
-import { Workflow, type WorkflowState } from "./workflow";
+import { Workflow } from "./workflow";
 
 describe("Workflow E2E Tests", () => {
   it("should parse scoped-execution.flow file with new simplified syntax", () => {
@@ -95,12 +95,8 @@ describe("Workflow E2E Tests", () => {
     // Create a Workflow instance
     const workflow = new Workflow(content);
 
-    // Test state transitions using the correct API
-    const initialState = "initial_loaded" as WorkflowState;
-    const refineTasks = "refine_tasks" as WorkflowState;
-
-    // Test state transitions
-    const result1 = workflow.transition(initialState, refineTasks);
+    // Test state transitions using the public API
+    const result1 = workflow.transitionPlain("initial_loaded", "refine_tasks");
     expect(result1.move).toBe("success");
     if (result1.move === "success") {
       expect(result1.nextState).toBe("refine_tasks");
