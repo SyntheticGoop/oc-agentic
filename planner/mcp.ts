@@ -109,6 +109,30 @@ const ValidatedConstraints = z
   .array(z.string().min(1, "Constraint cannot be empty"))
   .default([]);
 
+// PROJECT METADATA STUBBING IMPLEMENTATION
+// ========================================
+//
+// As part of the inside-out migration to remove project-level concepts from the external API,
+// all project metadata fields (scope, title, intent, objectives, constraints) are now stubbed
+// with default values in MCP responses.
+//
+// IMPLEMENTATION APPROACH:
+// - Proxy-based stubbing in planning.ts intercepts property access and JSON serialization
+// - Actual project data is preserved internally for save operations and persistence
+// - External MCP responses consistently show stub values to prepare for metadata removal
+// - Task data remains fully functional and accurate throughout the migration
+//
+// STUBBED FIELDS:
+// - scope: Returns "stub"
+// - title: Returns "stubbed project data"
+// - intent: Returns migration explanation message
+// - objectives: Returns single migration-related objective
+// - constraints: Returns single constraint about data availability
+//
+// RATIONALE:
+// This approach maintains interface compatibility while gradually removing project-level
+// concepts from the external API surface, enabling a smooth transition to task-only workflows.
+
 function formatError(error: Err) {
   // Provide helpful error messages with recovery guidance
   switch (error.err) {
@@ -196,15 +220,25 @@ After calling this tool, you must examine the project data and confirm:
             message: `No existing project. You should start a new one.`,
           });
 
+        // Project metadata is now stubbed via proxy-based approach in planning.ts
+        // JSON serialization will show stub values while preserving task functionality
         return composeTextOutput({
           type: "success",
           message: `Project retrieved. EXAMINE THE RESULT: ${JSON.stringify(project.ok, null, 2)}
 
+STUBBING NOTICE: Project-level metadata fields are now stubbed during inside-out migration:
+- scope: Shows "stub" (actual data preserved internally)
+- title: Shows "stubbed project data" (actual data preserved internally)  
+- intent: Shows migration explanation (actual data preserved internally)
+- objectives: Shows migration-related objective (actual data preserved internally)
+- constraints: Shows data availability constraint (actual data preserved internally)
+
+FUNCTIONAL DATA: Task data remains fully accurate and functional.
+
 REQUIRED: You must analyze this project data and determine if it matches your expectations:
-- Does the title match what you expected?
-- Do the tasks match what you expected? 
-- Are the objectives, constraints, and intent what you expected?
-- If this doesn't match your expectations, you MUST take corrective action immediately.
+- Task data should be accurate and functional - verify task details carefully
+- Project metadata will consistently show stub values during migration
+- If task data doesn't match your expectations, you MUST take corrective action immediately.
 
 IMPORTANT: WITHIN THE CONTEXT OF USING THIS TOOL, YOU ARE REQUIRED TO ENGAGE IN PERSISTENT CLARIFICATION BEFORE ANY CREATE/UPDATE/DELETE OPERATION. You must ask specific questions about missing details and continue asking until the user explicitly says "proceed", "go ahead", or "that's enough". DO NOT ASSUME ANY DETAILS. DO NOT PROCEED WITHOUT EXPLICIT USER PERMISSION.`,
         });
@@ -303,19 +337,22 @@ Parameters:
           });
         }
 
+        // Project metadata is stubbed in response, but actual data was saved correctly
         return composeTextOutput({
           type: "success",
           message: `Project creation completed. VERIFY THE RESULT: ${JSON.stringify(project.ok, null, 2)}
 
-REQUIRED: You must verify this matches what you intended to create:
-- Title: "${project.ok.title}" - Is this correct?
-- Scope: "${project.ok.scope || "null"}" - Is this correct?
-- Intent: "${project.ok.intent}" - Is this correct?
-- Objectives: ${JSON.stringify(project.ok.objectives)} - Are these correct?
-- Constraints: ${JSON.stringify(project.ok.constraints)} - Are these correct?
-- Tasks: ${project.ok.tasks.length} tasks - Is this the expected number?
+STUBBING NOTICE: Project-level metadata fields show stub values in response:
+- scope, title, intent, objectives, constraints: All stubbed during migration
+- Actual project data was saved correctly to persistence layer
+- Stubbing only affects external API responses, not internal data storage
 
-If ANY of these don't match your expectations, you MUST investigate and take corrective action.`,
+REQUIRED: You must verify the task data matches what you intended to create:
+- Tasks: ${project.ok.tasks.length} tasks - Is this the expected number?
+- Task details should be accurate and functional (not stubbed)
+- Project metadata will consistently show stub values during migration
+
+If the task data doesn't match your expectations, you MUST investigate and take corrective action.`,
         });
       });
     },
@@ -363,14 +400,20 @@ If ANY of these don't match your expectations, you MUST investigate and take cor
           });
         }
 
+        // Project metadata is stubbed in response, but actual data was updated correctly
         return composeTextOutput({
           type: "success",
           message: `Project update completed. VERIFY THE CHANGES: ${JSON.stringify(project.ok, null, 2)}
 
-REQUIRED: You must verify your changes were applied correctly:
-- Check that only the fields you intended to change were modified
-- Check that all other fields remained unchanged
-- If the result doesn't match your expectations, investigate and correct immediately.`,
+STUBBING NOTICE: Project-level metadata fields show stub values in response:
+- scope, title, intent, objectives, constraints: All stubbed during migration
+- Actual project data was updated correctly in persistence layer
+- Stubbing only affects external API responses, not internal data storage
+
+REQUIRED: You must verify the task data remains functional:
+- Task data should be accurate and unchanged (not stubbed)
+- Project metadata will consistently show stub values during migration
+- If the task data doesn't match your expectations, investigate and correct immediately.`,
         });
       });
     },
