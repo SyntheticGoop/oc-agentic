@@ -147,6 +147,30 @@ export class Saver {
 
     // For single task, create just one commit
     if (plan.tasks.length === 1) {
+      // If there's no anchor and the current working commit is empty, reuse it
+      if (!anchorPoint) {
+        const currentChange = await this.jj.changeId();
+        if (currentChange.err) return currentChange;
+        const isEmpty = await this.jj.empty(currentChange.ok);
+        if (isEmpty.err) return isEmpty;
+        if (isEmpty.ok) {
+          const taskMsg = formatTask(plan.tasks[0], isMulti);
+          if (taskMsg.err) return taskMsg;
+
+          const update = await this.jj.description.replace(
+            taskMsg.ok,
+            currentChange.ok,
+          );
+          if (update.err) return update;
+
+          // Position at the task commit
+          const moved = await this.jj.navigate.to(currentChange.ok);
+          if (moved.err) return moved;
+
+          return Ok(void 0);
+        }
+      }
+
       const createOptions = anchorPoint
         ? { after: anchorPoint, noEdit: true }
         : { noEdit: true };
@@ -176,18 +200,35 @@ export class Saver {
     const createBeginOptions = anchorPoint
       ? { after: anchorPoint, noEdit: true }
       : { noEdit: true };
-    const createBegin = await this.jj.new(createBeginOptions);
-    if (createBegin.err) return createBegin;
+
+    // If there's no anchor and the current working commit is empty, reuse it as the begin commit
+    let createBegin = null as null | Awaited<ReturnType<typeof this.jj.new>>;
+    if (!anchorPoint) {
+      const currentChange = await this.jj.changeId();
+      if (currentChange.err) return currentChange;
+      const isEmpty = await this.jj.empty(currentChange.ok);
+      if (isEmpty.err) return isEmpty;
+      if (isEmpty.ok) {
+        // Reuse current commit as begin
+        createBegin = Ok({ change: currentChange.ok });
+      }
+    }
+
+    if (!createBegin) {
+      const created = await this.jj.new(createBeginOptions);
+      if (created.err) return created;
+      createBegin = created;
+    }
 
     const begin = formatBegin(plan);
     if (begin.err) return begin;
 
     const updateBegin = await this.jj.description.replace(
       begin.ok,
-      createBegin.ok.change,
+      createBegin!.ok.change,
     );
     if (updateBegin.err) return updateBegin;
-    active = createBegin.ok.change;
+    active = createBegin!.ok.change;
 
     // Create task commits - each anchored to the previous commit
     for (const task of plan.tasks) {

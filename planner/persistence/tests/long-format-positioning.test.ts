@@ -215,17 +215,17 @@ describe("LONG Format Positioning Behavior", () => {
     ];
 
 
-    // Should have: begin -> empty -> first -> second -> third -> end (6 commits)
-    expect(allCommits).toHaveLength(6);
+    // Should have: begin -> first -> second -> third -> end (5 commits, empty commit reused)
+    expect(allCommits).toHaveLength(5);
     expect(allCommits[0]?.message).toContain("begin(longtest)::");
-    // allCommits[1] is the empty commit (skip)
-    expect(allCommits[2]?.message).toContain("feat(longtest)::");
-    expect(allCommits[2]?.message).toContain("first task");
-    expect(allCommits[3]?.message).toContain("fix(longtest)::");
-    expect(allCommits[3]?.message).toContain("second task");
-    expect(allCommits[4]?.message).toContain("refactor(longtest)::");
-    expect(allCommits[4]?.message).toContain("third task");
-    expect(allCommits[5]?.message).toContain("end(longtest)::");
+    // Empty commit was reused as begin commit
+    expect(allCommits[1]?.message).toContain("feat(longtest)::");
+    expect(allCommits[1]?.message).toContain("first task");
+    expect(allCommits[2]?.message).toContain("fix(longtest)::");
+    expect(allCommits[2]?.message).toContain("second task");
+    expect(allCommits[3]?.message).toContain("refactor(longtest)::");
+    expect(allCommits[3]?.message).toContain("third task");
+    expect(allCommits[4]?.message).toContain("end(longtest)::");
   });
 
   it("should stay at current task when modifying existing task in LONG format", async () => {

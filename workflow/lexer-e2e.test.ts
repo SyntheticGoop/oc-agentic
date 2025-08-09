@@ -1739,211 +1739,85 @@ describe("Lexer E2E Tests", () => {
           "column": 37,
           "line": 169,
           "type": "state",
-          "value": "automated_one_shot_inquisit",
+          "value": "automated_one_shot_create_project",
         },
         {
-          "column": 65,
+          "column": 71,
           "line": 169,
           "type": "colon",
           "value": ":",
         },
         {
-          "column": 66,
+          "column": 72,
           "line": 169,
           "type": "content",
-          "value": "Synthesize the single-task scope of work specifics. Pass the scope of work specifics to agent \`oc-agentic-inquisitor\`. Your message format will be \`[requirements] This needs clarity how plans will be formed during execution. Plans that derive from this must be strictly deterministic [specification] THE_PROJECT_SPECIFICATION\`. THE_SCOPE_OF_WORK_SPECIFICATION is the contents of the scope of work specifics you would have passed to \`planner_create_project\`. Wait for reply from \`oc-agentic-inquisitor\`. Perform secondary research on any questions raised. You may use \`oc-agentic-investigator\` to research about any concerns, in parallel, that deal directly with the codebase. \`oc-agentic-investigator\` should be called with the following format: \`I am uncertain about these THE_POINT. This is my current assumption THE_ASSUMPTION. Here is the CONTEXT. This is were I would begin: INVESTIGATION_ENTRY_POINT. Can you help provide factual clarity?\`. Use your enhanced contextual understanding and ability to investigate to immediately reject or accept points, synthesizing new points, or making any other adjustments to the project, leaving points with uncertainty as an exercise to the user to clarify. Present the synthesized single-task project specifics.",
+          "value": "Synthesize the single-task scope of work specifics. Pass the scope of work specifics to agent \`oc-agentic-inquisitor\`. Your message format will be \`[requirements] This needs clarity how plans will be formed during execution. Plans that derive from this must be strictly deterministic [specification] THE_PROJECT_SPECIFICATION\`. THE_SCOPE_OF_WORK_SPECIFICATION is the contents of the scope of work specifics you would have passed to \`planner_create_project\`. Wait for reply from \`oc-agentic-inquisitor\`. Perform secondary research on any questions raised. You may use \`oc-agentic-investigator\` to research about any concerns, in parallel, that deal directly with the codebase. \`oc-agentic-investigator\` should be called with the following format: \`I am uncertain about these THE_POINT. This is my current assumption THE_ASSUMPTION. Here is the CONTEXT. This is were I would begin: INVESTIGATION_ENTRY_POINT. Can you help provide factual clarity?\`. Use your enhanced contextual understanding and ability to investigate to immediately reject or accept points, synthesizing new points, or making any other adjustments to the project. Present the synthesized single-task project specifics. Update the project specifics based on the inquisitor reply. Pass the updated single-task specification to \`oc-agentic-inquisitor\` again using the same message format as above. Use \`oc-agentic-investigator\` as needed for codebase checks. Present final synthesized single-task specification ready for creation. Call \`planner_create_project\` with the final synthesized single-task project specifics ensuring the project contains exactly one task. Wait for successful reply.",
         },
         {
-          "column": 57,
-          "line": 179,
+          "column": 29,
+          "line": 185,
           "type": "newline",
           "value": "
       ",
         },
         {
           "column": 1,
-          "line": 180,
+          "line": 186,
           "type": "newline",
           "value": "
       ",
         },
         {
           "column": 1,
-          "line": 181,
+          "line": 187,
           "type": "colon",
           "value": ":",
         },
         {
           "column": 2,
-          "line": 181,
-          "type": "content",
-          "value": "Ask: Can you provide clarity on all the above points?",
-        },
-        {
-          "column": 56,
-          "line": 181,
-          "type": "newline",
-          "value": "
-      ",
-        },
-        {
-          "column": 1,
-          "line": 182,
-          "type": "state",
-          "value": "automated_one_shot_inquisit",
-        },
-        {
-          "column": 28,
-          "line": 182,
-          "type": "to",
-          "value": "to",
-        },
-        {
-          "column": 31,
-          "line": 182,
-          "type": "state",
-          "value": "automated_one_shot_refine",
-        },
-        {
-          "column": 57,
-          "line": 182,
-          "type": "colon",
-          "value": ":",
-        },
-        {
-          "column": 58,
-          "line": 182,
-          "type": "content",
-          "value": "",
-        },
-        {
-          "column": 58,
-          "line": 182,
-          "type": "newline",
-          "value": "
-      ",
-        },
-        {
-          "column": 1,
-          "line": 183,
-          "type": "newline",
-          "value": "
-      ",
-        },
-        {
-          "column": 1,
-          "line": 184,
-          "type": "colon",
-          "value": ":",
-        },
-        {
-          "column": 2,
-          "line": 184,
+          "line": 187,
           "type": "content",
           "value": "Do immediately",
         },
         {
           "column": 17,
-          "line": 184,
+          "line": 187,
           "type": "newline",
           "value": "
       ",
         },
         {
           "column": 1,
-          "line": 185,
-          "type": "state",
-          "value": "automated_one_shot_refine",
-        },
-        {
-          "column": 26,
-          "line": 185,
-          "type": "to",
-          "value": "to",
-        },
-        {
-          "column": 29,
-          "line": 185,
-          "type": "state",
-          "value": "automated_one_shot_inquisit_2",
-        },
-        {
-          "column": 59,
-          "line": 185,
-          "type": "colon",
-          "value": ":",
-        },
-        {
-          "column": 60,
-          "line": 185,
-          "type": "content",
-          "value": "Update the project specifics based on the inquisitor reply. Pass the updated single-task specification to \`oc-agentic-inquisitor\` again using the same message format as above. Use \`oc-agentic-investigator\` as needed for codebase checks. Present final synthesized single-task specification ready for creation.",
-        },
-        {
-          "column": 74,
-          "line": 189,
-          "type": "newline",
-          "value": "
-      ",
-        },
-        {
-          "column": 1,
-          "line": 190,
-          "type": "newline",
-          "value": "
-      ",
-        },
-        {
-          "column": 1,
-          "line": 191,
-          "type": "colon",
-          "value": ":",
-        },
-        {
-          "column": 2,
-          "line": 191,
-          "type": "content",
-          "value": "Ask: Would you like to proceed (anyway) to creating the single-task scope of work?",
-        },
-        {
-          "column": 85,
-          "line": 191,
-          "type": "newline",
-          "value": "
-      ",
-        },
-        {
-          "column": 1,
-          "line": 192,
-          "type": "state",
-          "value": "automated_one_shot_inquisit_2",
-        },
-        {
-          "column": 30,
-          "line": 192,
-          "type": "to",
-          "value": "to",
-        },
-        {
-          "column": 33,
-          "line": 192,
+          "line": 188,
           "type": "state",
           "value": "automated_one_shot_create_project",
         },
         {
-          "column": 67,
-          "line": 192,
+          "column": 34,
+          "line": 188,
+          "type": "to",
+          "value": "to",
+        },
+        {
+          "column": 37,
+          "line": 188,
+          "type": "state",
+          "value": "automated_one_shot_final_check",
+        },
+        {
+          "column": 68,
+          "line": 188,
           "type": "colon",
           "value": ":",
         },
         {
-          "column": 68,
-          "line": 192,
+          "column": 69,
+          "line": 188,
           "type": "content",
-          "value": "Call \`planner_create_project\` with the final synthesized single-task project specifics ensuring the project contains exactly one task. Wait for successful reply.",
+          "value": "Call \`planner_get_project\` to load created project and confirm it contains a single task. Format output and pass ONLY THAT INPUT to \`oc-agentic-inquisitor\` for a final internal consistency check. Your message format will be \`[requirements] This is a full single-task scope of work. Every part needs to be internally coherent and logically sound. Each part must build up to a cohesive whole and no contradictions are allowed. Work done must be atomic. Planning must be exhaustive. [specification] THE_SCOPE_OF_WORK_SPECIFICATION\`. Wait for reply. Use \`oc-agentic-investigator\` as needed. Present synthesized final single-task project.",
         },
         {
-          "column": 29,
+          "column": 49,
           "line": 194,
           "type": "newline",
           "value": "
@@ -1979,41 +1853,97 @@ describe("Lexer E2E Tests", () => {
           "column": 1,
           "line": 197,
           "type": "state",
-          "value": "automated_one_shot_create_project",
+          "value": "automated_one_shot_final_check",
         },
         {
-          "column": 34,
+          "column": 31,
           "line": 197,
           "type": "to",
           "value": "to",
         },
         {
-          "column": 37,
+          "column": 34,
           "line": 197,
           "type": "state",
-          "value": "automated_one_shot_final_check",
+          "value": "automated_one_shot_execution",
         },
         {
-          "column": 68,
+          "column": 63,
           "line": 197,
           "type": "colon",
           "value": ":",
         },
         {
-          "column": 69,
+          "column": 64,
           "line": 197,
           "type": "content",
-          "value": "Call \`planner_get_project\` to load created project and confirm it contains a single task. Format output and pass ONLY THAT INPUT to \`oc-agentic-inquisitor\` for a final internal consistency check. Your message format will be \`[requirements] This is a full single-task scope of work. Every part needs to be internally coherent and logically sound. Each part must build up to a cohesive whole and no contradictions are allowed. Work done must be atomic. Planning must be exhaustive. [specification] THE_SCOPE_OF_WORK_SPECIFICATION\`. Wait for reply. Use \`oc-agentic-investigator\` as needed. Present synthesized final single-task project.",
+          "value": "Proceed to execution of the single task without human intervention.",
         },
         {
-          "column": 49,
-          "line": 203,
+          "column": 70,
+          "line": 198,
           "type": "newline",
           "value": "
       ",
         },
         {
           "column": 1,
+          "line": 199,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 200,
+          "type": "colon",
+          "value": ":",
+        },
+        {
+          "column": 2,
+          "line": 200,
+          "type": "content",
+          "value": "Do immediately",
+        },
+        {
+          "column": 17,
+          "line": 200,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 201,
+          "type": "state",
+          "value": "automated_one_shot_execution",
+        },
+        {
+          "column": 29,
+          "line": 201,
+          "type": "to",
+          "value": "to",
+        },
+        {
+          "column": 32,
+          "line": 201,
+          "type": "state",
+          "value": "automated_one_shot_loop_tasks",
+        },
+        {
+          "column": 62,
+          "line": 201,
+          "type": "colon",
+          "value": ":",
+        },
+        {
+          "column": 63,
+          "line": 201,
+          "type": "content",
+          "value": "Find first (and only) unfinished task. Go to the task with \`planner_goto\`. Extract all current task details from \`planner_get_project\`.",
+        },
+        {
+          "column": 63,
           "line": 204,
           "type": "newline",
           "value": "
@@ -2022,18 +1952,6 @@ describe("Lexer E2E Tests", () => {
         {
           "column": 1,
           "line": 205,
-          "type": "colon",
-          "value": ":",
-        },
-        {
-          "column": 2,
-          "line": 205,
-          "type": "content",
-          "value": "Do immediately",
-        },
-        {
-          "column": 17,
-          "line": 205,
           "type": "newline",
           "value": "
       ",
@@ -2041,98 +1959,54 @@ describe("Lexer E2E Tests", () => {
         {
           "column": 1,
           "line": 206,
-          "type": "state",
-          "value": "automated_one_shot_final_check",
-        },
-        {
-          "column": 31,
-          "line": 206,
-          "type": "to",
-          "value": "to",
-        },
-        {
-          "column": 34,
-          "line": 206,
-          "type": "state",
-          "value": "automated_one_shot_execution",
-        },
-        {
-          "column": 63,
-          "line": 206,
           "type": "colon",
           "value": ":",
         },
         {
-          "column": 64,
+          "column": 2,
           "line": 206,
           "type": "content",
-          "value": "Proceed to execution of the single task without human intervention.",
+          "value": "Introspect: Has unfinished task.",
         },
         {
-          "column": 70,
+          "column": 35,
+          "line": 206,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
           "line": 207,
-          "type": "newline",
-          "value": "
-      ",
-        },
-        {
-          "column": 1,
-          "line": 208,
-          "type": "newline",
-          "value": "
-      ",
-        },
-        {
-          "column": 1,
-          "line": 209,
-          "type": "colon",
-          "value": ":",
-        },
-        {
-          "column": 2,
-          "line": 209,
-          "type": "content",
-          "value": "Do immediately",
-        },
-        {
-          "column": 17,
-          "line": 209,
-          "type": "newline",
-          "value": "
-      ",
-        },
-        {
-          "column": 1,
-          "line": 210,
-          "type": "state",
-          "value": "automated_one_shot_execution",
-        },
-        {
-          "column": 29,
-          "line": 210,
-          "type": "to",
-          "value": "to",
-        },
-        {
-          "column": 32,
-          "line": 210,
           "type": "state",
           "value": "automated_one_shot_loop_tasks",
         },
         {
-          "column": 62,
-          "line": 210,
+          "column": 30,
+          "line": 207,
+          "type": "to",
+          "value": "to",
+        },
+        {
+          "column": 33,
+          "line": 207,
+          "type": "state",
+          "value": "automated_one_shot_run_task",
+        },
+        {
+          "column": 61,
+          "line": 207,
           "type": "colon",
           "value": ":",
         },
         {
-          "column": 63,
-          "line": 210,
+          "column": 62,
+          "line": 207,
           "type": "content",
-          "value": "Find first (and only) unfinished task. Go to the task with \`planner_goto\`. Extract all current task details from \`planner_get_project\`.",
+          "value": "Pass the task to \`oc-agentic-executor\`. Your message format will be \`Do TASK_DETAILS\` where TASK_DETAILS is the full specification of the current active task verbatim. Wait for execution to complete. Pass the task and execution review to \`oc-agentic-reiviewer\`. Your message format will be \`Based on TASK_DETAILS review the current changes as reported by EXECUTION_REVIEW\` where TASK_DETAILS is the full specification of the current active task verbatim and EXECUTION_REVIEW is the output produced by the executor. Wait for review to complete.",
         },
         {
-          "column": 63,
+          "column": 31,
           "line": 213,
           "type": "newline",
           "value": "
@@ -2155,10 +2029,10 @@ describe("Lexer E2E Tests", () => {
           "column": 2,
           "line": 215,
           "type": "content",
-          "value": "Introspect: Has unfinished task.",
+          "value": "Introspect: Task is complete. IMPORTANT: THIS IS STRICT 100% COMPLETION. YOU ARE NOT ALLOWED TO BYPASS THIS REQUIREMENT. DOING SO WILL CAUSE SERIOUS PROGRAM CORRUPTION.",
         },
         {
-          "column": 35,
+          "column": 171,
           "line": 215,
           "type": "newline",
           "value": "
@@ -2168,34 +2042,85 @@ describe("Lexer E2E Tests", () => {
           "column": 1,
           "line": 216,
           "type": "state",
-          "value": "automated_one_shot_loop_tasks",
+          "value": "automated_one_shot_run_task",
         },
         {
-          "column": 30,
+          "column": 28,
           "line": 216,
           "type": "to",
           "value": "to",
         },
         {
-          "column": 33,
+          "column": 31,
           "line": 216,
           "type": "state",
-          "value": "automated_one_shot_run_task",
+          "value": "automated_one_shot_mark_task",
         },
         {
-          "column": 61,
+          "column": 60,
           "line": 216,
           "type": "colon",
           "value": ":",
         },
         {
-          "column": 62,
+          "column": 61,
           "line": 216,
           "type": "content",
-          "value": "Pass the task to \`oc-agentic-executor\`. Your message format will be \`Do TASK_DETAILS\` where TASK_DETAILS is the full specification of the current active task verbatim. Wait for execution to complete. Pass the task and execution review to \`oc-agentic-reiviewer\`. Your message format will be \`Based on TASK_DETAILS review the current changes as reported by EXECUTION_REVIEW\` where TASK_DETAILS is the full specification of the current active task verbatim and EXECUTION_REVIEW is the output produced by the executor. Wait for review to complete.",
+          "value": "Synthesize current task specification with actual work done to produce updated task. Be precise with your editing. Call \`planner_update_task\` to update the task as completed with new details.",
         },
         {
-          "column": 31,
+          "column": 79,
+          "line": 219,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 220,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 221,
+          "type": "colon",
+          "value": ":",
+        },
+        {
+          "column": 2,
+          "line": 221,
+          "type": "content",
+          "value": "Do immediately",
+        },
+        {
+          "column": 17,
+          "line": 221,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 222,
+          "type": "state",
+          "value": "automated_one_shot_mark_task",
+        },
+        {
+          "column": 29,
+          "line": 222,
+          "type": "to",
+          "value": "to",
+        },
+        {
+          "column": 32,
+          "line": 222,
+          "type": "state",
+          "value": "automated_one_shot_loop_tasks",
+        },
+        {
+          "column": 62,
           "line": 222,
           "type": "newline",
           "value": "
@@ -2218,10 +2143,10 @@ describe("Lexer E2E Tests", () => {
           "column": 2,
           "line": 224,
           "type": "content",
-          "value": "Introspect: Task is complete. IMPORTANT: THIS IS STRICT 100% COMPLETION. YOU ARE NOT ALLOWED TO BYPASS THIS REQUIREMENT. DOING SO WILL CAUSE SERIOUS PROGRAM CORRUPTION.",
+          "value": "Introspect: Task not yet successfully completed.",
         },
         {
-          "column": 171,
+          "column": 51,
           "line": 224,
           "type": "newline",
           "value": "
@@ -2243,80 +2168,22 @@ describe("Lexer E2E Tests", () => {
           "column": 31,
           "line": 225,
           "type": "state",
-          "value": "automated_one_shot_mark_task",
+          "value": "automated_one_shot_redefine_task",
         },
         {
-          "column": 60,
+          "column": 64,
           "line": 225,
           "type": "colon",
           "value": ":",
         },
         {
-          "column": 61,
+          "column": 65,
           "line": 225,
           "type": "content",
-          "value": "Synthesize current task specification with actual work done to produce updated task. Be precise with your editing. Call \`planner_update_task\` to update the task as completed with new details.",
+          "value": "Generate new sub plan that would satisfy task requirements. Format sub plan for \`planner_update_task\` and pass ONLY THAT INPUT to \`oc-agentic-inquisitor\`. Your message format will be \`[requirements] This needs clarity how execution will be carried out. Execution on this task must be strictly deterministic [specification] THE_TASK_SPECIFICATION\`. Perform secondary research on any questions raised. You may use \`oc-agentic-investigator\` to research about any concerns, in parallel, that deal directly with the codebase. \`oc-agentic-investigator\` should be called with the following format: \`I am uncertain about these THE_POINT. This is my current assumption THE_ASSUMPTION. Here is the CONTEXT. This is were I would begin: INVESTIGATION_ENTRY_POINT. Can you help provide factual clarity?\`. Use your enhanced contextual understanding and ability to investigate to immediately reject or accept points, synthesizing new points, or making any other adjustments to the task plan. Ensure that your plan remains within the constraints of the sub problems to solve.",
         },
         {
-          "column": 79,
-          "line": 228,
-          "type": "newline",
-          "value": "
-      ",
-        },
-        {
-          "column": 1,
-          "line": 229,
-          "type": "newline",
-          "value": "
-      ",
-        },
-        {
-          "column": 1,
-          "line": 230,
-          "type": "colon",
-          "value": ":",
-        },
-        {
-          "column": 2,
-          "line": 230,
-          "type": "content",
-          "value": "Do immediately",
-        },
-        {
-          "column": 17,
-          "line": 230,
-          "type": "newline",
-          "value": "
-      ",
-        },
-        {
-          "column": 1,
-          "line": 231,
-          "type": "state",
-          "value": "automated_one_shot_mark_task",
-        },
-        {
-          "column": 29,
-          "line": 231,
-          "type": "to",
-          "value": "to",
-        },
-        {
-          "column": 32,
-          "line": 231,
-          "type": "state",
-          "value": "automated_one_shot_loop_tasks",
-        },
-        {
-          "column": 62,
-          "line": 231,
-          "type": "newline",
-          "value": "
-      ",
-        },
-        {
-          "column": 1,
+          "column": 270,
           "line": 232,
           "type": "newline",
           "value": "
@@ -2325,18 +2192,6 @@ describe("Lexer E2E Tests", () => {
         {
           "column": 1,
           "line": 233,
-          "type": "colon",
-          "value": ":",
-        },
-        {
-          "column": 2,
-          "line": 233,
-          "type": "content",
-          "value": "Introspect: Task not yet successfully completed.",
-        },
-        {
-          "column": 51,
-          "line": 233,
           "type": "newline",
           "value": "
       ",
@@ -2344,35 +2199,105 @@ describe("Lexer E2E Tests", () => {
         {
           "column": 1,
           "line": 234,
-          "type": "state",
-          "value": "automated_one_shot_run_task",
-        },
-        {
-          "column": 28,
-          "line": 234,
-          "type": "to",
-          "value": "to",
-        },
-        {
-          "column": 31,
-          "line": 234,
-          "type": "state",
-          "value": "automated_one_shot_redefine_task",
-        },
-        {
-          "column": 64,
-          "line": 234,
           "type": "colon",
           "value": ":",
         },
         {
-          "column": 65,
+          "column": 2,
           "line": 234,
           "type": "content",
-          "value": "Generate new sub plan that would satisfy task requirements. Format sub plan for \`planner_update_task\` and pass ONLY THAT INPUT to \`oc-agentic-inquisitor\`. Your message format will be \`[requirements] This needs clarity how execution will be carried out. Execution on this task must be strictly deterministic [specification] THE_TASK_SPECIFICATION\`. Perform secondary research on any questions raised. You may use \`oc-agentic-investigator\` to research about any concerns, in parallel, that deal directly with the codebase. \`oc-agentic-investigator\` should be called with the following format: \`I am uncertain about these THE_POINT. This is my current assumption THE_ASSUMPTION. Here is the CONTEXT. This is were I would begin: INVESTIGATION_ENTRY_POINT. Can you help provide factual clarity?\`. Use your enhanced contextual understanding and ability to investigate to immediately reject or accept points, synthesizing new points, or making any other adjustments to the task plan. Ensure that your plan remains within the constraints of the sub problems to solve.",
+          "value": "Do immediately",
         },
         {
-          "column": 270,
+          "column": 17,
+          "line": 234,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 235,
+          "type": "state",
+          "value": "automated_one_shot_redefine_task",
+        },
+        {
+          "column": 33,
+          "line": 235,
+          "type": "to",
+          "value": "to",
+        },
+        {
+          "column": 36,
+          "line": 235,
+          "type": "state",
+          "value": "automated_one_shot_run_task",
+        },
+        {
+          "column": 64,
+          "line": 235,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 236,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 237,
+          "type": "colon",
+          "value": ":",
+        },
+        {
+          "column": 2,
+          "line": 237,
+          "type": "content",
+          "value": "Introspect: All tasks complete",
+        },
+        {
+          "column": 33,
+          "line": 237,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 238,
+          "type": "state",
+          "value": "automated_one_shot_loop_tasks",
+        },
+        {
+          "column": 30,
+          "line": 238,
+          "type": "to",
+          "value": "to",
+        },
+        {
+          "column": 33,
+          "line": 238,
+          "type": "state",
+          "value": "automated_one_shot_all_tasks_complete",
+        },
+        {
+          "column": 71,
+          "line": 238,
+          "type": "colon",
+          "value": ":",
+        },
+        {
+          "column": 72,
+          "line": 238,
+          "type": "content",
+          "value": "Call \`planner_get_project\` to get full project details. Present reply to agent (no human). Decide acceptability automatically using previously gathered validation results.",
+        },
+        {
+          "column": 83,
           "line": 241,
           "type": "newline",
           "value": "
@@ -2408,22 +2333,22 @@ describe("Lexer E2E Tests", () => {
           "column": 1,
           "line": 244,
           "type": "state",
-          "value": "automated_one_shot_redefine_task",
+          "value": "automated_one_shot_all_tasks_complete",
         },
         {
-          "column": 33,
+          "column": 38,
           "line": 244,
           "type": "to",
           "value": "to",
         },
         {
-          "column": 36,
+          "column": 41,
           "line": 244,
           "type": "state",
-          "value": "automated_one_shot_run_task",
+          "value": "initial_loaded",
         },
         {
-          "column": 64,
+          "column": 56,
           "line": 244,
           "type": "newline",
           "value": "
@@ -2439,120 +2364,6 @@ describe("Lexer E2E Tests", () => {
         {
           "column": 1,
           "line": 246,
-          "type": "colon",
-          "value": ":",
-        },
-        {
-          "column": 2,
-          "line": 246,
-          "type": "content",
-          "value": "Introspect: All tasks complete",
-        },
-        {
-          "column": 33,
-          "line": 246,
-          "type": "newline",
-          "value": "
-      ",
-        },
-        {
-          "column": 1,
-          "line": 247,
-          "type": "state",
-          "value": "automated_one_shot_loop_tasks",
-        },
-        {
-          "column": 30,
-          "line": 247,
-          "type": "to",
-          "value": "to",
-        },
-        {
-          "column": 33,
-          "line": 247,
-          "type": "state",
-          "value": "automated_one_shot_all_tasks_complete",
-        },
-        {
-          "column": 71,
-          "line": 247,
-          "type": "colon",
-          "value": ":",
-        },
-        {
-          "column": 72,
-          "line": 247,
-          "type": "content",
-          "value": "Call \`planner_get_project\` to get full project details. Present reply to agent (no human). Decide acceptability automatically using previously gathered validation results.",
-        },
-        {
-          "column": 83,
-          "line": 250,
-          "type": "newline",
-          "value": "
-      ",
-        },
-        {
-          "column": 1,
-          "line": 251,
-          "type": "newline",
-          "value": "
-      ",
-        },
-        {
-          "column": 1,
-          "line": 252,
-          "type": "colon",
-          "value": ":",
-        },
-        {
-          "column": 2,
-          "line": 252,
-          "type": "content",
-          "value": "Do immediately",
-        },
-        {
-          "column": 17,
-          "line": 252,
-          "type": "newline",
-          "value": "
-      ",
-        },
-        {
-          "column": 1,
-          "line": 253,
-          "type": "state",
-          "value": "automated_one_shot_all_tasks_complete",
-        },
-        {
-          "column": 38,
-          "line": 253,
-          "type": "to",
-          "value": "to",
-        },
-        {
-          "column": 41,
-          "line": 253,
-          "type": "state",
-          "value": "initial_loaded",
-        },
-        {
-          "column": 56,
-          "line": 253,
-          "type": "newline",
-          "value": "
-      ",
-        },
-        {
-          "column": 1,
-          "line": 254,
-          "type": "newline",
-          "value": "
-      ",
-        },
-        {
-          "column": 1,
-          "line": 255,
           "type": "eof",
           "value": "",
         },
