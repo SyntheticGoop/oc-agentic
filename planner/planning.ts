@@ -1,5 +1,6 @@
 import type { Jujutsu } from "../src/jujutsu";
 import { Err, Ok } from "../src/result";
+import { generateTag } from "./crypto";
 import { Loader } from "./persistence/loader";
 import { Saver, type SavingPlanData } from "./persistence/saver";
 
@@ -87,29 +88,23 @@ export class PlanningLibrary {
     | Err<`${"VCS" | "Structure"} Error: ${string}`>
   >;
   async project(options: {
-    new: true;
+    new: boolean;
   }): Promise<
     | Ok<ReturnType<typeof createProject>>
     | Err<`${"VCS" | "Structure"} Error: ${string}`>
   >;
   async project(options?: {
-    new?: true;
+    new?: boolean;
   }): Promise<
     | Ok<ReturnType<typeof createProject>>
     | Ok<null>
     | Err<`${"VCS" | "Structure"} Error: ${string}`>
   > {
-    const plan = await this.persistence.loader.loadPlan();
     if (options?.new) {
       return Ok(
         createProject(
           {
-            constraints: [],
-            intent: "",
-            objectives: [],
-            scope: "",
-            title: "",
-            tag: null,
+            tag: generateTag(),
             new: true,
             tasks: [
               {
@@ -128,6 +123,7 @@ export class PlanningLibrary {
         ),
       );
     }
+    const plan = await this.persistence.loader.loadPlan();
     if (plan.err) {
       switch (plan.err) {
         // VCS should not fail
@@ -137,21 +133,13 @@ export class PlanningLibrary {
         case "VCS Error: No current commit found in repository":
 
         // Structure should not be corrupted if present.
-        case "Structure Error: Unexpected terminating header in task position":
-        case "Structure Error: Invalid LONG format plan: insufficient commits":
-        case "Structure Error: Invalid LONG format plan: expected end commit":
-        case "Structure Error: Invalid LONG format plan: expected begin commit":
-        case "Structure Error: Failed to find end commit":
         case "Structure Error: There must be at least one task":
           return plan;
 
         // Parse errors on load indicate inability to detect current structure
         // or that it doesn't exist
-        case "Parse Error: Begin commit title exceeds maximum length":
-        case "Parse Error: End commit title exceeds maximum length":
         case "Parse Error: Invalid commit type":
         case "Parse Error: Task commit title exceeds maximum length":
-        case "Parse Error: Single task commit title exceeds maximum length":
         case "Parse Error: Invalid header format":
         case "Parse Error: Invalid constraint format":
         case "Parse Error: Invalid objective format":
@@ -164,6 +152,9 @@ export class PlanningLibrary {
       return Ok(null);
     }
 
-    return Ok(createProject(plan.ok, this.persistence.saver, this.jujutsu));
+    const tag = plan.ok.tasks[0].tag;
+    return Ok(
+      createProject({ tag, ...plan.ok }, this.persistence.saver, this.jujutsu),
+    );
   }
 }

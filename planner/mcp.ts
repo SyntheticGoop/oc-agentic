@@ -90,7 +90,9 @@ const ValidatedTitle = z
     "Title must not have leading or trailing whitespace",
   )
   .refine(
-    (val) => val.length > 0 && val[0] === val[0].toLowerCase(),
+    (val) =>
+      val.trim().at(0) === "" ||
+      val.trim().at(0)?.toLowerCase() === val.trim().at(0),
     "Title must start with lowercase letter",
   );
 
@@ -273,7 +275,8 @@ Parameters:
 - intent: WHY this task is needed (detailed explanation)
 - objectives: Specific outcomes for this task (at least one required)
 - constraints: Task-specific limitations (optional)
-- completed: false (default for new tasks)`,
+- completed: false (default for new tasks)
+- new: boolean (true if creating new project) `,
     parameters: z.object({
       type: ValidatedCommitType,
       scope: ValidatedScope,
@@ -282,10 +285,11 @@ Parameters:
       objectives: ValidatedObjectives,
       constraints: ValidatedConstraints,
       completed: z.boolean().default(false),
+      new: z.boolean().default(false),
     }),
     execute: async (args) => {
       return libraryQueue.enqueue(async (library) => {
-        const project = await library.project();
+        const project = await library.project({ new: args.new });
         if (project.err)
           return composeTextOutput({
             type: "error",
@@ -309,7 +313,11 @@ Parameters:
           completed: args.completed,
         };
 
-        project.ok.tasks.push(newTask);
+        if (args.new) {
+          project.ok.tasks = [newTask];
+        } else {
+          project.ok.tasks.push(newTask);
+        }
 
         const saveResult = await project.ok.save();
         if (saveResult.err) {

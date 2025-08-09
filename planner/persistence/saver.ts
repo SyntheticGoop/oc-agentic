@@ -19,13 +19,8 @@ type Task = {
 };
 
 export type SavingPlanData = {
-  new?: boolean;
   tag: string;
-  scope?: string;
-  intent: string;
-  title: string;
-  objectives: string[];
-  constraints: string[];
+  new?: boolean;
   tasks: [Task, ...Task[]];
 };
 

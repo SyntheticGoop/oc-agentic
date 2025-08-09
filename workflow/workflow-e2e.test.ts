@@ -27,9 +27,6 @@ describe("Workflow E2E Tests", () => {
       "*",
       "initial_loaded",
       "refine_tasks",
-      "define_project",
-      "refine_project",
-      "create_project",
       "check_tasks",
       "update_task",
       "delete_task",
@@ -60,23 +57,9 @@ describe("Workflow E2E Tests", () => {
     expect(workflowDef.transitions.initial_loaded).toBeDefined();
     expect(workflowDef.transitions.initial_loaded?.refine_tasks).toBeDefined();
     expect(workflowDef.transitions.initial_loaded?.refine_tasks?.guidance).toBe(
-      "Ask: Do you want to continue the scope of work?",
+      "Ask: Do you want to continue with existing tasks?",
     );
 
-    expect(
-      workflowDef.transitions.initial_loaded?.define_project,
-    ).toBeDefined();
-    expect(
-      workflowDef.transitions.initial_loaded?.define_project?.guidance,
-    ).toBe("Ask: Do you want to start a new scope of work?");
-
-    // Verify self-referencing transitions work
-    expect(
-      workflowDef.transitions.refine_project?.refine_project,
-    ).toBeDefined();
-    expect(
-      workflowDef.transitions.refine_project?.refine_project?.guidance,
-    ).toBe("Ask: Can you provide clarity on all the above points?");
 
     // Verify transitions to initial state work
     expect(
@@ -100,7 +83,6 @@ describe("Workflow E2E Tests", () => {
     expect(result1.move).toBe("success");
     if (result1.move === "success") {
       expect(result1.nextState).toBe("refine_tasks");
-      expect(result1.guidance).toBe(""); // refine_tasks state has empty guidance
     }
   });
 
@@ -143,7 +125,7 @@ describe("Workflow E2E Tests", () => {
 
     expect(transitionsWithGuidance).toBeGreaterThan(0);
     expect(transitionsWithoutGuidance).toBeGreaterThan(0);
-    expect(selfReferencingTransitions).toBeGreaterThan(0);
+    expect(selfReferencingTransitions).toBe(0);
     // Note: scoped-execution.flow doesn't have transitions to end state (*)
   });
 

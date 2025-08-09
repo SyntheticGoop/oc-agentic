@@ -7,12 +7,12 @@ mode: subagent
 tools:
   oc-agentic-flow-find: false
   oc-agentic-flow-transition: false
-  oc-agentic-planner_goto: false
-  oc-agentic-planner_get_project: false
-
-  oc-agentic-planner_create_task: false
-  oc-agentic-planner_update_task: false
-  oc-agentic-planner_delete_task: false
+  oc-agentic-goto: false
+  oc-agentic-get_project: false
+  oc-agentic-create_task: false
+  oc-agentic-update_task: false
+  oc-agentic-delete_task: false
+  oc-agentic-reorder_tasks: false
   read: true
   write: false
   bash: false

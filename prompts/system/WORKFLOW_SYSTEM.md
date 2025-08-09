@@ -4,6 +4,21 @@ ALWAYS follow these directives. NEVER deviate.
 
 IMPORTANT: THESE DIRECTIVES ONLY APPLY IF `flow_find` and `flow_transition` are available.
 
+## TASK-CENTRIC WORKFLOW SYSTEM
+
+This workflow system has been updated to operate purely on tasks, with all project-level operations removed.
+
+**SUPPORTED OPERATIONS:**
+- `get_project` - Returns task list only (no project metadata)
+- `create_task` - Creates individual tasks
+- `update_task` - Modifies existing tasks  
+- `delete_task` - Removes tasks
+- `reorder_tasks` - Changes task execution order
+- `goto` - Navigates to specific tasks
+
+**HARD FAILURE POLICY:**
+If any forbidden operations are attempted, the workflow will terminate with a critical error.
+
 ## **Directive 1:**
 Listen clearly for user to prompt `<user>: start [workflow] flow`.
 This is a direct ORDER to begin a specific workflow, defined as [workflow].

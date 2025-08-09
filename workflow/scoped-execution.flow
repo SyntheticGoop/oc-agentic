@@ -1,78 +1,66 @@
-# Planner Workflow State Machine
+# Task-Centric Workflow State Machine
+# 
+# This workflow is designed to work ONLY with task-centric operations.
+# Supported operations: get_project, create_task, update_task, delete_task, reorder_tasks, goto
+# FORBIDDEN operations: create_project, update_project, delete_project, planner_* (legacy names)
 
 : Do immediately
 * to initial_loaded:
-  Call `planner_get_project` to load current scope of work.
+  Call `get_project` to load current task list.
   List summary of files changed with `jj diff --summary -r @`
-  Wait for scope of work.
-  Display current scope of work status to the user.
+  Display detailed list of current task status to the user.
 
-: Ask: Do you want to continue the scope of work?
-initial_loaded to refine_tasks
+: Ask: Do you want to continue with existing tasks?
+initial_loaded to refine_tasks:
+  Ask if the user would like to create, update, delete, reorder or skip to execution.
 
-: Ask: Do you want to start a new scope of work?
-initial_loaded to define_project:
-  Ask to define the specifics of the scope of work.
-  These specifics will be used to create the first task with `planner_create_task`.
-  Detail the specifics.
+: Ask: Do you want to create a new tasks?
+initial_loaded to create_task:
+  Ask to define the specifics of the task.
+  These specifics will be used to create the task with `create_task` with (new=true).
+  Detail the task specifics including type, scope, title, intent, objectives, and constraints.
 
-: Do immediately
-define_project to refine_project:
-  Synthesize the scope of work specifics.
-  Pass the scope of work specifics to agent `oc-agentic-inquisitor`.
-  Your message format will be `[requirements] This needs clarity how plans will be formed during execution. Plans that derive from this must be strictly deterministic [specification] THE_PROJECT_SPECIFICATION`.
-  THE_SCOPE_OF_WORK_SPECIFICATION is the contents of the scope of work specifics you would have passed to `planner_create_project`.
-  Wait for reply from `oc-agentic-inquisitor`.
-  Perform secondary research on any questions raised.
-  You may use `oc-agentic-investigator` to research about any concerns, in parallel, that deal directly with the codebase.
-  `oc-agentic-investigator` should be called with the following format: `I am uncertain about these THE_POINT. This is my current assumption THE_ASSUMPTION. Here is the CONTEXT. This is were I would begin: INVESTIGATION_ENTRY_POINT. Can you help provide factual clarity?`.
-  Use your enhanced contextual understanding and ability to investigate to immediately reject or accept points, synthesizing new points, or making any other adjustments to the project, leaving points with uncertainty as an exercise to the user to clarify.
-  Present the scope of work specifics with updated points.
-
-: Ask: Can you provide clarity on all the above points?
-refine_project to refine_project
-
-: Ask: Would you like to proceed (anyway) to creating the scope of work?
-refine_project to create_project:
-  Call `planner_create_task` with the final synthesized task specifics from all the clarifications.
-  Wait for successful reply.
-
-: Do immediately
-create_project to refine_tasks:
-  Get current scope of work with `planner_get_project`.
-  Display current tasks.
-
-: Ask: Is there a task you want to alter? What are the details?
-refine_tasks to check_tasks:
-  Format input for `planner_update_task` and pass ONLY THAT INPUT to `oc-agentic-inquisitor`.
+: Do: When user is done clarifying their task.
+create_task to checked_task:
+  Format input for `update_task` and pass ONLY THAT INPUT to `oc-agentic-inquisitor`.
   Your message format will be `[requirements] This needs clarity how execution will be carried out. Execution on this task must be strictly deterministic [specification] THE_TASK_SPECIFICATION`.
   Perform secondary research on any questions raised.
   You may use `oc-agentic-investigator` to research about any concerns, in parallel, that deal directly with the codebase.
   `oc-agentic-investigator` should be called with the following format: `I am uncertain about these THE_POINT. This is my current assumption THE_ASSUMPTION. Here is the CONTEXT. This is were I would begin: INVESTIGATION_ENTRY_POINT. Can you help provide factual clarity?`.
-  Use your enhanced contextual understanding and ability to investigate to immediately reject or accept points, synthesizing new points, or making any other adjustments to the scope of work, leaving points with uncertainty as an exercise to the user to clarify.
-  Present reply and interrogate them with the response questions.
+  Use your enhanced contextual understanding and ability to investigate to immediately reject or accept points, synthesizing new points, or making any other adjustments to the task, leaving points with uncertainty as an exercise to the user to clarify.
+  Present reply and interrogate them for clarification, or ask if they would like to ignore reccomendations.
 
-: Ask: Can you provide clarity on all the above points
-check_tasks to check_tasks
+: Ask: Can you provide clarity on all the above points?
+checked_task to check_tasks
 
 : Ask: Would you like to proceed (anyway) to updating the task?
-check_tasks to update_task:
-  Pass input to `planner_update_task`.
+checked_task to commit_create_task:
+  Consolidate everything discussed in detail, without missing anything, and use it to call `create_task` with (new=true).
   Wait for reply.
+
+: Do immediately
+commit_create_task to refine_tasks
+
+: Ask: Would you like to create a new task?
+refine_tasks to create_task:
+  Ask to define the specifics of the task.
+  These specifics will be used to create the task with `create_task` with (new=false).
+  Detail the task specifics including type, scope, title, intent, objectives, and constraints.
 
 : Do immediately
 update_task to refine_tasks
 
 : Ask: Would you like to delete a specific task or tasks?
 refine_tasks to delete_task:
-  Call `planner_delete_task` to delete task in question.
+  Call `delete_task` to delete task in question.
   Wait for reply.
 
+: Do immediately
 delete_task to refine_tasks
 
 : Ask: Would you like to reorder specific tasks?
 refine_tasks to reorder_tasks:
-  Call `planner_reorder_tasks` to reorder tasks.
+  Call `reorder_tasks` to reorder tasks.
   Wait for reply.
 
 : Do immediately
@@ -81,45 +69,45 @@ reorder_tasks to refine_tasks
 : Ask: Would you like to proceed to do a final check?
 refine_tasks to final_check:
   NEVER SKIP THIS EVEN IF IT WAS DONE BEFORE. QUESTIONS CAN CHANGE.
-  Get full scope of work state with `planner_get_project`.
-  Format output of `planner_get_project` and pass ONLY THAT INPUT to `oc-agentic-inquisitor`.
-  Your message format will be `[requirements] This is a full scope of work. Every part needs to be internally coherent and logically sound. Each part must build up to a cohesive whole and no contradictions are allowed. Work done must be atomic. Planning must be exhaustive. [specification] THE_SCOPE_OF_WORK_SPECIFICATION`.
+  Get full task list with `get_project`.
+  Format output of `get_project` and pass ONLY THAT INPUT to `oc-agentic-inquisitor`.
+  Your message format will be `[requirements] This is a full task list. Every part needs to be internally coherent and logically sound. Each part must build up to a cohesive whole and no contradictions are allowed. Work done must be atomic. Planning must be exhaustive. [specification] THE_TASK_LIST_SPECIFICATION`.
   Wait for reply from `oc-agentic-inquisitor`.
   You may use `oc-agentic-investigator` to research about any concerns, in parallel, that deal directly with the codebase.
   `oc-agentic-investigator` should be called with the following format: `I am uncertain about these THE_POINT. This is my current assumption THE_ASSUMPTION. Here is the CONTEXT. This is were I would begin: INVESTIGATION_ENTRY_POINT. Can you help provide factual clarity?`.
-  Use your enhanced contextual understanding and ability to investigate to immediately reject or accept points, synthesizing new points, or making any other adjustments to the scope of work, leaving points with uncertainty as an exercise to the user to clarify.
-  Present the synthesized full scope of work to the user, leaving no details out.
+  Use your enhanced contextual understanding and ability to investigate to immediately reject or accept points, synthesizing new points, or making any other adjustments to the task list, leaving points with uncertainty as an exercise to the user to clarify.
+  Present the synthesized full task list to the user, leaving no details out.
 
-: Ask: Do you accept these changes as the full scope of work??
+: Ask: Do you accept these changes as the full task list?
 final_check to parallel_update:
-  Update any scope with any points that the user clarifies.
-  Commit these changes in tasks with `planner_update_task`
-  Commit these changes in task order with `planner_reoder_tasks`
-  Commit these changes in task deletion with `planner_delete_task`
+  Update any tasks with any points that the user clarifies.
+  Commit these changes in tasks with `update_task`
+  Commit these changes in task order with `reorder_tasks`
+  Commit these changes in task deletion with `delete_task`
 
 : Do immediately
 parallel_update to final_check
 
 : Ask: Do want to continue on?
 final_check to execution:
-  Update any scope with any points that the user clarifies.
-  Commit these changes in tasks with `planner_update_task`
-  Commit these changes in task order with `planner_reoder_tasks`
-  Commit these changes in task deletion with `planner_delete_task`
-  Call `planner_get_project` to get full project details.
+  Update any tasks with any points that the user clarifies.
+  Commit these changes in tasks with `update_task`
+  Commit these changes in task order with `reorder_tasks`
+  Commit these changes in task deletion with `delete_task`
+  Call `get_project` to get full task details.
 
 : Do immediately
 execution to loop_tasks:
   Find first unfinished task.
-  Go to first incomplete task with `planner_goto`.
-  Extract all current task details from `planner_get_project`.
+  Go to first incomplete task with `goto`.
+  Extract all current task details from `get_project`.
 
 : Introspect: Has unfinished task.
 loop_tasks to run_task:
   Pass the task to `oc-agentic-executor`.
   Your message format will be `Do TASK_DETAILS` where TASK_DETAILS is the full specification of the current active task verbatim.
   Wait for execution to complete.
-  Pass the task to `oc-agentic-reiviewer`.
+  Pass the task to `oc-agentic-reviewer`.
   Your message format will be `Based on TASK_DETAILS review the current changes as reported by EXECUTION_REVIEW` where TASK_DETAILS is the full specification of the current active task verbatim and EXECUTION_REVIEW is the output produced by the executor.
   Wait for review to complete.
 
@@ -127,7 +115,7 @@ loop_tasks to run_task:
 run_task to mark_task:
   Synthesize current task specification with actual work done to produce updated task.
   Be precise with your editing.
-  Call `planner_update_task` to update the task as completed with new details.
+  Call `update_task` to update the task as completed with new details.
 
 : Do immediately
 mark_task to loop_tasks
@@ -135,23 +123,23 @@ mark_task to loop_tasks
 : Introspect: Task not yet successfully completed.
 run_task to redefine_task:
   Generate new sub plan that would satisfy task requirements. 
-  Format sub plan for `planner_update_task` and pass ONLY THAT INPUT to `oc-agentic-inquisitor`.
+  Format sub plan for `update_task` and pass ONLY THAT INPUT to `oc-agentic-inquisitor`.
   Your message format will be `[requirements] This needs clarity how execution will be carried out. Execution on this task must be strictly deterministic [specification] THE_TASK_SPECIFICATION`.
   Perform secondary research on any questions raised.
   You may use `oc-agentic-investigator` to research about any concerns, in parallel, that deal directly with the codebase.
   `oc-agentic-investigator` should be called with the following format: `I am uncertain about these THE_POINT. This is my current assumption THE_ASSUMPTION. Here is the CONTEXT. This is were I would begin: INVESTIGATION_ENTRY_POINT. Can you help provide factual clarity?`.
-  Use your enhanced contextual understanding and ability to investigate to immediately reject or accept points, synthesizing new points, or making any other adjustments to the scope of work. Ensure that your plan remains within the constraints of the sub problems to solve.
-  This synthesized scope of work MUST contain the following:
-  1. It must contain all the work already done. These tasks should be classified as tasks that must be evaluated and reattempted if the evaluation failed. Evaluation means ensuring that the task is actually complete.
-  2. It must append all the new tasks that must be completed.
-  3. It must not drop uncompleted tasks from the current main task. Those must still be enforced.
+  Use your enhanced contextual understanding and ability to investigate to immediately reject or accept points, synthesizing new points, or making any other adjustments to the task. Ensure that your plan remains within the constraints of the sub problems to solve.
+  This synthesized task plan MUST contain the following:
+  1. It must contain all the work already done. These sub-tasks should be classified as tasks that must be evaluated and reattempted if the evaluation failed. Evaluation means ensuring that the task is actually complete.
+  2. It must append all the new sub-tasks that must be completed.
+  3. It must not drop uncompleted sub-tasks from the current main task. Those must still be enforced.
 
 : Do immediately
 redefine_task to run_task
 
 : Introspect: All tasks complete
 loop_tasks to all_tasks_complete:
-  Call `planner_get_project` to get full project details.
+  Call `get_project` to get full task details.
   Present reply to user
 
 : User is satisfied with output
@@ -161,39 +149,39 @@ all_tasks_complete to initial_loaded
 all_tasks_complete to refine_tasks
 
 
-: Ask: Do you want to run an automated one-shot scope of work (fully automated, no further human interaction)?
-initial_loaded to automated_one_shot_define_project:
-  Ask to define the specifics of the single-task scope of work.
-  These specifics will be used to fulfill the arguments to `planner_create_task`.
-  This automated flow will create a single-task project and fully execute it without human interaction.
+: Ask: Do you want to run an automated one-shot task (fully automated, no further human interaction)?
+initial_loaded to automated_one_shot_define_task:
+  Ask to define the specifics of the single task.
+  These specifics will be used to fulfill the arguments to `create_task` with (new=true).
+  This automated flow will create a single task and fully execute it without human interaction.
 
 : Do immediately
-automated_one_shot_define_project to automated_one_shot_create_project:
-  Synthesize the single-task scope of work specifics.
-  Pass the scope of work specifics to agent `oc-agentic-inquisitor`.
-  Your message format will be `[requirements] This needs clarity how plans will be formed during execution. Plans that derive from this must be strictly deterministic [specification] THE_PROJECT_SPECIFICATION`.
-  THE_SCOPE_OF_WORK_SPECIFICATION is the contents of the scope of work specifics you would have passed to `planner_create_task`.
+automated_one_shot_define_task to automated_one_shot_create_task:
+  Synthesize the single-task specifics.
+  Pass the task specifics to agent `oc-agentic-inquisitor`.
+  Your message format will be `[requirements] This needs clarity how plans will be formed during execution. Plans that derive from this must be strictly deterministic [specification] THE_TASK_SPECIFICATION`.
+  THE_TASK_SPECIFICATION is the contents of the task specifics you would have passed to `create_task` with (new=true).
   Wait for reply from `oc-agentic-inquisitor`.
   Perform secondary research on any questions raised.
   You may use `oc-agentic-investigator` to research about any concerns, in parallel, that deal directly with the codebase.
   `oc-agentic-investigator` should be called with the following format: `I am uncertain about these THE_POINT. This is my current assumption THE_ASSUMPTION. Here is the CONTEXT. This is were I would begin: INVESTIGATION_ENTRY_POINT. Can you help provide factual clarity?`.
-  Use your enhanced contextual understanding and ability to investigate to immediately reject or accept points, synthesizing new points, or making any other adjustments to the project.
-  Present the synthesized single-task project specifics.
-  Update the project specifics based on the inquisitor reply.
+  Use your enhanced contextual understanding and ability to investigate to immediately reject or accept points, synthesizing new points, or making any other adjustments to the task.
+  Present the synthesized single-task specifics.
+  Update the task specifics based on the inquisitor reply.
   Pass the updated single-task specification to `oc-agentic-inquisitor` again using the same message format as above.
   Use `oc-agentic-investigator` as needed for codebase checks.
   Present final synthesized single-task specification ready for creation.
-  Call `planner_create_task` with the final synthesized single-task project specifics ensuring the project contains exactly one task.
+  Call `create_task` with (new=true) with the final synthesized single-task specifics.
   Wait for successful reply.
 
 : Do immediately
-automated_one_shot_create_project to automated_one_shot_final_check:
-  Call `planner_get_project` to load created project and confirm it contains a single task.
+automated_one_shot_create_task to automated_one_shot_final_check:
+  Call `get_project` to load created task and confirm it exists.
   Format output and pass ONLY THAT INPUT to `oc-agentic-inquisitor` for a final internal consistency check.
-  Your message format will be `[requirements] This is a full single-task scope of work. Every part needs to be internally coherent and logically sound. Each part must build up to a cohesive whole and no contradictions are allowed. Work done must be atomic. Planning must be exhaustive. [specification] THE_SCOPE_OF_WORK_SPECIFICATION`.
+  Your message format will be `[requirements] This is a single task. Every part needs to be internally coherent and logically sound. Each part must build up to a cohesive whole and no contradictions are allowed. Work done must be atomic. Planning must be exhaustive. [specification] THE_TASK_SPECIFICATION`.
   Wait for reply.
   Use `oc-agentic-investigator` as needed.
-  Present synthesized final single-task project.
+  Present synthesized final single-task.
 
 : Do immediately
 automated_one_shot_final_check to automated_one_shot_execution:
@@ -202,22 +190,22 @@ automated_one_shot_final_check to automated_one_shot_execution:
 : Do immediately
 automated_one_shot_execution to automated_one_shot_loop_tasks:
   Find first (and only) unfinished task.
-  Go to the task with `planner_goto`.
-  Extract all current task details from `planner_get_project`.
+  Go to the task with `goto`.
+  Extract all current task details from `get_project`.
 
 : Introspect: Has unfinished task.
 automated_one_shot_loop_tasks to automated_one_shot_run_task:
   Pass the task to `oc-agentic-executor`.
   Your message format will be `Do TASK_DETAILS` where TASK_DETAILS is the full specification of the current active task verbatim.
   Wait for execution to complete.
-  Pass the task and execution review to `oc-agentic-reiviewer`.
+  Pass the task and execution review to `oc-agentic-reviewer`.
   Your message format will be `Based on TASK_DETAILS review the current changes as reported by EXECUTION_REVIEW` where TASK_DETAILS is the full specification of the current active task verbatim and EXECUTION_REVIEW is the output produced by the executor.
   Wait for review to complete.
 
 : Introspect: Task not yet successfully completed.
 automated_one_shot_run_task to automated_one_shot_redefine_task:
   Generate new sub plan that would satisfy task requirements.
-  Format sub plan for `planner_update_task` and pass ONLY THAT INPUT to `oc-agentic-inquisitor`.
+  Format sub plan for `update_task` and pass ONLY THAT INPUT to `oc-agentic-inquisitor`.
   Your message format will be `[requirements] This needs clarity how execution will be carried out. Execution on this task must be strictly deterministic [specification] THE_TASK_SPECIFICATION`.
   Perform secondary research on any questions raised.
   You may use `oc-agentic-investigator` to research about any concerns, in parallel, that deal directly with the codebase.
@@ -229,7 +217,7 @@ automated_one_shot_redefine_task to automated_one_shot_run_task
 
 : Introspect: Task is complete. IMPORTANT: THIS IS STRICT 100% COMPLETION. YOU ARE NOT ALLOWED TO BYPASS THIS REQUIREMENT. DOING SO WILL CAUSE SERIOUS PROGRAM CORRUPTION.
 automated_one_shot_run_task to automated_one_shot_all_tasks_complete:
-  Call `planner_get_project` to get full project details.
+  Call `get_project` to get full task details.
   Decide acceptability automatically using previously gathered validation results.
   Present completed work to human for review. Show synthesized execution summary and diffs. Provide the user with three choices:
   - Quick review: human inspects, provides concise feedback; system will synthesize comments and attempt automated fixes then resume automated execution.
@@ -240,10 +228,10 @@ automated_one_shot_run_task to automated_one_shot_all_tasks_complete:
 automated_one_shot_all_tasks_complete to human_review_quick:
   Collect human feedback. Ask the user for explicit review notes and any blockers. Wait for user input.
   Synthesize feedback into concrete changelist
-  This synthesized scope of work MUST contain the following:
-  1. It must contain all the work already done. These tasks should be classified as tasks that must be evaluated and reattempted if the evaluation failed. Evaluation means ensuring that the task is actually complete.
-  2. It must append all the new tasks that must be completed.
-  3. It must not drop uncompleted tasks from the current main task. Those must still be enforced.
+  This synthesized task plan MUST contain the following:
+  1. It must contain all the work already done. These sub-tasks should be classified as tasks that must be evaluated and reattempted if the evaluation failed. Evaluation means ensuring that the task is actually complete.
+  2. It must append all the new sub-tasks that must be completed.
+  3. It must not drop uncompleted sub-tasks from the current main task. Those must still be enforced.
   This list will be used in the next task execution
 
 : Do immediately
