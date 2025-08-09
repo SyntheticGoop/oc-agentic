@@ -27,11 +27,11 @@ describe("Parser E2E Tests", () => {
             "name": "all_tasks_complete",
           },
           "automated_one_shot_all_tasks_complete": {
-            "guidance": "Call \`planner_get_project\` to get full project details. Present reply to agent (no human). Decide acceptability automatically using previously gathered validation results.",
+            "guidance": "Call \`planner_get_project\` to get full project details. Decide acceptability automatically using previously gathered validation results. Present completed work to human for review. Show synthesized execution summary and diffs. Provide the user with three choices: - Quick review: human inspects, provides concise feedback; system will synthesize comments and attempt automated fixes then resume automated execution. - Precise review: human will hand off to the main review chain for deeper human-driven acceptance and possible merge into the main workflow (all_tasks_complete). - Finish: accept and return to initial_loaded.",
             "name": "automated_one_shot_all_tasks_complete",
           },
           "automated_one_shot_create_project": {
-            "guidance": "Call \`planner_create_project\` with the final synthesized single-task project specifics ensuring the project contains exactly one task. Wait for successful reply.",
+            "guidance": "Synthesize the single-task scope of work specifics. Pass the scope of work specifics to agent \`oc-agentic-inquisitor\`. Your message format will be \`[requirements] This needs clarity how plans will be formed during execution. Plans that derive from this must be strictly deterministic [specification] THE_PROJECT_SPECIFICATION\`. THE_SCOPE_OF_WORK_SPECIFICATION is the contents of the scope of work specifics you would have passed to \`planner_create_project\`. Wait for reply from \`oc-agentic-inquisitor\`. Perform secondary research on any questions raised. You may use \`oc-agentic-investigator\` to research about any concerns, in parallel, that deal directly with the codebase. \`oc-agentic-investigator\` should be called with the following format: \`I am uncertain about these THE_POINT. This is my current assumption THE_ASSUMPTION. Here is the CONTEXT. This is were I would begin: INVESTIGATION_ENTRY_POINT. Can you help provide factual clarity?\`. Use your enhanced contextual understanding and ability to investigate to immediately reject or accept points, synthesizing new points, or making any other adjustments to the project. Present the synthesized single-task project specifics. Update the project specifics based on the inquisitor reply. Pass the updated single-task specification to \`oc-agentic-inquisitor\` again using the same message format as above. Use \`oc-agentic-investigator\` as needed for codebase checks. Present final synthesized single-task specification ready for creation. Call \`planner_create_project\` with the final synthesized single-task project specifics ensuring the project contains exactly one task. Wait for successful reply.",
             "name": "automated_one_shot_create_project",
           },
           "automated_one_shot_define_project": {
@@ -46,29 +46,13 @@ describe("Parser E2E Tests", () => {
             "guidance": "Call \`planner_get_project\` to load created project and confirm it contains a single task. Format output and pass ONLY THAT INPUT to \`oc-agentic-inquisitor\` for a final internal consistency check. Your message format will be \`[requirements] This is a full single-task scope of work. Every part needs to be internally coherent and logically sound. Each part must build up to a cohesive whole and no contradictions are allowed. Work done must be atomic. Planning must be exhaustive. [specification] THE_SCOPE_OF_WORK_SPECIFICATION\`. Wait for reply. Use \`oc-agentic-investigator\` as needed. Present synthesized final single-task project.",
             "name": "automated_one_shot_final_check",
           },
-          "automated_one_shot_inquisit": {
-            "guidance": "Synthesize the single-task scope of work specifics. Pass the scope of work specifics to agent \`oc-agentic-inquisitor\`. Your message format will be \`[requirements] This needs clarity how plans will be formed during execution. Plans that derive from this must be strictly deterministic [specification] THE_PROJECT_SPECIFICATION\`. THE_SCOPE_OF_WORK_SPECIFICATION is the contents of the scope of work specifics you would have passed to \`planner_create_project\`. Wait for reply from \`oc-agentic-inquisitor\`. Perform secondary research on any questions raised. You may use \`oc-agentic-investigator\` to research about any concerns, in parallel, that deal directly with the codebase. \`oc-agentic-investigator\` should be called with the following format: \`I am uncertain about these THE_POINT. This is my current assumption THE_ASSUMPTION. Here is the CONTEXT. This is were I would begin: INVESTIGATION_ENTRY_POINT. Can you help provide factual clarity?\`. Use your enhanced contextual understanding and ability to investigate to immediately reject or accept points, synthesizing new points, or making any other adjustments to the project, leaving points with uncertainty as an exercise to the user to clarify. Present the synthesized single-task project specifics.",
-            "name": "automated_one_shot_inquisit",
-          },
-          "automated_one_shot_inquisit_2": {
-            "guidance": "Update the project specifics based on the inquisitor reply. Pass the updated single-task specification to \`oc-agentic-inquisitor\` again using the same message format as above. Use \`oc-agentic-investigator\` as needed for codebase checks. Present final synthesized single-task specification ready for creation.",
-            "name": "automated_one_shot_inquisit_2",
-          },
           "automated_one_shot_loop_tasks": {
             "guidance": "Find first (and only) unfinished task. Go to the task with \`planner_goto\`. Extract all current task details from \`planner_get_project\`.",
             "name": "automated_one_shot_loop_tasks",
           },
-          "automated_one_shot_mark_task": {
-            "guidance": "Synthesize current task specification with actual work done to produce updated task. Be precise with your editing. Call \`planner_update_task\` to update the task as completed with new details.",
-            "name": "automated_one_shot_mark_task",
-          },
           "automated_one_shot_redefine_task": {
             "guidance": "Generate new sub plan that would satisfy task requirements. Format sub plan for \`planner_update_task\` and pass ONLY THAT INPUT to \`oc-agentic-inquisitor\`. Your message format will be \`[requirements] This needs clarity how execution will be carried out. Execution on this task must be strictly deterministic [specification] THE_TASK_SPECIFICATION\`. Perform secondary research on any questions raised. You may use \`oc-agentic-investigator\` to research about any concerns, in parallel, that deal directly with the codebase. \`oc-agentic-investigator\` should be called with the following format: \`I am uncertain about these THE_POINT. This is my current assumption THE_ASSUMPTION. Here is the CONTEXT. This is were I would begin: INVESTIGATION_ENTRY_POINT. Can you help provide factual clarity?\`. Use your enhanced contextual understanding and ability to investigate to immediately reject or accept points, synthesizing new points, or making any other adjustments to the task plan. Ensure that your plan remains within the constraints of the sub problems to solve.",
             "name": "automated_one_shot_redefine_task",
-          },
-          "automated_one_shot_refine": {
-            "guidance": "",
-            "name": "automated_one_shot_refine",
           },
           "automated_one_shot_run_task": {
             "guidance": "Pass the task to \`oc-agentic-executor\`. Your message format will be \`Do TASK_DETAILS\` where TASK_DETAILS is the full specification of the current active task verbatim. Wait for execution to complete. Pass the task and execution review to \`oc-agentic-reiviewer\`. Your message format will be \`Based on TASK_DETAILS review the current changes as reported by EXECUTION_REVIEW\` where TASK_DETAILS is the full specification of the current active task verbatim and EXECUTION_REVIEW is the output produced by the executor. Wait for review to complete.",
@@ -97,6 +81,14 @@ describe("Parser E2E Tests", () => {
           "final_check": {
             "guidance": "NEVER SKIP THIS EVEN IF IT WAS DONE BEFORE. QUESTIONS CAN CHANGE. Get full scope of work state with \`planner_get_project\`. Format output of \`planner_get_project\` and pass ONLY THAT INPUT to \`oc-agentic-inquisitor\`. Your message format will be \`[requirements] This is a full scope of work. Every part needs to be internally coherent and logically sound. Each part must build up to a cohesive whole and no contradictions are allowed. Work done must be atomic. Planning must be exhaustive. [specification] THE_SCOPE_OF_WORK_SPECIFICATION\`. Wait for reply from \`oc-agentic-inquisitor\`. You may use \`oc-agentic-investigator\` to research about any concerns, in parallel, that deal directly with the codebase. \`oc-agentic-investigator\` should be called with the following format: \`I am uncertain about these THE_POINT. This is my current assumption THE_ASSUMPTION. Here is the CONTEXT. This is were I would begin: INVESTIGATION_ENTRY_POINT. Can you help provide factual clarity?\`. Use your enhanced contextual understanding and ability to investigate to immediately reject or accept points, synthesizing new points, or making any other adjustments to the scope of work, leaving points with uncertainty as an exercise to the user to clarify. Present the synthesized full scope of work to the user, leaving no details out.",
             "name": "final_check",
+          },
+          "human_review_detailed": {
+            "guidance": "Collect human feedback. Ask the user for explicit review notes and any blockers. Wait for user input. Synthesize feedback into concrete changelist This list will be used in the next task execution",
+            "name": "human_review_detailed",
+          },
+          "human_review_quick": {
+            "guidance": "Collect human feedback. Ask the user for explicit review notes and any blockers. Wait for user input. Synthesize feedback into concrete changelist This list will be used in the next task execution",
+            "name": "human_review_quick",
           },
           "initial_loaded": {
             "guidance": "Call \`planner_get_project\` to load current scope of work. List summary of files changed with \`jj diff --summary -r @\` Wait for scope of work. Display current scope of work status to the user.",
@@ -157,8 +149,16 @@ describe("Parser E2E Tests", () => {
             },
           },
           "automated_one_shot_all_tasks_complete": {
+            "human_review_detailed": {
+              "guidance": "Ask: Do you want to perform a detailed review?",
+              "target": "human_review_detailed",
+            },
+            "human_review_quick": {
+              "guidance": "Ask: Do you want to perform a quick review?",
+              "target": "human_review_quick",
+            },
             "initial_loaded": {
-              "guidance": "Do immediately",
+              "guidance": "Ask: Do you want to finish?",
               "target": "initial_loaded",
             },
           },
@@ -169,9 +169,9 @@ describe("Parser E2E Tests", () => {
             },
           },
           "automated_one_shot_define_project": {
-            "automated_one_shot_inquisit": {
+            "automated_one_shot_create_project": {
               "guidance": "Do immediately",
-              "target": "automated_one_shot_inquisit",
+              "target": "automated_one_shot_create_project",
             },
           },
           "automated_one_shot_execution": {
@@ -186,32 +186,10 @@ describe("Parser E2E Tests", () => {
               "target": "automated_one_shot_execution",
             },
           },
-          "automated_one_shot_inquisit": {
-            "automated_one_shot_refine": {
-              "guidance": "Ask: Can you provide clarity on all the above points?",
-              "target": "automated_one_shot_refine",
-            },
-          },
-          "automated_one_shot_inquisit_2": {
-            "automated_one_shot_create_project": {
-              "guidance": "Ask: Would you like to proceed (anyway) to creating the single-task scope of work?",
-              "target": "automated_one_shot_create_project",
-            },
-          },
           "automated_one_shot_loop_tasks": {
-            "automated_one_shot_all_tasks_complete": {
-              "guidance": "Introspect: All tasks complete",
-              "target": "automated_one_shot_all_tasks_complete",
-            },
             "automated_one_shot_run_task": {
               "guidance": "Introspect: Has unfinished task.",
               "target": "automated_one_shot_run_task",
-            },
-          },
-          "automated_one_shot_mark_task": {
-            "automated_one_shot_loop_tasks": {
-              "guidance": "Do immediately",
-              "target": "automated_one_shot_loop_tasks",
             },
           },
           "automated_one_shot_redefine_task": {
@@ -220,16 +198,10 @@ describe("Parser E2E Tests", () => {
               "target": "automated_one_shot_run_task",
             },
           },
-          "automated_one_shot_refine": {
-            "automated_one_shot_inquisit_2": {
-              "guidance": "Do immediately",
-              "target": "automated_one_shot_inquisit_2",
-            },
-          },
           "automated_one_shot_run_task": {
-            "automated_one_shot_mark_task": {
+            "automated_one_shot_all_tasks_complete": {
               "guidance": "Introspect: Task is complete. IMPORTANT: THIS IS STRICT 100% COMPLETION. YOU ARE NOT ALLOWED TO BYPASS THIS REQUIREMENT. DOING SO WILL CAUSE SERIOUS PROGRAM CORRUPTION.",
-              "target": "automated_one_shot_mark_task",
+              "target": "automated_one_shot_all_tasks_complete",
             },
             "automated_one_shot_redefine_task": {
               "guidance": "Introspect: Task not yet successfully completed.",
@@ -278,6 +250,18 @@ describe("Parser E2E Tests", () => {
             "parallel_update": {
               "guidance": "Ask: Do you accept these changes as the full scope of work??",
               "target": "parallel_update",
+            },
+          },
+          "human_review_detailed": {
+            "run_task": {
+              "guidance": "Do immediately",
+              "target": "run_task",
+            },
+          },
+          "human_review_quick": {
+            "automated_one_shot_loop_tasks": {
+              "guidance": "Do immediately",
+              "target": "automated_one_shot_loop_tasks",
             },
           },
           "initial_loaded": {
