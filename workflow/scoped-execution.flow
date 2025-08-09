@@ -13,7 +13,7 @@ initial_loaded to refine_tasks
 : Ask: Do you want to start a new scope of work?
 initial_loaded to define_project:
   Ask to define the specifics of the scope of work.
-  These specifics will be used to fulfill the arguments to `planner_create_project`.
+  These specifics will be used to create the first task with `planner_create_task`.
   Detail the specifics.
 
 : Do immediately
@@ -34,7 +34,7 @@ refine_project to refine_project
 
 : Ask: Would you like to proceed (anyway) to creating the scope of work?
 refine_project to create_project:
-  Call `planner_create_project` with the final synthesized project specifics from all the clarifications.
+  Call `planner_create_task` with the final synthesized task specifics from all the clarifications.
   Wait for successful reply.
 
 : Do immediately
@@ -93,7 +93,6 @@ refine_tasks to final_check:
 : Ask: Do you accept these changes as the full scope of work??
 final_check to parallel_update:
   Update any scope with any points that the user clarifies.
-  Commit these changes in project with `planner_update_project`
   Commit these changes in tasks with `planner_update_task`
   Commit these changes in task order with `planner_reoder_tasks`
   Commit these changes in task deletion with `planner_delete_task`
@@ -104,7 +103,6 @@ parallel_update to final_check
 : Ask: Do want to continue on?
 final_check to execution:
   Update any scope with any points that the user clarifies.
-  Commit these changes in project with `planner_update_project`
   Commit these changes in tasks with `planner_update_task`
   Commit these changes in task order with `planner_reoder_tasks`
   Commit these changes in task deletion with `planner_delete_task`
@@ -166,7 +164,7 @@ all_tasks_complete to refine_tasks
 : Ask: Do you want to run an automated one-shot scope of work (fully automated, no further human interaction)?
 initial_loaded to automated_one_shot_define_project:
   Ask to define the specifics of the single-task scope of work.
-  These specifics will be used to fulfill the arguments to `planner_create_project`.
+  These specifics will be used to fulfill the arguments to `planner_create_task`.
   This automated flow will create a single-task project and fully execute it without human interaction.
 
 : Do immediately
@@ -174,7 +172,7 @@ automated_one_shot_define_project to automated_one_shot_create_project:
   Synthesize the single-task scope of work specifics.
   Pass the scope of work specifics to agent `oc-agentic-inquisitor`.
   Your message format will be `[requirements] This needs clarity how plans will be formed during execution. Plans that derive from this must be strictly deterministic [specification] THE_PROJECT_SPECIFICATION`.
-  THE_SCOPE_OF_WORK_SPECIFICATION is the contents of the scope of work specifics you would have passed to `planner_create_project`.
+  THE_SCOPE_OF_WORK_SPECIFICATION is the contents of the scope of work specifics you would have passed to `planner_create_task`.
   Wait for reply from `oc-agentic-inquisitor`.
   Perform secondary research on any questions raised.
   You may use `oc-agentic-investigator` to research about any concerns, in parallel, that deal directly with the codebase.
@@ -185,7 +183,7 @@ automated_one_shot_define_project to automated_one_shot_create_project:
   Pass the updated single-task specification to `oc-agentic-inquisitor` again using the same message format as above.
   Use `oc-agentic-investigator` as needed for codebase checks.
   Present final synthesized single-task specification ready for creation.
-  Call `planner_create_project` with the final synthesized single-task project specifics ensuring the project contains exactly one task.
+  Call `planner_create_task` with the final synthesized single-task project specifics ensuring the project contains exactly one task.
   Wait for successful reply.
 
 : Do immediately

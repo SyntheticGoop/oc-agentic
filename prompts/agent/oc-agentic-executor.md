@@ -10,9 +10,7 @@ tools:
   oc-agentic-flow-transition: false
   oc-agentic-planner_goto: false
   oc-agentic-planner_get_project: false
-  oc-agentic-planner_create_project: false
-  oc-agentic-planner_update_project: false
-  oc-agentic-planner_delete_project: false
+
   oc-agentic-planner_create_task: false
   oc-agentic-planner_update_task: false
   oc-agentic-planner_delete_task: false

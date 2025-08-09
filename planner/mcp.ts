@@ -109,29 +109,23 @@ const ValidatedConstraints = z
   .array(z.string().min(1, "Constraint cannot be empty"))
   .default([]);
 
-// PROJECT METADATA STUBBING IMPLEMENTATION
-// ========================================
+// TASK-CENTRIC MCP INTERFACE
+// ==========================
 //
-// As part of the inside-out migration to remove project-level concepts from the external API,
-// all project metadata fields (scope, title, intent, objectives, constraints) are now stubbed
-// with default values in MCP responses.
+// This MCP server now operates purely on tasks, with project-level metadata operations removed.
+// All operations work through task creation and management, making the interface task-centric.
 //
-// IMPLEMENTATION APPROACH:
-// - Proxy-based stubbing in planning.ts intercepts property access and JSON serialization
-// - Actual project data is preserved internally for save operations and persistence
-// - External MCP responses consistently show stub values to prepare for metadata removal
-// - Task data remains fully functional and accurate throughout the migration
-//
-// STUBBED FIELDS:
-// - scope: Returns "stub"
-// - title: Returns "stubbed project data"
-// - intent: Returns migration explanation message
-// - objectives: Returns single migration-related objective
-// - constraints: Returns single constraint about data availability
+// AVAILABLE OPERATIONS:
+// - get_project: Returns task list only (no project metadata)
+// - create_task: Creates new tasks
+// - update_task: Updates existing tasks
+// - delete_task: Removes tasks
+// - reorder_tasks: Changes task execution order
+// - goto: Navigates to specific tasks
 //
 // RATIONALE:
-// This approach maintains interface compatibility while gradually removing project-level
-// concepts from the external API surface, enabling a smooth transition to task-only workflows.
+// This completes the migration to a purely task-based external API, removing project metadata
+// concepts from the MCP interface while preserving full task management functionality.
 
 function formatError(error: Err) {
   // Provide helpful error messages with recovery guidance
@@ -192,17 +186,10 @@ function start() {
   const jj = Jujutsu.cwd(process.cwd());
   const libraryQueue = new PlanningLibraryQueue(jj);
 
-  // Project CRUD Operations
+  // Task-Only Operations
   server.addTool({
     name: "get_project",
-    description: `Returns the complete current project state. ALWAYS CALL THIS FIRST.
-
-VERIFICATION REQUIRED:
-After calling this tool, you must examine the project data and confirm:
-- Is this the project state you expected?
-- Do the title, scope, intent, objectives, and constraints match expectations?
-- Are the tasks what you expected to find?
-- If not, what corrective action is needed?`,
+    description: `Returns the current task list and project state. ALWAYS CALL THIS FIRST.`,
     parameters: z.object({}),
     execute: async () => {
       return libraryQueue.enqueue(async (library) => {
@@ -217,234 +204,28 @@ After calling this tool, you must examine the project data and confirm:
         if (project.ok === null)
           return composeTextOutput({
             type: "success",
-            message: `No existing project. You should start a new one.`,
+            message: `No existing tasks. Create your first task using create_task.`,
           });
 
-        // Project metadata is now stubbed via proxy-based approach in planning.ts
-        // JSON serialization will show stub values while preserving task functionality
+        // Return only task data - project metadata is no longer exposed
+        const taskOnlyData = {
+          tasks: project.ok.tasks,
+        };
+
         return composeTextOutput({
           type: "success",
-          message: `Project retrieved. EXAMINE THE RESULT: ${JSON.stringify(project.ok, null, 2)}
+          message: `Tasks retrieved. EXAMINE THE RESULT: ${JSON.stringify(taskOnlyData, null, 2)}
 
-STUBBING NOTICE: Project-level metadata fields are now stubbed during inside-out migration:
-- scope: Shows "stub" (actual data preserved internally)
-- title: Shows "stubbed project data" (actual data preserved internally)  
-- intent: Shows migration explanation (actual data preserved internally)
-- objectives: Shows migration-related objective (actual data preserved internally)
-- constraints: Shows data availability constraint (actual data preserved internally)
+TASK-CENTRIC INTERFACE: This system now operates purely on tasks:
+- Project metadata operations have been removed from the MCP interface
+- All operations work through task creation and management
+- Use create_task to add new tasks to your workflow
 
-FUNCTIONAL DATA: Task data remains fully accurate and functional.
-
-REQUIRED: You must analyze this project data and determine if it matches your expectations:
+REQUIRED: You must analyze this task data and determine if it matches your expectations:
 - Task data should be accurate and functional - verify task details carefully
-- Project metadata will consistently show stub values during migration
 - If task data doesn't match your expectations, you MUST take corrective action immediately.
 
 IMPORTANT: WITHIN THE CONTEXT OF USING THIS TOOL, YOU ARE REQUIRED TO ENGAGE IN PERSISTENT CLARIFICATION BEFORE ANY CREATE/UPDATE/DELETE OPERATION. You must ask specific questions about missing details and continue asking until the user explicitly says "proceed", "go ahead", or "that's enough". DO NOT ASSUME ANY DETAILS. DO NOT PROCEED WITHOUT EXPLICIT USER PERMISSION.`,
-        });
-      });
-    },
-  });
-
-  server.addTool({
-    name: "create_project",
-    description: `Creates a new project with metadata. Use this after get_project shows a default/empty project.
-
-PARAMETER GUIDE:
-
-SCOPE - Area of change (examples of transforming user input):
-- "User Authentication System" → "auth" or "user-auth"  
-- "API Version 2 Updates" → "api.v2" or "api/v2"
-- "Database Migration Tools" → "db/migration" or "db-tools"
-- "Frontend Components" → "ui" or "frontend"
-- Can be null if project spans multiple areas
-
-TITLE - Brief description (lowercase start, max 120 chars):
-- "implement user authentication system"
-- "migrate database to postgresql" 
-- "add real-time notifications"
-
-INTENT - WHY this project exists (be specific):
-✅ GOOD: "Users currently cannot securely access their accounts, leading to security risks and poor user experience. We need authentication to protect user data and enable personalized features."
-❌ BAD: "Add login functionality" (doesn't explain WHY)
-
-OBJECTIVES - Measurable outcomes (what success looks like):
-✅ GOOD: ["Users can register with email/password", "Login completes within 3 seconds", "Password reset via email works", "Support 1000 concurrent users"]
-❌ BAD: ["Better security", "Improved UX"] (not measurable)
-
-CONSTRAINTS - Limitations/requirements:
-✅ GOOD: ["Must use existing PostgreSQL database", "Cannot store passwords in plain text", "Must work on mobile devices"]
-❌ BAD: ["Make it secure"] (not actionable)
-
-TYPE - What kind of work this project represents:
-- feat: New user-facing features ("implement user authentication", "add search functionality")
-- fix: Bug repairs ("fix security vulnerabilities", "resolve login issues")
-- refactor: Code improvements ("reorganize authentication system")
-- build: Build/deployment changes ("setup CI/CD pipeline")
-- chore: Maintenance ("update dependencies", "cleanup old code")
-- docs: Documentation ("create API documentation")
-- lint: Code style improvements ("enforce coding standards")
-- infra: Infrastructure ("setup monitoring", "deploy to cloud")
-- spec: Requirements/specifications ("define authentication requirements")
-
-Parameters:
-- scope: Area of change (lowercase start, letters/numbers/hyphens/dots/slashes, or null)
-- title: Brief description (lowercase start, max 120 chars)
-- intent: WHY this project exists (detailed explanation required)
-- objectives: Measurable outcomes (at least one required)
-- constraints: Limitations/requirements (optional, defaults to empty)
-- type: Task type for the initial task (feat/fix/refactor/build/chore/docs/lint/infra/spec)`,
-    parameters: z.object({
-      scope: ValidatedScope,
-      title: ValidatedTitle,
-      intent: ValidatedIntent,
-      objectives: ValidatedObjectives,
-      constraints: ValidatedConstraints,
-      type: ValidatedCommitType,
-    }),
-    execute: async (args) => {
-      return libraryQueue.enqueue(async (library) => {
-        const project = await library.project({ new: true });
-        if (project.err)
-          return composeTextOutput({
-            type: "error",
-            error: project,
-          });
-
-        // Update project metadata and clear default tasks
-        project.ok.scope = args.scope;
-        project.ok.title = args.title;
-        project.ok.intent = args.intent;
-        project.ok.objectives = args.objectives;
-        project.ok.constraints = args.constraints;
-        project.ok.tasks = [
-          {
-            completed: false,
-            constraints: args.constraints,
-            intent: args.intent,
-            objectives: args.objectives,
-            scope: args.scope,
-            title: args.title,
-            type: args.type,
-          },
-        ];
-
-        const saveResult = await project.ok.save();
-        if (saveResult.err) {
-          return composeTextOutput({
-            type: "error",
-            error: saveResult as Err<string, unknown>,
-          });
-        }
-
-        // Project metadata is stubbed in response, but actual data was saved correctly
-        return composeTextOutput({
-          type: "success",
-          message: `Project creation completed. VERIFY THE RESULT: ${JSON.stringify(project.ok, null, 2)}
-
-STUBBING NOTICE: Project-level metadata fields show stub values in response:
-- scope, title, intent, objectives, constraints: All stubbed during migration
-- Actual project data was saved correctly to persistence layer
-- Stubbing only affects external API responses, not internal data storage
-
-REQUIRED: You must verify the task data matches what you intended to create:
-- Tasks: ${project.ok.tasks.length} tasks - Is this the expected number?
-- Task details should be accurate and functional (not stubbed)
-- Project metadata will consistently show stub values during migration
-
-If the task data doesn't match your expectations, you MUST investigate and take corrective action.`,
-        });
-      });
-    },
-  });
-
-  server.addTool({
-    name: "update_project",
-    description: `Updates existing project metadata with partial changes (does not modify tasks).`,
-    parameters: z.object({
-      scope: ValidatedScope.optional(),
-      title: ValidatedTitle.optional(),
-      intent: ValidatedIntent.optional(),
-      objectives: ValidatedObjectives.optional(),
-      constraints: ValidatedConstraints.optional(),
-    }),
-    execute: async (args) => {
-      return libraryQueue.enqueue(async (library) => {
-        const project = await library.project();
-        if (project.err)
-          return composeTextOutput({
-            type: "error",
-            error: project,
-          });
-
-        if (project.ok === null)
-          return composeTextOutput({
-            type: "error",
-            error: Err("Tool Error: There is no existing project to update."),
-          });
-
-        // Update only provided fields
-        if (args.scope !== undefined) project.ok.scope = args.scope;
-        if (args.title !== undefined) project.ok.title = args.title;
-        if (args.intent !== undefined) project.ok.intent = args.intent;
-        if (args.objectives !== undefined)
-          project.ok.objectives = args.objectives;
-        if (args.constraints !== undefined)
-          project.ok.constraints = args.constraints;
-
-        const saveResult = await project.ok.save();
-        if (saveResult.err) {
-          return composeTextOutput({
-            type: "error",
-            error: saveResult as Err<string, unknown>,
-          });
-        }
-
-        // Project metadata is stubbed in response, but actual data was updated correctly
-        return composeTextOutput({
-          type: "success",
-          message: `Project update completed. VERIFY THE CHANGES: ${JSON.stringify(project.ok, null, 2)}
-
-STUBBING NOTICE: Project-level metadata fields show stub values in response:
-- scope, title, intent, objectives, constraints: All stubbed during migration
-- Actual project data was updated correctly in persistence layer
-- Stubbing only affects external API responses, not internal data storage
-
-REQUIRED: You must verify the task data remains functional:
-- Task data should be accurate and unchanged (not stubbed)
-- Project metadata will consistently show stub values during migration
-- If the task data doesn't match your expectations, investigate and correct immediately.`,
-        });
-      });
-    },
-  });
-
-  server.addTool({
-    name: "delete_project",
-    description: `Removes project completely.`,
-    parameters: z.object({}),
-    execute: async () => {
-      return libraryQueue.enqueue(async (library) => {
-        const project = await library.project();
-        if (project.err)
-          return composeTextOutput({
-            type: "error",
-            error: project,
-          });
-
-        if (project.ok !== null) {
-          const result = await project.ok.drop();
-          if (result.err) {
-            return composeTextOutput({
-              type: "error",
-              error: result,
-            });
-          }
-        }
-
-        return composeTextOutput({
-          type: "success",
-          message: `Project deletion completed. You must now start a new project`,
         });
       });
     },

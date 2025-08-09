@@ -110,31 +110,16 @@ end(auth)(auth):: implement user authentication system
 
 ## MCP Tools
 
-### Project Operations
+### Task-Only Operations
 
 #### `get_project`
-**Purpose**: Retrieve current project state
+**Purpose**: Retrieve current task list and project state
 - **Parameters**: None
-- **Returns**: Complete project data with verification prompts
+- **Returns**: Task data with verification prompts
 - **Usage**: Always call first to understand current state
+- **Note**: Returns only task data - project metadata operations have been removed
 
-#### `create_project`
-**Purpose**: Create new project with metadata
-- **Parameters**: `scope`, `title`, `intent`, `objectives`, `constraints`, `type`
-- **Validation**: Comprehensive schema validation for all fields
-- **Effect**: Creates initial project structure with first task
-
-#### `update_project`
-**Purpose**: Update project metadata (not tasks)
-- **Parameters**: Partial project fields (all optional)
-- **Effect**: Updates only provided fields, preserves others
-
-#### `delete_project`
-**Purpose**: Remove project completely
-- **Safety**: Validates no uncommitted changes exist
-- **Effect**: Abandons all project commits
-
-### Task Operations
+### Task Management
 
 #### `create_task`
 **Purpose**: Add new task to existing project
@@ -170,19 +155,19 @@ end(auth)(auth):: implement user authentication system
 
 ## Usage Patterns
 
-### Project Creation Workflow
+### Task-Only Workflow
 ```typescript
 // 1. Check current state
 await mcpClient.callTool("get_project", {});
 
-// 2. Create new project
-await mcpClient.callTool("create_project", {
+// 2. Create first task (replaces project creation)
+await mcpClient.callTool("create_task", {
+  type: "feat",
   scope: "auth",
   title: "implement user authentication system",
   intent: "Users need secure access to protected features...",
   objectives: ["Users can register with email/password", "Login sessions persist"],
-  constraints: ["Must use existing PostgreSQL database"],
-  type: "feat"
+  constraints: ["Must use existing PostgreSQL database"]
 });
 
 // 3. Add additional tasks
@@ -198,7 +183,7 @@ await mcpClient.callTool("create_task", {
 
 ### Task Execution Workflow
 ```typescript
-// 1. Review current project
+// 1. Review current tasks
 await mcpClient.callTool("get_project", {});
 
 // 2. Navigate to first task
