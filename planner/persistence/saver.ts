@@ -1,5 +1,6 @@
 import type { Jujutsu } from "../../src/jujutsu";
 import { Err, Ok } from "../../src/result";
+import { generateTag } from "../crypto";
 import {
   type Loader,
   parseCommitBody,
@@ -32,8 +33,16 @@ export type SavingPlanData = {
 function formatBegin(data: SavingPlanData) {
   data.title = data.title.trim();
   data.intent = data.intent.trim();
+
+  // Generate tag if not provided
   if (!data.tag) {
-    return Err("Structure Error: Tag is required for begin commit");
+    try {
+      data.tag = generateTag();
+    } catch (error) {
+      return Err(
+        `Structure Error: Failed to generate tag: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
+    }
   }
   const head = `begin(${data.scope ?? ""}:${data.tag}):: ${data.title}`;
   const parsed = parseCommitHeader(head);
@@ -42,8 +51,15 @@ function formatBegin(data: SavingPlanData) {
 }
 
 function formatEnd(data: SavingPlanData) {
+  // Generate tag if not provided (should already be set by formatBegin, but safety check)
   if (!data.tag) {
-    return Err("Structure Error: Tag is required for end commit");
+    try {
+      data.tag = generateTag();
+    } catch (error) {
+      return Err(
+        `Structure Error: Failed to generate tag: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
+    }
   }
   const head = `end(${data.scope ?? ""}:${data.tag}):: ${data.title}`;
   const body = `${

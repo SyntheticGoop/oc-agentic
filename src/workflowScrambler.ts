@@ -1,9 +1,9 @@
-import { obfuscateState } from "../workflow/stateHash";
 import type {
   StateDefinition,
   TransitionDefinition,
   WorkflowDefinition,
 } from "../workflow/parser";
+import { obfuscateState } from "../workflow/stateHash";
 
 /**
  * scrambleWorkflowDefinition

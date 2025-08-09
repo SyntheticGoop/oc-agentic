@@ -71,6 +71,7 @@ export class PlanningLibrary {
             objectives: [],
             scope: "",
             title: "",
+            tag: null,
             new: true,
             tasks: [
               {

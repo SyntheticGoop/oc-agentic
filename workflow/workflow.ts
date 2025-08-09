@@ -1,9 +1,9 @@
+import {
+  obfuscateName,
+  scrambleWorkflowDefinition,
+} from "../src/workflowScrambler";
 import { WorkflowLexer } from "./lexer";
 import { type WorkflowDefinition, WorkflowParser } from "./parser";
-import {
-  scrambleWorkflowDefinition,
-  obfuscateName,
-} from "../src/workflowScrambler";
 
 declare const Brand: unique symbol;
 declare class StateBrand {
