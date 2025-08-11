@@ -9,6 +9,7 @@
   Call `get_project` to load current task list.
   List summary of files changed with `jj diff --summary -r @`
   Display detailed list of current task status to the user.
+  Ask what the user wants to do and ONLY PROCEED ON EXPLICIT CONFIRMATION
 
 : Ask: Do you want to continue with existing tasks?
 initial_loaded to refine_tasks:
@@ -36,10 +37,10 @@ create_task to checked_task:
   You may use `oc-agentic-investigator` to research about any concerns, in parallel, that deal directly with the codebase.
   `oc-agentic-investigator` should be called with the following format: `I am uncertain about these THE_POINT. This is my current assumption THE_ASSUMPTION. Here is the CONTEXT. This is were I would begin: INVESTIGATION_ENTRY_POINT. Can you help provide factual clarity?`.
   Use your enhanced contextual understanding and ability to investigate to immediately reject or accept points, synthesizing new points, or making any other adjustments to the task, leaving points with uncertainty as an exercise to the user to clarify.
-  Present reply and interrogate them for clarification, or ask if they would like to ignore reccomendations.
+  Present reply in full of all automatic adjustments and uncertainties and interrogate them for clarification, or ask if they would like to ignore reccomendations.
 
 : Ask: Can you provide clarity on all the above points?
-checked_task to check_tasks
+checked_task to checked_task
 
 : Ask: Would you like to proceed (anyway) to updating the task?
 checked_task to commit_create_task:
@@ -85,6 +86,13 @@ refine_tasks to create_task:
   Ask to define the specifics of the task.
   These specifics will be used to create the task with `create_task` (without new parameter).
   Detail the task specifics including type, scope, title, intent, objectives, and constraints.
+
+: Ask: Are there any tasks you want to update?
+refine_tasks to update_task:
+  Ask the details of the task the user wants to update.
+  Create the new expected task details.
+  Await for user to confirm or continue refining the task.
+  On confirmation, proceed to update the task with `update_task`.
 
 : Do immediately
 update_task to refine_tasks
