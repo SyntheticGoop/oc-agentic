@@ -33,11 +33,11 @@ describe("Parser E2E Tests", () => {
             "name": "automated_one_shot_all_tasks_complete",
           },
           "automated_one_shot_create_task": {
-            "guidance": "Synthesize the single-task specifics. Pass the task specifics to agent \`oc-agentic-inquisitor\`. Your message format will be \`[requirements] This needs clarity how plans will be formed during execution. Plans that derive from this must be strictly deterministic [specification] THE_TASK_SPECIFICATION\`. THE_TASK_SPECIFICATION is the contents of the task specifics you would have passed to \`create_task\`. Wait for reply from \`oc-agentic-inquisitor\`. Perform secondary research on any questions raised. You may use \`oc-agentic-investigator\` to research about any concerns, in parallel, that deal directly with the codebase. \`oc-agentic-investigator\` should be called with the following format: \`I am uncertain about these THE_POINT. This is my current assumption THE_ASSUMPTION. Here is the CONTEXT. This is were I would begin: INVESTIGATION_ENTRY_POINT. Can you help provide factual clarity?\`. Use your enhanced contextual understanding and ability to investigate to immediately reject or accept points, synthesizing new points, or making any other adjustments to the task. Present the synthesized single-task specifics. Update the task specifics based on the inquisitor reply. Pass the updated single-task specification to \`oc-agentic-inquisitor\` again using the same message format as above. Use \`oc-agentic-investigator\` as needed for codebase checks. Present final synthesized single-task specification ready for creation. Call \`create_task\` with the final synthesized single-task specifics. Wait for successful reply.",
+            "guidance": "Synthesize the single-task specifics. Pass the task specifics to agent \`oc-agentic-inquisitor\`. Your message format will be \`[requirements] This needs clarity how plans will be formed during execution. Plans that derive from this must be strictly deterministic [specification] THE_TASK_SPECIFICATION\`. THE_TASK_SPECIFICATION is the contents of the task specifics you would have passed to \`create_task\` with (new=true). Wait for reply from \`oc-agentic-inquisitor\`. Perform secondary research on any questions raised. You may use \`oc-agentic-investigator\` to research about any concerns, in parallel, that deal directly with the codebase. \`oc-agentic-investigator\` should be called with the following format: \`I am uncertain about these THE_POINT. This is my current assumption THE_ASSUMPTION. Here is the CONTEXT. This is were I would begin: INVESTIGATION_ENTRY_POINT. Can you help provide factual clarity?\`. Use your enhanced contextual understanding and ability to investigate to immediately reject or accept points, synthesizing new points, or making any other adjustments to the task. Present the synthesized single-task specifics. Update the task specifics based on the inquisitor reply. Pass the updated single-task specification to \`oc-agentic-inquisitor\` again using the same message format as above. Use \`oc-agentic-investigator\` as needed for codebase checks. Present final synthesized single-task specification ready for creation. Call \`create_task\` with (new=true) with the final synthesized single-task specifics. Wait for successful reply.",
             "name": "automated_one_shot_create_task",
           },
           "automated_one_shot_define_task": {
-            "guidance": "Ask to define the specifics of the single task. These specifics will be used to fulfill the arguments to \`create_task\`. This automated flow will create a single task and fully execute it without human interaction.",
+            "guidance": "Ask to define the specifics of the single task. These specifics will be used to fulfill the arguments to \`create_task\` with (new=true). This automated flow will create a single task and fully execute it without human interaction.",
             "name": "automated_one_shot_define_task",
           },
           "automated_one_shot_execution": {
@@ -69,11 +69,11 @@ describe("Parser E2E Tests", () => {
             "name": "checked_task",
           },
           "commit_create_task": {
-            "guidance": "Consolidate everything discussed in detail, without missing anything, and use it to call \`create_task\`. Wait for reply.",
+            "guidance": "Consolidate everything discussed in detail, without missing anything, and use it to call \`create_task\` with (new=true). Wait for reply.",
             "name": "commit_create_task",
           },
           "create_task": {
-            "guidance": "Ask to define the specifics of the task. These specifics will be used to create the task with \`create_task\`. Detail the task specifics including type, scope, title, intent, objectives, and constraints.",
+            "guidance": "Ask to define the specifics of the task. These specifics will be used to create the task with \`create_task\` with (new=true). Detail the task specifics including type, scope, title, intent, objectives, and constraints.",
             "name": "create_task",
           },
           "delete_task": {
@@ -223,7 +223,7 @@ describe("Parser E2E Tests", () => {
           },
           "commit_create_task": {
             "refine_tasks": {
-              "guidance": undefined,
+              "guidance": "Do immediately",
               "target": "refine_tasks",
             },
           },
@@ -235,7 +235,7 @@ describe("Parser E2E Tests", () => {
           },
           "delete_task": {
             "refine_tasks": {
-              "guidance": undefined,
+              "guidance": "Do immediately",
               "target": "refine_tasks",
             },
           },

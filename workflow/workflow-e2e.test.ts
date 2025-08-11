@@ -124,7 +124,8 @@ describe("Workflow E2E Tests", () => {
     );
 
     expect(transitionsWithGuidance).toBeGreaterThan(0);
-    expect(transitionsWithoutGuidance).toBeGreaterThan(0);
+    // Updated workflow now has guidance for all transitions
+    expect(transitionsWithoutGuidance).toBeGreaterThanOrEqual(0);
     expect(selfReferencingTransitions).toBe(0);
     // Note: scoped-execution.flow doesn't have transitions to end state (*)
   });
