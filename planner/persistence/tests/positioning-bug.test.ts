@@ -70,7 +70,7 @@ describe("Positioning Bug Reproduction", () => {
   it("should reproduce positioning bug through complete workflow", async () => {
     // Step 1: Create single plan
     const singlePlan: SavingPlanData = {
-      new: true,
+      new: "auto",
       scope: "workflow",
       tag: "test",
       intent: "test complete workflow positioning",

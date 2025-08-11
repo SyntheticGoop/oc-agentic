@@ -28,7 +28,11 @@ class PlanningLibraryQueue {
     operation: (library: PlanningLibrary) => Promise<T>,
   ): Promise<T> {
     return new Promise<T>((resolve, reject) => {
-      this.queue.push({ operation, resolve, reject });
+      this.queue.push({
+        operation,
+        resolve,
+        reject,
+      });
       this.processQueue();
     });
   }
@@ -110,6 +114,8 @@ const ValidatedObjectives = z
 const ValidatedConstraints = z
   .array(z.string().min(1, "Constraint cannot be empty"))
   .default([]);
+
+const ValidatedNewParameter = z.enum(["current", "auto"]).optional();
 
 // TASK-CENTRIC MCP INTERFACE
 // ==========================
@@ -276,7 +282,7 @@ Parameters:
 - objectives: Specific outcomes for this task (at least one required)
 - constraints: Task-specific limitations (optional)
 - completed: false (default for new tasks)
-- new: boolean (true if creating new project) `,
+- new: "current" | "auto" (optional - "auto" creates new project, "current" documents existing work) `,
     parameters: z.object({
       type: ValidatedCommitType,
       scope: ValidatedScope,
@@ -285,11 +291,13 @@ Parameters:
       objectives: ValidatedObjectives,
       constraints: ValidatedConstraints,
       completed: z.boolean().default(false),
-      new: z.boolean().default(false),
+      new: ValidatedNewParameter,
     }),
     execute: async (args) => {
       return libraryQueue.enqueue(async (library) => {
-        const project = await library.project({ new: args.new });
+        const project = await library.project(
+          args.new ? { new: args.new } : {},
+        );
         if (project.err)
           return composeTextOutput({
             type: "error",
@@ -313,7 +321,7 @@ Parameters:
           completed: args.completed,
         };
 
-        if (args.new) {
+        if (args.new === "auto") {
           project.ok.tasks = [newTask];
         } else {
           project.ok.tasks.push(newTask);

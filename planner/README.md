@@ -258,4 +258,83 @@ yarn biome check --write .
 - Structured response formats
 - Error handling patterns
 
+## Migration Guide
+
+### Enhanced Task Creation Parameter (v0.2.0)
+
+The `create_task` tool now supports enhanced parameter modes for autonomous workflows:
+
+#### New Parameter Format
+```typescript
+// New enum format (recommended)
+new: "current" | "auto" | undefined
+
+// Legacy boolean format (deprecated)
+new: boolean | undefined
+```
+
+#### Migration Examples
+
+**Before (deprecated):**
+```typescript
+await mcpClient.callTool("create_task", {
+  type: "feat",
+  scope: "auth",
+  title: "implement user login",
+  intent: "Users need secure access...",
+  objectives: ["Login form accepts credentials"],
+  constraints: [],
+  new: true  // ❌ Deprecated boolean format
+});
+```
+
+**After (recommended):**
+```typescript
+// For new project creation
+await mcpClient.callTool("create_task", {
+  type: "feat", 
+  scope: "auth",
+  title: "implement user login",
+  intent: "Users need secure access...",
+  objectives: ["Login form accepts credentials"],
+  constraints: [],
+  new: "auto"  // ✅ New enum format
+});
+
+// For documenting existing work
+await mcpClient.callTool("create_task", {
+  type: "feat",
+  scope: "auth", 
+  title: "implement user login",
+  intent: "Users need secure access...",
+  objectives: ["Login form accepts credentials"],
+  constraints: [],
+  new: "current"  // ✅ Documents current commit
+});
+```
+
+#### Autonomous Documentation Workflow
+
+The new `new: "current"` mode enables autonomous commit documentation:
+
+1. **Diff Analysis**: Automatically analyzes `jj diff --summary -r @`
+2. **Content Sanitization**: Removes sensitive information (emails, IPs, tokens)
+3. **Retroactive Documentation**: Creates task documentation for completed work
+4. **Workflow Integration**: Integrates with `document_work_done` workflow state
+
+#### Backward Compatibility
+
+- Boolean values are automatically converted: `true` → `"auto"`, `false` → `undefined`
+- Deprecation warnings are logged for boolean usage
+- Full backward compatibility maintained during transition period
+- No breaking changes to existing code
+
+#### Safety Features
+
+- **Retry Logic**: Default 3 retries with exponential backoff
+- **Loop Prevention**: Safeguards against infinite autonomous cycles  
+- **Structured Logging**: Correlation IDs for workflow observability
+- **Content Sanitization**: Automatic removal of sensitive data
+- **Repository Integrity**: Safe operations that maintain valid states
+
 This planner provides a robust foundation for structured project management with version control integration, type safety, and comprehensive error handling.

@@ -17,8 +17,16 @@ initial_loaded to refine_tasks:
 : Ask: Do you want to create a new tasks?
 initial_loaded to create_task:
   Ask to define the specifics of the task.
-  These specifics will be used to create the task with `create_task` with (new=true).
+  These specifics will be used to create the task with `create_task` with (new="auto").
   Detail the task specifics including type, scope, title, intent, objectives, and constraints.
+
+: Ask: Do you want to document work already done?
+initial_loaded to document_work_done:
+  Analyze current commit changes using `jj diff --summary -r @` to understand what work has been completed.
+  Use `oc-agentic-investigator` to extract task details from actual file changes and commit context.
+  Use `oc-agentic-inquisitor` for iterative plan refinement until task specification accurately reflects completed work.
+  Create task documentation using `create_task` with (new="current") based on analysis of actual changes, not planned work.
+  Loop back to initial_loaded state after completion without human interaction.
 
 : Do: When user is done clarifying their task.
 create_task to checked_task:
@@ -35,8 +43,39 @@ checked_task to check_tasks
 
 : Ask: Would you like to proceed (anyway) to updating the task?
 checked_task to commit_create_task:
-  Consolidate everything discussed in detail, without missing anything, and use it to call `create_task` with (new=true).
+  Consolidate everything discussed in detail, without missing anything, and use it to call `create_task` with (new="auto").
   Wait for reply.
+
+: Do immediately
+document_work_done to analyze_commit_changes:
+  Run `jj diff --summary -r @` to get summary of current commit changes.
+  Extract file paths, change types, and modification patterns from diff output.
+  Prepare context for commit analysis including changed files and their purposes.
+
+: Do immediately
+analyze_commit_changes to investigate_changes:
+  Pass commit analysis context to `oc-agentic-investigator`.
+  Your message format will be `I need to understand the work completed in this commit. Here are the file changes: DIFF_SUMMARY. I want to extract task details including type, scope, title, intent, objectives, and constraints based on actual changes made, not planned work. Can you help analyze what was actually accomplished?`.
+  Wait for investigator analysis of actual changes and their business impact.
+  Extract technical details, scope of changes, and implementation approach from analysis.
+
+: Do immediately
+investigate_changes to refine_task_spec:
+  Format extracted task details and pass to `oc-agentic-inquisitor`.
+  Your message format will be `[requirements] This task specification needs to accurately reflect completed work for retroactive documentation. The specification must be based on actual file changes and implementation details, not planned work. [specification] EXTRACTED_TASK_DETAILS`.
+  Wait for inquisitor refinement of task specification.
+  Iterate with inquisitor until task specification accurately captures completed work.
+  Ensure task type, scope, title, intent, objectives, and constraints reflect actual implementation.
+
+: Do immediately
+refine_task_spec to create_documentation_task:
+  Use refined task specification to call `create_task` with (new="current").
+  This will document the current commit with the analyzed task details.
+  Ensure all task fields accurately reflect the completed work based on commit analysis.
+  Wait for successful task creation.
+
+: Do immediately
+create_documentation_task to initial_loaded
 
 : Do immediately
 commit_create_task to refine_tasks
@@ -44,7 +83,7 @@ commit_create_task to refine_tasks
 : Ask: Would you like to create a new task?
 refine_tasks to create_task:
   Ask to define the specifics of the task.
-  These specifics will be used to create the task with `create_task` with (new=false).
+  These specifics will be used to create the task with `create_task` (without new parameter).
   Detail the task specifics including type, scope, title, intent, objectives, and constraints.
 
 : Do immediately
@@ -152,7 +191,7 @@ all_tasks_complete to refine_tasks
 : Ask: Do you want to run an automated one-shot task (fully automated, no further human interaction)?
 initial_loaded to automated_one_shot_define_task:
   Ask to define the specifics of the single task.
-  These specifics will be used to fulfill the arguments to `create_task` with (new=true).
+  These specifics will be used to fulfill the arguments to `create_task` with (new="auto").
   This automated flow will create a single task and fully execute it without human interaction.
 
 : Do immediately
@@ -160,7 +199,7 @@ automated_one_shot_define_task to automated_one_shot_create_task:
   Synthesize the single-task specifics.
   Pass the task specifics to agent `oc-agentic-inquisitor`.
   Your message format will be `[requirements] This needs clarity how plans will be formed during execution. Plans that derive from this must be strictly deterministic [specification] THE_TASK_SPECIFICATION`.
-  THE_TASK_SPECIFICATION is the contents of the task specifics you would have passed to `create_task` with (new=true).
+  THE_TASK_SPECIFICATION is the contents of the task specifics you would have passed to `create_task` with (new="auto").
   Wait for reply from `oc-agentic-inquisitor`.
   Perform secondary research on any questions raised.
   You may use `oc-agentic-investigator` to research about any concerns, in parallel, that deal directly with the codebase.
@@ -171,7 +210,7 @@ automated_one_shot_define_task to automated_one_shot_create_task:
   Pass the updated single-task specification to `oc-agentic-inquisitor` again using the same message format as above.
   Use `oc-agentic-investigator` as needed for codebase checks.
   Present final synthesized single-task specification ready for creation.
-  Call `create_task` with (new=true) with the final synthesized single-task specifics.
+  Call `create_task` with (new="auto") with the final synthesized single-task specifics.
   Wait for successful reply.
 
 : Do immediately

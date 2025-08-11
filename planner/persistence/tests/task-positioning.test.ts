@@ -64,7 +64,7 @@ describe("Task Positioning Behavior", () => {
   it("should position at task itself after single task init", async () => {
     // Create a single task plan (SHORT format)
     const singleTaskPlan: SavingPlanData = {
-      new: true,
+      new: "auto",
       scope: "test",
       tag: "test",
       intent: "test single task positioning",
@@ -113,7 +113,7 @@ describe("Task Positioning Behavior", () => {
   it("should stick to current task position when adding new task from single", async () => {
     // Step 1: Create initial single task
     const singleTaskPlan: SavingPlanData = {
-      new: true,
+      new: "auto",
       scope: "test",
       tag: "test",
       intent: "test task addition positioning",
@@ -235,7 +235,7 @@ describe("Task Positioning Behavior", () => {
   it("should handle multiple task additions while maintaining position", async () => {
     // Step 1: Create initial single task
     const singleTaskPlan: SavingPlanData = {
-      new: true,
+      new: "auto",
       scope: "multi",
       tag: "test",
       intent: "test multiple task additions",
@@ -379,7 +379,7 @@ describe("Task Positioning Behavior", () => {
   it("should handle complex positioning scenario: add task, move, complete, delete", async () => {
     // Step 1: Create initial single task
     const singleTaskPlan: SavingPlanData = {
-      new: true,
+      new: "auto",
       scope: "complex",
       tag: "test",
       intent: "test complex positioning scenario",

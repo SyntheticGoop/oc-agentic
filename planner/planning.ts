@@ -88,24 +88,27 @@ export class PlanningLibrary {
     | Err<`${"VCS" | "Structure"} Error: ${string}`>
   >;
   async project(options: {
-    new: boolean;
+    new?: "current" | "auto";
   }): Promise<
     | Ok<ReturnType<typeof createProject>>
     | Err<`${"VCS" | "Structure"} Error: ${string}`>
   >;
   async project(options?: {
-    new?: boolean;
+    new?: "current" | "auto";
   }): Promise<
     | Ok<ReturnType<typeof createProject>>
     | Ok<null>
     | Err<`${"VCS" | "Structure"} Error: ${string}`>
   > {
     if (options?.new) {
+      // Handle both "auto" and "current" modes properly
+      const newMode = options.new;
+
       return Ok(
         createProject(
           {
             tag: generateTag(),
-            new: true,
+            new: newMode, // Use the actual enum value passed in
             tasks: [
               {
                 constraints: [],

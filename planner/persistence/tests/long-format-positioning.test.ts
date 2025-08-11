@@ -63,7 +63,7 @@ describe("LONG Format Positioning Behavior", () => {
   it("should stay at current task when creating new task in LONG format", async () => {
     // Step 1: Create initial LONG format plan with 2 tasks
     const initialPlan: SavingPlanData = {
-      new: true,
+      new: "auto",
       scope: "longtest",
       tag: "test", title: "long format positioning test",
       intent: "test positioning behavior in long format",
@@ -222,7 +222,7 @@ describe("LONG Format Positioning Behavior", () => {
   it("should stay at current task when modifying existing task in LONG format", async () => {
     // Step 1: Create initial LONG format plan
     const initialPlan: SavingPlanData = {
-      new: true,
+      new: "auto",
       scope: "modify",
       title: "task modification test",
       tag: "test", intent: "test positioning when modifying tasks",

@@ -20,7 +20,7 @@ type Task = {
 
 export type SavingPlanData = {
   tag: string;
-  new?: boolean;
+  new?: "current" | "auto";
   tasks: [Task, ...Task[]];
 };
 
@@ -132,10 +132,34 @@ export class Saver {
 
     return Ok(void 0);
   }
+
+  private async saveCurrentPlan(plan: SavingPlanData) {
+    if (plan.tasks.length === 0)
+      return Err("Structure Error: Empty task not allowed");
+
+    // For new="current", we bypass empty commit and message checks
+    // and use the current commit to document work already done
+    const desc = await this.jj.description.get();
+    const id = await this.jj.changeId();
+    if (desc.err) return desc;
+    if (id.err) return id;
+
+    const task = plan.tasks[0];
+    const taskMsg = formatTask(plan.tag, task);
+    if (taskMsg.err) return taskMsg;
+
+    // Update current commit description with task documentation
+    const update = await this.jj.description.replace(taskMsg.ok, id.ok);
+    if (update.err) return update;
+
+    return Ok(void 0);
+  }
+
   public async savePlan(plan: SavingPlanData) {
     if (plan.tasks.length === 0)
       return Err("Structure Error: Empty task not allowed");
-    if (plan.new === true) return this.saveNewPlan(plan);
+    if (plan.new === "auto") return this.saveNewPlan(plan);
+    if (plan.new === "current") return this.saveCurrentPlan(plan);
 
     const current = await this.loader.loadPlan();
     if (current.err) return current;

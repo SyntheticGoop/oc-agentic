@@ -196,13 +196,8 @@ initial intent
 
     // Step 1: Create single plan
     const singlePlan: SavingPlanData = {
-      new: true,
-      scope: "workflow",
+      new: "auto",
       tag: "test",
-      intent: "test complete workflow positioning",
-      title: "workflow positioning test",
-      objectives: ["track positioning throughout workflow"],
-      constraints: [],
       tasks: [
         {
           type: "feat",
@@ -216,7 +211,7 @@ initial intent
       ],
     };
 
-    const step1Result = await saver.savePlan({ ...singlePlan, new: true });
+    const step1Result = await saver.savePlan({ ...singlePlan, new: "auto" });
     expect(step1Result.err).toBeUndefined();
 
     // Verify step 1 - should be SHORT format
@@ -1065,7 +1060,7 @@ initial intent
     expect(descResult5.err).toBeUndefined();
 
     const mixedCompletionPlan: SavingPlanData = {
-      new: true,
+      new: "auto",
       scope: "status",
       tag: "test",
       intent: "test completion markers",
@@ -1205,7 +1200,7 @@ initial intent
 
     // Create initial plan
     const initialPlan: SavingPlanData = {
-      new: true,
+      new: "auto",
       scope: "preserve",
       tag: "test",
       intent: "initial plan",
@@ -1294,7 +1289,7 @@ initial intent
 
     // Create initial plan with one task
     const initialPlan: SavingPlanData = {
-      new: true,
+      new: "auto",
       scope: "create",
       tag: "test",
       intent: "initial plan",
@@ -1411,7 +1406,7 @@ initial intent
     // Create initial plan with multiple tasks
     const initialPlan: SavingPlanData = {
       scope: "remove",
-      new: true,
+      new: "auto",
       tag: "test", intent: "initial plan",
       title: "initial title",
       objectives: [],
@@ -1516,7 +1511,7 @@ initial intent
       scope: "order",
       tag: "test",
       intent: "initial plan",
-      new: true,
+      new: "auto",
       title: "initial title",
       objectives: [],
       constraints: [],
@@ -1688,7 +1683,7 @@ initial intent
       ],
     };
 
-    const shortResult = await saver.savePlan({ ...shortPlan, new: true });
+    const shortResult = await saver.savePlan({ ...shortPlan, new: "auto" });
     expect(shortResult.err).toBeUndefined();
 
     // Verify SHORT format
@@ -1806,7 +1801,7 @@ initial intent
       ],
     };
 
-    const longResult = await saver.savePlan({ ...longPlan, new: true });
+    const longResult = await saver.savePlan({ ...longPlan, new: "auto" });
     expect(longResult.err).toBeUndefined();
 
     // Verify LONG format
@@ -1901,7 +1896,7 @@ describe("New Plan Creation Tests", () => {
       tasks: [] as any,
     };
 
-    const result = await saver.savePlan({ ...emptyTaskPlan, new: true });
+    const result = await saver.savePlan({ ...emptyTaskPlan, new: "auto" });
     expect(result.err).toBeDefined();
     expect(result.err).toBe("Structure Error: Empty task not allowed");
   });
@@ -1932,7 +1927,7 @@ describe("New Plan Creation Tests", () => {
       ],
     };
 
-    const result = await saver.savePlan({ ...singleTaskPlan, new: true });
+    const result = await saver.savePlan({ ...singleTaskPlan, new: "auto" });
     expect(result.err).toBeUndefined();
 
     // Verify SHORT format was created
@@ -1993,7 +1988,7 @@ initial setup for testing
       ],
     };
 
-    const result = await saver.savePlan({ ...multiTaskPlan, new: true });
+    const result = await saver.savePlan({ ...multiTaskPlan, new: "auto" });
     expect(result.err).toBeUndefined();
 
 
@@ -2063,7 +2058,7 @@ initial setup for testing
       ],
     };
 
-    const result = await saver.savePlan({ ...mixedCompletionPlan, new: true });
+    const result = await saver.savePlan({ ...mixedCompletionPlan, new: "auto" });
     expect(result.err).toBeUndefined();
 
     // Verify completion markers in commit history
@@ -2110,7 +2105,7 @@ initial setup for testing
       ],
     };
 
-    const result = await saver.savePlan({ ...nullScopePlan, new: true });
+    const result = await saver.savePlan({ ...nullScopePlan, new: "auto" });
     expect(result.err).toBeUndefined();
 
     // Verify header format without scope
@@ -2146,7 +2141,7 @@ initial setup for testing
       ],
     };
 
-    const result = await saver.savePlan({ ...invalidTypePlan, new: true });
+    const result = await saver.savePlan({ ...invalidTypePlan, new: "auto" });
     expect(result.err).toBeDefined();
     expect(result.err).toContain("Invalid commit type");
   });
@@ -2184,7 +2179,7 @@ initial setup for testing
       ],
     };
 
-    const result = await saver.savePlan({ ...invalidScopePlan, new: true });
+    const result = await saver.savePlan({ ...invalidScopePlan, new: "auto" });
     expect(result.err).toBeDefined();
     expect(result.err).toContain("Invalid");
   });
@@ -2234,7 +2229,7 @@ initial setup for testing
       ],
     };
 
-    const result = await saver.savePlan({ ...newPlan, new: true });
+    const result = await saver.savePlan({ ...newPlan, new: "auto" });
     expect(result.err).toBeUndefined();
 
     // Verify plan was created and can be loaded
@@ -2298,7 +2293,7 @@ initial setup for testing
       ],
     };
 
-    const existingResult = await saver.savePlan({ ...existingPlan, new: true });
+    const existingResult = await saver.savePlan({ ...existingPlan, new: "auto" });
     expect(existingResult.err).toBeUndefined();
 
     // Load the existing plan to get task keys
@@ -2340,7 +2335,7 @@ initial setup for testing
       ],
     };
 
-    const newResult2 = await saver.savePlan({ ...newPlan, new: true });
+    const newResult2 = await saver.savePlan({ ...newPlan, new: "auto" });
     expect(newResult2.err).toBeUndefined();
 
     // Verify that we can load the new plan (not nested)
@@ -2403,7 +2398,7 @@ initial setup for testing
       ],
     };
 
-    const existingResult = await saver.savePlan({ ...existingPlan, new: true });
+    const existingResult = await saver.savePlan({ ...existingPlan, new: "auto" });
     expect(existingResult.err).toBeUndefined();
 
     // We should already be positioned at the end of the existing plan
@@ -2428,7 +2423,7 @@ initial setup for testing
       ],
     };
 
-    const newResult2 = await saver.savePlan({ ...newPlan, new: true });
+    const newResult2 = await saver.savePlan({ ...newPlan, new: "auto" });
     expect(newResult2.err).toBeUndefined();
 
     // Verify that we can load the new plan
@@ -2465,7 +2460,7 @@ initial setup for testing
       ],
     };
 
-    const result = await saver.savePlan({ ...newPlan, new: true });
+    const result = await saver.savePlan({ ...newPlan, new: "auto" });
     expect(result.err).toBeUndefined();
 
     // Verify that we can load the plan
@@ -2517,7 +2512,7 @@ initial setup for testing
       ],
     };
 
-    const result = await saver.savePlan({ ...singleTaskPlan, new: true });
+    const result = await saver.savePlan({ ...singleTaskPlan, new: "auto" });
     expect(result.err).toBeUndefined();
 
 
@@ -2584,7 +2579,7 @@ initial setup for testing
       ],
     };
 
-    const result = await saver.savePlan({ ...multiTaskPlan, new: true });
+    const result = await saver.savePlan({ ...multiTaskPlan, new: "auto" });
     expect(result.err).toBeUndefined();
 
     // Verify the commit history contains a commit with our original commit ID
@@ -2649,7 +2644,7 @@ initial setup for testing
       ],
     };
 
-    const result = await saver.savePlan({ ...singleTaskPlan, new: true });
+    const result = await saver.savePlan({ ...singleTaskPlan, new: "auto" });
     expect(result.err).toBeUndefined();
 
     // Verify we're on a different commit (new one was created)
@@ -2850,7 +2845,7 @@ initial intent
       ],
     };
 
-    const validResult = await saver.savePlan({ ...validPlan, new: true });
+    const validResult = await saver.savePlan({ ...validPlan, new: "auto" });
     expect(validResult.err).toBeUndefined();
 
     // Get initial state
