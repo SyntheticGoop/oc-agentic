@@ -21,7 +21,7 @@ describe("Parser E2E Tests", () => {
         "initialState": "initial_loaded",
         "states": {
           "*": {
-            "guidance": "Call \`get_project\` to load current task list. List summary of files changed with \`jj diff --summary -r @\` Display detailed list of current task status to the user.",
+            "guidance": "Call \`get_project\` to load current task list. List summary of files changed with \`jj diff --summary -r @\`. Display detailed list of current task status to the user. Ask what the user wants to do and only proceed on explicit confirmation.",
             "name": "*",
           },
           "all_tasks_complete": {
@@ -64,12 +64,8 @@ describe("Parser E2E Tests", () => {
             "guidance": "Pass the task to \`oc-agentic-executor\`. Your message format will be \`Do TASK_DETAILS\` where TASK_DETAILS is the full specification of the current active task verbatim. Wait for execution to complete. Pass the task and execution review to \`oc-agentic-reviewer\`. Your message format will be \`Based on TASK_DETAILS review the current changes as reported by EXECUTION_REVIEW\` where TASK_DETAILS is the full specification of the current active task verbatim and EXECUTION_REVIEW is the output produced by the executor. Wait for review to complete.",
             "name": "automated_one_shot_run_task",
           },
-          "check_tasks": {
-            "guidance": "",
-            "name": "check_tasks",
-          },
           "checked_task": {
-            "guidance": "Format input for \`update_task\` and pass ONLY THAT INPUT to \`oc-agentic-inquisitor\`. Your message format will be \`[requirements] This needs clarity how execution will be carried out. Execution on this task must be strictly deterministic [specification] THE_TASK_SPECIFICATION\`. Perform secondary research on any questions raised. You may use \`oc-agentic-investigator\` to research about any concerns, in parallel, that deal directly with the codebase. \`oc-agentic-investigator\` should be called with the following format: \`I am uncertain about these THE_POINT. This is my current assumption THE_ASSUMPTION. Here is the CONTEXT. This is were I would begin: INVESTIGATION_ENTRY_POINT. Can you help provide factual clarity?\`. Use your enhanced contextual understanding and ability to investigate to immediately reject or accept points, synthesizing new points, or making any other adjustments to the task, leaving points with uncertainty as an exercise to the user to clarify. Present reply and interrogate them for clarification, or ask if they would like to ignore reccomendations.",
+            "guidance": "Format input for \`update_task\` and pass ONLY THAT INPUT to \`oc-agentic-inquisitor\`. Your message format will be \`[requirements] This needs clarity how execution will be carried out. Execution on this task must be strictly deterministic [specification] THE_TASK_SPECIFICATION\`. Perform secondary research on any questions raised. You may use \`oc-agentic-investigator\` to research about any concerns, in parallel, that deal directly with the codebase. \`oc-agentic-investigator\` should be called with the following format: \`I am uncertain about these THE_POINT. This is my current assumption THE_ASSUMPTION. Here is the CONTEXT. This is where I would begin: INVESTIGATION_ENTRY_POINT. Can you help provide factual clarity?\`. Use your contextual understanding and ability to investigate to accept or reject points, synthesize new points, or make adjustments to the task. Clearly mark remaining uncertainties for the user to resolve. Present the reply including all automatic adjustments and uncertainties, then ask the user whether to apply or ignore recommendations.",
             "name": "checked_task",
           },
           "commit_create_task": {
@@ -109,7 +105,7 @@ describe("Parser E2E Tests", () => {
             "name": "human_review_quick",
           },
           "initial_loaded": {
-            "guidance": "Call \`get_project\` to load current task list. List summary of files changed with \`jj diff --summary -r @\` Display detailed list of current task status to the user.",
+            "guidance": "Call \`get_project\` to load current task list. List summary of files changed with \`jj diff --summary -r @\`. Display detailed list of current task status to the user. Ask what the user wants to do and only proceed on explicit confirmation.",
             "name": "initial_loaded",
           },
           "investigate_changes": {
@@ -149,7 +145,7 @@ describe("Parser E2E Tests", () => {
             "name": "run_task",
           },
           "update_task": {
-            "guidance": "",
+            "guidance": "Ask the details of the task the user wants to update. Create the new expected task details. Await for user to confirm or continue refining the task. On confirmation, proceed to update the task with \`update_task\`.",
             "name": "update_task",
           },
         },
@@ -236,11 +232,10 @@ describe("Parser E2E Tests", () => {
               "target": "automated_one_shot_redefine_task",
             },
           },
-          "check_tasks": {},
           "checked_task": {
-            "check_tasks": {
+            "checked_task": {
               "guidance": "Ask: Can you provide clarity on all the above points?",
-              "target": "check_tasks",
+              "target": "checked_task",
             },
             "commit_create_task": {
               "guidance": "Ask: Would you like to proceed (anyway) to updating the task?",
@@ -379,6 +374,10 @@ describe("Parser E2E Tests", () => {
             "reorder_tasks": {
               "guidance": "Ask: Would you like to reorder specific tasks?",
               "target": "reorder_tasks",
+            },
+            "update_task": {
+              "guidance": "Ask: Are there any tasks you want to update?",
+              "target": "update_task",
             },
           },
           "reorder_tasks": {

@@ -24,7 +24,7 @@ function start() {
   );
 
   const server = new FastMCP({
-    name: "workflow",
+    name: "flow",
     version: "0.1.0",
   });
 

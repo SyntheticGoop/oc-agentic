@@ -39,7 +39,9 @@ function formatTask(tag: string, data: SavingPlanData["tasks"][number]) {
   }`.trim();
 
   const parseHeader = parseCommitHeader(head);
-  if (parseHeader.err) return parseHeader;
+  if (parseHeader.err) {
+    return parseHeader;
+  }
   const parseBody = parseCommitBody(body);
   if (parseBody.err) return parseBody;
   if (body.length > 0) {

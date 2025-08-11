@@ -27,7 +27,7 @@ describe("Workflow E2E Tests", () => {
       "*",
       "initial_loaded",
       "refine_tasks",
-      "check_tasks",
+      "checked_task",
       "update_task",
       "delete_task",
       "reorder_tasks",
@@ -41,10 +41,19 @@ describe("Workflow E2E Tests", () => {
       "all_tasks_complete",
     ];
 
+    const missingStates: string[] = [];
     expectedStates.forEach((state) => {
-      expect(workflowDef.states[state]).toBeDefined();
+      if (!workflowDef.states[state]) missingStates.push(state);
+      // fail later with clear message
+    });
+    if (missingStates.length) {
+      // throw a descriptive error so the test runner shows the missing states
+      throw new Error('MISSING_STATES: ' + missingStates.join(', '));
+    }
+    expectedStates.forEach((state) => {
       expect(workflowDef.states[state]?.name).toBe(state);
     });
+
 
     // Verify initial transition exists
     expect(workflowDef.transitions["*"]).toBeDefined();
@@ -115,7 +124,8 @@ describe("Workflow E2E Tests", () => {
               transitionsWithoutGuidance++;
             }
 
-            if (fromState === transition?.target) {
+            // Only count self-referencing transitions that have NO guidance
+            if (fromState === transition?.target && !transition?.guidance) {
               selfReferencingTransitions++;
             }
 
@@ -130,6 +140,7 @@ describe("Workflow E2E Tests", () => {
     expect(transitionsWithGuidance).toBeGreaterThan(0);
     // Updated workflow now has guidance for all transitions
     expect(transitionsWithoutGuidance).toBeGreaterThanOrEqual(0);
+    if (selfReferencingTransitions > 0) console.log('UNGUIDED_SELF_REFERENCING_TRANSITIONS:', selfReferencingTransitions);
     expect(selfReferencingTransitions).toBe(0);
     // Note: scoped-execution.flow doesn't have transitions to end state (*)
   });

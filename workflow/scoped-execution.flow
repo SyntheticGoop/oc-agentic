@@ -7,8 +7,9 @@
 : Do immediately
 * to initial_loaded:
   Call `get_project` to load current task list.
-  List summary of files changed with `jj diff --summary -r @`
+  List summary of files changed with `jj diff --summary -r @`.
   Display detailed list of current task status to the user.
+  Ask what the user wants to do and only proceed on explicit confirmation.
 
 : Ask: Do you want to continue with existing tasks?
 initial_loaded to refine_tasks:
@@ -31,15 +32,15 @@ initial_loaded to document_work_done:
 : Do: When user is done clarifying their task.
 create_task to checked_task:
   Format input for `update_task` and pass ONLY THAT INPUT to `oc-agentic-inquisitor`.
-  Your message format will be `[requirements] This needs clarity how execution will be carried out. Execution on this task must be strictly deterministic [specification] THE_TASK_SPECIFICATION`.
+  Your message format will be `[requirements] This needs clarity how execution will be carried out. Execution on this task must be strictly deterministic [specification] THE_TASK_SPECIFICATION`. `THE_TASK_SPECIFICATION` needs to have its multiple lines compressed into a single line.
   Perform secondary research on any questions raised.
   You may use `oc-agentic-investigator` to research about any concerns, in parallel, that deal directly with the codebase.
-  `oc-agentic-investigator` should be called with the following format: `I am uncertain about these THE_POINT. This is my current assumption THE_ASSUMPTION. Here is the CONTEXT. This is were I would begin: INVESTIGATION_ENTRY_POINT. Can you help provide factual clarity?`.
-  Use your enhanced contextual understanding and ability to investigate to immediately reject or accept points, synthesizing new points, or making any other adjustments to the task, leaving points with uncertainty as an exercise to the user to clarify.
-  Present reply and interrogate them for clarification, or ask if they would like to ignore reccomendations.
+  `oc-agentic-investigator` should be called with the following format: `I am uncertain about these THE_POINT. This is my current assumption THE_ASSUMPTION. Here is the CONTEXT. This is where I would begin: INVESTIGATION_ENTRY_POINT. Can you help provide factual clarity?`.
+  Use your contextual understanding and ability to investigate to accept or reject points, synthesize new points, or make adjustments to the task. Clearly mark remaining uncertainties for the user to resolve.
+  Present the reply including all automatic adjustments and uncertainties, then ask the user whether to apply or ignore recommendations.
 
 : Ask: Can you provide clarity on all the above points?
-checked_task to check_tasks
+checked_task to checked_task
 
 : Ask: Would you like to proceed (anyway) to updating the task?
 checked_task to commit_create_task:
@@ -85,6 +86,13 @@ refine_tasks to create_task:
   Ask to define the specifics of the task.
   These specifics will be used to create the task with `create_task` (without new parameter).
   Detail the task specifics including type, scope, title, intent, objectives, and constraints.
+
+: Ask: Are there any tasks you want to update?
+refine_tasks to update_task:
+  Ask the details of the task the user wants to update.
+  Create the new expected task details.
+  Await for user to confirm or continue refining the task.
+  On confirmation, proceed to update the task with `update_task`.
 
 : Do immediately
 update_task to refine_tasks
@@ -163,7 +171,7 @@ mark_task to loop_tasks
 run_task to redefine_task:
   Generate new sub plan that would satisfy task requirements. 
   Format sub plan for `update_task` and pass ONLY THAT INPUT to `oc-agentic-inquisitor`.
-  Your message format will be `[requirements] This needs clarity how execution will be carried out. Execution on this task must be strictly deterministic [specification] THE_TASK_SPECIFICATION`.
+  Your message format will be `[requirements] This needs clarity how execution will be carried out. Execution on this task must be strictly deterministic [specification] THE_TASK_SPECIFICATION`. `THE_TASK_SPECIFICATION` needs to have its multiple lines compressed into a single line.
   Perform secondary research on any questions raised.
   You may use `oc-agentic-investigator` to research about any concerns, in parallel, that deal directly with the codebase.
   `oc-agentic-investigator` should be called with the following format: `I am uncertain about these THE_POINT. This is my current assumption THE_ASSUMPTION. Here is the CONTEXT. This is were I would begin: INVESTIGATION_ENTRY_POINT. Can you help provide factual clarity?`.
@@ -198,7 +206,7 @@ initial_loaded to automated_one_shot_define_task:
 automated_one_shot_define_task to automated_one_shot_create_task:
   Synthesize the single-task specifics.
   Pass the task specifics to agent `oc-agentic-inquisitor`.
-  Your message format will be `[requirements] This needs clarity how plans will be formed during execution. Plans that derive from this must be strictly deterministic [specification] THE_TASK_SPECIFICATION`.
+  Your message format will be `[requirements] This needs clarity how plans will be formed during execution. Plans that derive from this must be strictly deterministic [specification] THE_TASK_SPECIFICATION`. `THE_TASK_SPECIFICATION` needs to have its multiple lines compressed into a single line.
   THE_TASK_SPECIFICATION is the contents of the task specifics you would have passed to `create_task` with (new="auto").
   Wait for reply from `oc-agentic-inquisitor`.
   Perform secondary research on any questions raised.
@@ -217,7 +225,7 @@ automated_one_shot_define_task to automated_one_shot_create_task:
 automated_one_shot_create_task to automated_one_shot_final_check:
   Call `get_project` to load created task and confirm it exists.
   Format output and pass ONLY THAT INPUT to `oc-agentic-inquisitor` for a final internal consistency check.
-  Your message format will be `[requirements] This is a single task. Every part needs to be internally coherent and logically sound. Each part must build up to a cohesive whole and no contradictions are allowed. Work done must be atomic. Planning must be exhaustive. [specification] THE_TASK_SPECIFICATION`.
+  Your message format will be `[requirements] This is a single task. Every part needs to be internally coherent and logically sound. Each part must build up to a cohesive whole and no contradictions are allowed. Work done must be atomic. Planning must be exhaustive. [specification] THE_TASK_SPECIFICATION`. `THE_TASK_SPECIFICATION` needs to have its multiple lines compressed into a single line.
   Wait for reply.
   Use `oc-agentic-investigator` as needed.
   Present synthesized final single-task.
@@ -245,7 +253,7 @@ automated_one_shot_loop_tasks to automated_one_shot_run_task:
 automated_one_shot_run_task to automated_one_shot_redefine_task:
   Generate new sub plan that would satisfy task requirements.
   Format sub plan for `update_task` and pass ONLY THAT INPUT to `oc-agentic-inquisitor`.
-  Your message format will be `[requirements] This needs clarity how execution will be carried out. Execution on this task must be strictly deterministic [specification] THE_TASK_SPECIFICATION`.
+  Your message format will be `[requirements] This needs clarity how execution will be carried out. Execution on this task must be strictly deterministic [specification] THE_TASK_SPECIFICATION`. `THE_TASK_SPECIFICATION` needs to have its multiple lines compressed into a single line.
   Perform secondary research on any questions raised.
   You may use `oc-agentic-investigator` to research about any concerns, in parallel, that deal directly with the codebase.
   `oc-agentic-investigator` should be called with the following format: `I am uncertain about these THE_POINT. This is my current assumption THE_ASSUMPTION. Here is the CONTEXT. This is were I would begin: INVESTIGATION_ENTRY_POINT. Can you help provide factual clarity?`.

@@ -298,6 +298,7 @@ Parameters:
         const project = await library.project(
           args.new ? { new: args.new } : {},
         );
+
         if (project.err)
           return composeTextOutput({
             type: "error",
@@ -323,11 +324,15 @@ Parameters:
 
         if (args.new === "auto") {
           project.ok.tasks = [newTask];
+        } else if (args.new === "current") {
+          // For "current" mode, replace the empty placeholder task with the actual task
+          project.ok.tasks = [newTask];
         } else {
           project.ok.tasks.push(newTask);
         }
 
         const saveResult = await project.ok.save();
+
         if (saveResult.err) {
           return composeTextOutput({
             type: "error",
@@ -337,11 +342,7 @@ Parameters:
 
         return composeTextOutput({
           type: "success",
-          message: `Task '${newTask.title}' created successfully. VERIFY THE RESULT: ${JSON.stringify(project.ok, null, 2)}
-
-REQUIRED: Confirm the task was created correctly with the right details.
-- Verify that the entire project scope and task order MUST BE coherent
-- If the result doesn't match your expectations, YOU MUST investigate and correct immediately.`,
+          message: `Task '${newTask.title}' created successfully. VERIFY THE RESULT: ${JSON.stringify(project.ok, null, 2)}\n\nDEBUG LOG: .debug.mcp.log contains detailed debug output to investigate header serialization if needed.\n\nREQUIRED: Confirm the task was created correctly with the right details.\n- Verify that the entire project scope and task order MUST BE coherent\n- If the result doesn't match your expectations, YOU MUST investigate and correct immediately.`,
         });
       });
     },

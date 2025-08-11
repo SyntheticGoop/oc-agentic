@@ -6,14 +6,14 @@ model: anthropic/claude-sonnet-4-20250514
 temperature: 0.1
 mode: subagent
 tools:
-  oc-agentic-flow-find: false
-  oc-agentic-flow-transition: false
-  oc-agentic-goto: false
-  oc-agentic-get_project: false
-  oc-agentic-create_task: false
-  oc-agentic-update_task: false
-  oc-agentic-delete_task: false
-  oc-agentic-reorder_tasks: false
+  flow_find: false
+  flow_transition: false
+  planner_goto: false
+  planner_get_project: false
+  planner_create_task: false
+  planner_update_task: false
+  planner_delete_task: false
+  planner_reorder_tasks: false
   read: true
   write: true
   bash: true
