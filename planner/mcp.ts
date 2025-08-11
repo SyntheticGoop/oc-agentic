@@ -342,7 +342,7 @@ Parameters:
 
         return composeTextOutput({
           type: "success",
-          message: `Task '${newTask.title}' created successfully. VERIFY THE RESULT: ${JSON.stringify(project.ok, null, 2)}\n\nDEBUG LOG: .debug.mcp.log contains detailed debug output to investigate header serialization if needed.\n\nREQUIRED: Confirm the task was created correctly with the right details.\n- Verify that the entire project scope and task order MUST BE coherent\n- If the result doesn't match your expectations, YOU MUST investigate and correct immediately.`,
+          message: `Task '${newTask.title}' created successfully. VERIFY THE RESULT: ${JSON.stringify({ tasks: project.ok.tasks }, null, 2)}\n\nDEBUG LOG: .debug.mcp.log contains detailed debug output to investigate header serialization if needed.\n\nREQUIRED: Confirm the task was created correctly with the right details.\n- Verify that the entire project scope and task order MUST BE coherent\n- If the result doesn't match your expectations, YOU MUST investigate and correct immediately.`,
         });
       });
     },
@@ -417,7 +417,7 @@ Parameters:
 
         return composeTextOutput({
           type: "success",
-          message: `Task update completed. VERIFY THE CHANGES: ${JSON.stringify(project.ok, null, 2)}
+          message: `Task update completed. VERIFY THE CHANGES: ${JSON.stringify({ tasks: project.ok.tasks }, null, 2)}
 
 REQUIRED: You must verify your task update was applied correctly:
 - Check that the changes you made were in line with the agreed upon changes.
