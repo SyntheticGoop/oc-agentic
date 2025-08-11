@@ -3,7 +3,7 @@ description: >-
   Internal agent to validate and refine ambiguous or underspecified tasks by
   simulating how different agents might misinterpret them. Avoid call this
   unless told to do so explicitly.
-model: openrouter/openai/gpt-5-nano
+model: anthropic/claude-sonnet-4-20250514
 temperature: 0.4
 mode: subagent
 tools:

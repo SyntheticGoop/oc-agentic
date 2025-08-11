@@ -159,96 +159,26 @@ export class Workflow {
     return this.obfToPlain[obf] ?? (obf as string);
   }
 
-  /**
-   * transitionPlain
-   *
-   * Public wrapper for performing a transition using plain (unobfuscated)
-   * state identifiers. Inputs are validated to be strings and converted to the
-   * internal obfuscated representation before performing the transition. The
-   * returned result contains plain state names.
-   *
-   * @param currentStatePlain - Plain current state name or '*' (string)
-   * @param nextStatePlain - Plain next state name or '*' (string)
-   * @returns PublicTransitionResult with plain state names
-   */
-  transitionPlain(
-    currentStatePlain: string,
-    nextStatePlain: string,
-  ): PublicTransitionResult {
-    // Input validation
-    if (
-      typeof currentStatePlain !== "string" ||
-      typeof nextStatePlain !== "string"
-    ) {
-      throw new TypeError("state parameters must be strings");
-    }
-
-    const obfCurrent = this.toObf(currentStatePlain);
-    const obfNext = this.toObf(nextStatePlain);
-
-    // If current state is unknown, return invalid with minimal info
-    if (!obfCurrent) {
-      return {
-        move: "invalid",
-        nextState: currentStatePlain,
-        validActions: [],
-        guidance: "Unknown current state",
-      };
-    }
-
-    // If next state is unknown, do not perform the transition; return invalid
-    if (!obfNext) {
-      // Call transition with same current state to produce a well-typed invalid result
-      const internal = this.transition(obfCurrent, obfCurrent);
-      return {
-        move: internal.move,
-        nextState: this.toPlain(internal.nextState),
-        validActions: internal.validActions.map((a) => ({
-          action: this.toPlain(a.action),
-          guidance: a.guidance,
-        })),
-        guidance: internal.guidance,
-      };
-    }
-
-    const internal = this.transition(obfCurrent, obfNext);
-
-    // Map internal result back to plain names
-    return {
-      move: internal.move,
-      nextState: this.toPlain(internal.nextState),
-      validActions: internal.validActions.map((a) => ({
-        action: this.toPlain(a.action),
-        guidance: a.guidance,
-      })),
-      guidance: internal.guidance,
-    };
-  }
-
-  // isValidState accepts either plain or obfuscated names for convenience
+  // isValidState accepts obfuscated names only
   isValidState(state: string): state is WorkflowState {
     if (typeof state !== "string") return false;
     if (state === "*") return true;
-    if (state in this.plainToObf) return true;
     return state in this.definition.transitions;
   }
 
   /**
-   * getInitialStatePlain
+   * getInternalInitialState
    *
-   * Returns the public (plain/unobfuscated) initial state name for this
-   * workflow. The internal scrambled initialState is validated before being
-   * converted to a plain identifier.
-   *
-   * @returns plain state name string (or "*" for the special initial token)
-   * @throws {TypeError} if the internal initial state is malformed
+   * Returns the internal obfuscated initial state token as stored in the
+   * scrambled workflow definition. This replaces the previous plain-facing
+   * helper.
    */
-  getInitialStatePlain(): string {
+  getInternalInitialState(): string {
     const obf = this.definition.initialState;
     if (typeof obf !== "string")
       throw new TypeError("internal initialState is not a string");
     if (!this.isObfuscatedState(obf))
       throw new Error("internal initialState is not a known obfuscated state");
-    return this.toPlain(obf as WorkflowState);
+    return obf as string;
   }
 }

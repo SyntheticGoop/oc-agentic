@@ -1,6 +1,6 @@
 ---
 description: "Internal agent to resolve merge conflicts intelligently using file history analysis and interactive confirmation. Operates in two modes: coordination (global planning) and subagent (per-file resolution)."
-model: anthropic/claude-sonnet-4-20250514
+model: openrouter/openai/gpt-5-mini
 temperature: 0.2
 mode: all
 tools:

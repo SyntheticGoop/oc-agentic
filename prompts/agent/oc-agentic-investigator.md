@@ -1,7 +1,7 @@
 ---
 description: >-
   Internal agent for extracting facts about the world. Avoid call this unless told to do so explicitly.
-model: openrouter/openai/gpt-5-nano
+model: openrouter/openai/gpt-5-mini
 temperature: 0.4
 mode: subagent
 tools:

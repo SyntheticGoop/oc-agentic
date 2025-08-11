@@ -39,7 +39,7 @@ function start() {
     execute: async (args) => {
       const workflow = workflows[args.workflow];
 
-      // Validate states (accept plain names)
+      // Validate obfuscated state tokens only
       if (!workflow.isValidState(args.current_state)) {
         return {
           type: "text" as const,
@@ -53,9 +53,9 @@ function start() {
         };
       }
 
-      const transition = workflow.transitionPlain(
-        args.current_state,
-        args.next_state,
+      const transition = workflow.transition(
+        args.current_state as any,
+        args.next_state as any,
       );
 
       switch (transition.move) {
@@ -91,8 +91,8 @@ function start() {
       const workflow = workflows[args.workflow];
       return {
         type: "text",
-        // Return plain (unobfuscated) initial state for external callers
-        text: `start = "${workflow.getInitialStatePlain()}"`,
+        // Return internal obfuscated initial state for external callers
+        text: `start = "${workflow.getInternalInitialState()}"`,
       };
     },
   });
