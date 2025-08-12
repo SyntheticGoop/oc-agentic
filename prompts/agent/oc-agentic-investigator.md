@@ -1,7 +1,7 @@
 ---
 description: >-
   Internal agent for extracting facts about the world. Avoid call this unless told to do so explicitly.
-model: openrouter/openai/gpt-5-mini
+model: anthropic/claude-sonnet-4-20250514
 temperature: 0.4
 mode: subagent
 tools:

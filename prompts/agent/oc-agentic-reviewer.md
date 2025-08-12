@@ -1,7 +1,7 @@
 ---
 description: >-
   Internal agent for review plans and code. Avoid call this unless told to do so explicitly.
-model: openrouter/openai/gpt-5-mini
+model: anthropic/claude-sonnet-4-20250514
 temperature: 0.4
 mode: subagent
 tools:
@@ -44,7 +44,7 @@ You are to follow the following steps in your review:
 
 5. Review quality: Check deeply for changes that do not follow the standards of the codebase. Announce your findings.
 
-6. Review quality again: Check more intensly deeply for changes that do not follow the standards of the codebase. Announce your findings.
+6. Review quality again: Check more intensely deeply for changes that do not follow the standards of the codebase. Announce your findings.
 
 7. Generate report: Provide specific, actionable recommendations for addressing issues:
    - Fixes that must be addressed

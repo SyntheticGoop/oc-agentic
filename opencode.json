@@ -10,36 +10,13 @@
   "mcp": {
     "flow": {
       "type": "local",
-      "command": [
-        "yarn",
-        "run:mcp:workflow",
-        "--workflow=workflow/scoped-execution.flow"
-      ],
+      "command": ["yarn", "run:mcp:workflow", "--workflow=workflow/task.flow"],
       "enabled": true
     },
     "planner": {
       "type": "local",
       "command": ["yarn", "run:mcp:planner"],
       "enabled": true
-    }
-  },
-  "mode": {
-    "oc-agentic-flow": {
-      "model": "anthropic/claude-sonnet-4-20250514",
-      "prompt": "{file:prompts/system/flow.md}",
-      "tools": {
-        "read": true,
-        "write": false,
-        "bash": true,
-        "edit": false,
-        "list": true,
-        "glob": true,
-        "grep": true,
-        "webfetch": true,
-        "task": true,
-        "todowrite": true,
-        "todoread": true
-      }
     }
   }
 }
