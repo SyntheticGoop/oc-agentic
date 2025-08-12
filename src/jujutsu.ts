@@ -307,7 +307,7 @@ export const Jujutsu = {
             "::@ ~ @",
             "--no-graph",
             "-T",
-            'commit_id ++ " " ++ change_id ++ " " ++ description.first_line() ++ "\\n"',
+            'commit_id ++ " " ++ change_id ++ " " ++ parents.len() ++ " " ++ description.first_line() ++ "\\n"',
             "-R",
             dir,
           ]);
@@ -321,7 +321,7 @@ export const Jujutsu = {
             "@:: ~ @",
             "--no-graph",
             "-T",
-            'commit_id ++ " " ++ change_id ++ " " ++ description.first_line() ++ "\\n"',
+            'commit_id ++ " " ++ change_id ++ " " ++ parents.len() ++ " " ++ description.first_line() ++ "\\n"',
             "-R",
             dir,
           ]);
@@ -340,34 +340,20 @@ export const Jujutsu = {
             if (!line.trim()) continue;
 
             const parts = line.split(" ");
-            if (parts.length < 3)
+            if (parts.length < 4)
               return Err("VCS Error: Unexpected commit format");
 
             const hash = parts[0];
             const changeId = parts[1];
-            const message = parts.slice(2).join(" ").trim();
+            const parents = parseInt(parts[2]);
+            const message = parts.slice(3).join(" ").trim();
 
             // Skip root commit (all zeros)
             if (hash.match(/^0+$/)) continue;
 
             history.push({ hash, changeId, message });
 
-            // Check if this commit is a merge (has multiple parents)
-            const parentCheckResult = await spawnjj([
-              "log",
-              "-r",
-              hash,
-              "--no-graph",
-              "-T",
-              "parents.len()",
-              "-R",
-              dir,
-            ]);
-
-            if (
-              parentCheckResult.ok &&
-              parseInt(parentCheckResult.ok.stdout.trim()) > 1
-            ) {
+            if (parents > 1) {
               // This is a merge commit, stop here
               break;
             }
@@ -381,6 +367,7 @@ export const Jujutsu = {
             message: string;
           }> = [];
 
+          let stop = false;
           for (const line of descendantLines) {
             if (!line.trim()) continue;
 
@@ -390,31 +377,14 @@ export const Jujutsu = {
 
             const hash = parts[0];
             const changeId = parts[1];
-            const message = parts.slice(2).join(" ").trim();
+            const parents = parseInt(parts[2]);
+            const message = parts.slice(3).join(" ").trim();
 
             future.push({ hash, changeId, message });
+            if (stop) break;
 
-            // Check if this commit is a merge (has multiple children)
-            const childCheckResult = await spawnjj([
-              "log",
-              "-r",
-              `${hash}+`,
-              "--no-graph",
-              "-T",
-              "commit_id",
-              "-R",
-              dir,
-            ]);
-
-            if (childCheckResult.ok) {
-              const childHashes = childCheckResult.ok.stdout
-                .trim()
-                .split("\n")
-                .filter((h) => h.trim());
-              if (childHashes.length > 1) {
-                // This commit has multiple children (fork point), stop here
-                break;
-              }
+            if (parents > 1) {
+              stop = true;
             }
           }
 

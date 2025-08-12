@@ -25,12 +25,12 @@ initial_loaded to create_task:
 initial_loaded to document_work_done:
   Only fetch current commit changes using `jj diff --summary -r @` to understand what files have changed.
   Use `oc-agentic-investigator` to extract task details from actual file changes and commit context. You must explictly instruct for the following: Changes must be based off why a file was changed from its previous code to its current code. That change can be extracted using `jj diff --context 0 --git -r @ FILENAME` for the current changes. Ground your full understading of final outcomes with `jj file show -r @ FILENAME` for the file without diffs. YOU MUST NOT BASE IT OFF THE ENTIRE FILE'S CONTENT BLINDLY.
-  Announce your conclusions out loud.
+  Announce the investigator conclusions out loud.
   Use `oc-agentic-inquisitor` for iterative plan refinement until task specification accurately reflects completed work.
-  Announce your conclusions out loud.
-  Create task documentation using `create_task` with (new="current") based on analysis of actual changes, not planned work.
+  Announce the inquisitor conclusions out loud.
+  Create task documentation using `create_task` with (new="current") based on analysis of completed, not planned work. Completed work MUST ONLY BE COMPOSED OF ACTUAL CHANGES.
+  ALL CHANGES MUST ONLY OCCUPY ONE TASK.
   ENSURE you ground your decisions the change of contents.
-  Loop back to initial_loaded state after completion without human interaction.
 
 : Do: When user is done clarifying their task.
 create_task to checked_task:
