@@ -2400,7 +2400,7 @@ describe("Lexer E2E Tests", () => {
           "column": 65,
           "line": 258,
           "type": "content",
-          "value": "Generate new sub plan that would satisfy task requirements. Format sub plan for \`update_task\` and pass ONLY THAT INPUT to \`oc-agentic-inquisitor\`. Your message format will be \`[requirements] This needs clarity how execution will be carried out. Execution on this task must be strictly deterministic [specification] THE_TASK_SPECIFICATION\`. \`THE_TASK_SPECIFICATION\` needs to have its multiple lines compressed into a single line. Perform secondary research on any questions raised. You may use \`oc-agentic-investigator\` to research about any concerns, in parallel, that deal directly with the codebase. \`oc-agentic-investigator\` should be called with the following format: \`I am uncertain about these THE_POINT. This is my current assumption THE_ASSUMPTION. Here is the CONTEXT. This is were I would begin: INVESTIGATION_ENTRY_POINT. Can you help provide factual clarity?\`. Use your enhanced contextual understanding and ability to investigate to immediately reject or accept points, synthesizing new points, or making any other adjustments to the task plan. Ensure that your plan remains within the constraints of the sub problems to solve. Call \`update_task\` with the refined task specification to update the current task. Wait for successful task update.",
+          "value": "Synthesize new sub plan that would satisfy task requirements. Format sub plan for \`update_task\` and pass ONLY THAT INPUT to \`oc-agentic-inquisitor\`. Your message format will be \`[requirements] This needs clarity how execution will be carried out. Execution on this task must be strictly deterministic [specification] THE_TASK_SPECIFICATION\`. \`THE_TASK_SPECIFICATION\` needs to have its multiple lines compressed into a single line. Perform secondary research on any questions raised. You may use \`oc-agentic-investigator\` to research about any concerns, in parallel, that deal directly with the codebase. \`oc-agentic-investigator\` should be called with the following format: \`I am uncertain about these THE_POINT. This is my current assumption THE_ASSUMPTION. Here is the CONTEXT. This is were I would begin: INVESTIGATION_ENTRY_POINT. Can you help provide factual clarity?\`. Use your enhanced contextual understanding and ability to investigate to immediately reject or accept points, synthesizing new points, or making any other adjustments to the task plan. Ensure that your plan remains within the constraints of the sub problems to solve. Call \`update_task\` to update the task as with refined requirements. Ensure that you do not override previous requirements, only add or refine them. Wait for successful task update.",
         },
         {
           "column": 35,
@@ -2577,17 +2577,10 @@ describe("Lexer E2E Tests", () => {
           "column": 61,
           "line": 286,
           "type": "content",
-          "value": "Collect human feedback. Ask the user for explicit review notes and any blockers. Wait for user input. Synthesize feedback into concrete changelist This synthesized task plan MUST contain the following: 1. It must contain all the work already done. These sub-tasks should be classified as tasks that must be evaluated and reattempted if the evaluation failed. Evaluation means ensuring that the task is actually complete. 2. It must append all the new sub-tasks that must be completed. 3. It must not drop uncompleted sub-tasks from the current main task. Those must still be enforced. This list will be used in the next task execution",
+          "value": "Collect human feedback. Ask the user for explicit review notes and any blockers. Wait for user input. Synthesize feedback into concrete changelist This synthesized task plan MUST contain the following: 1. It must contain all the work already done. These sub-tasks should be classified as tasks that must be evaluated and reattempted if the evaluation failed. Evaluation means ensuring that the task is actually complete. 2. It must append all the new sub-tasks that must be completed. 3. It must not drop uncompleted sub-tasks from the current main task. Those must still be enforced. This list will be used in the next task execution Call \`update_task\` to update the task as with refined requirements. Ensure that you do not override previous requirements, only add or refine them.",
         },
         {
-          "column": 52,
-          "line": 293,
-          "type": "newline",
-          "value": "
-      ",
-        },
-        {
-          "column": 1,
+          "column": 150,
           "line": 294,
           "type": "newline",
           "value": "
@@ -2596,18 +2589,6 @@ describe("Lexer E2E Tests", () => {
         {
           "column": 1,
           "line": 295,
-          "type": "colon",
-          "value": ":",
-        },
-        {
-          "column": 2,
-          "line": 295,
-          "type": "content",
-          "value": "Do immediately",
-        },
-        {
-          "column": 17,
-          "line": 295,
           "type": "newline",
           "value": "
       ",
@@ -2615,23 +2596,17 @@ describe("Lexer E2E Tests", () => {
         {
           "column": 1,
           "line": 296,
-          "type": "state",
-          "value": "human_review_quick",
+          "type": "colon",
+          "value": ":",
         },
         {
-          "column": 19,
+          "column": 2,
           "line": 296,
-          "type": "to",
-          "value": "to",
+          "type": "content",
+          "value": "Do immediately",
         },
         {
-          "column": 22,
-          "line": 296,
-          "type": "state",
-          "value": "automated_one_shot_loop_tasks",
-        },
-        {
-          "column": 52,
+          "column": 17,
           "line": 296,
           "type": "newline",
           "value": "
@@ -2640,6 +2615,24 @@ describe("Lexer E2E Tests", () => {
         {
           "column": 1,
           "line": 297,
+          "type": "state",
+          "value": "human_review_quick",
+        },
+        {
+          "column": 19,
+          "line": 297,
+          "type": "to",
+          "value": "to",
+        },
+        {
+          "column": 22,
+          "line": 297,
+          "type": "state",
+          "value": "automated_one_shot_loop_tasks",
+        },
+        {
+          "column": 52,
+          "line": 297,
           "type": "newline",
           "value": "
       ",
@@ -2647,80 +2640,61 @@ describe("Lexer E2E Tests", () => {
         {
           "column": 1,
           "line": 298,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 299,
           "type": "colon",
           "value": ":",
         },
         {
           "column": 2,
-          "line": 298,
+          "line": 299,
           "type": "content",
           "value": "Ask: Do you want to perform a detailed review?",
         },
         {
           "column": 49,
-          "line": 298,
+          "line": 299,
           "type": "newline",
           "value": "
       ",
         },
         {
           "column": 1,
-          "line": 299,
+          "line": 300,
           "type": "state",
           "value": "automated_one_shot_all_tasks_complete",
         },
         {
           "column": 38,
-          "line": 299,
+          "line": 300,
           "type": "to",
           "value": "to",
         },
         {
           "column": 41,
-          "line": 299,
+          "line": 300,
           "type": "state",
           "value": "human_review_detailed",
         },
         {
           "column": 63,
-          "line": 299,
+          "line": 300,
           "type": "colon",
           "value": ":",
         },
         {
           "column": 64,
-          "line": 299,
+          "line": 300,
           "type": "content",
-          "value": "Collect human feedback. Ask the user for explicit review notes and any blockers. Wait for user input. Synthesize feedback into concrete changelist This list will be used in the next task execution",
+          "value": "Collect human feedback. Ask the user for explicit review notes and any blockers. Wait for user input. Synthesize feedback into concrete changelist This list will be used in the next task execution Call \`update_task\` to update the task as with refined requirements. Ensure that you do not override previous requirements, only add or refine them.",
         },
         {
-          "column": 52,
-          "line": 302,
-          "type": "newline",
-          "value": "
-      ",
-        },
-        {
-          "column": 1,
-          "line": 303,
-          "type": "newline",
-          "value": "
-      ",
-        },
-        {
-          "column": 1,
-          "line": 304,
-          "type": "colon",
-          "value": ":",
-        },
-        {
-          "column": 2,
-          "line": 304,
-          "type": "content",
-          "value": "Do immediately",
-        },
-        {
-          "column": 17,
+          "column": 150,
           "line": 304,
           "type": "newline",
           "value": "
@@ -2728,24 +2702,6 @@ describe("Lexer E2E Tests", () => {
         },
         {
           "column": 1,
-          "line": 305,
-          "type": "state",
-          "value": "human_review_detailed",
-        },
-        {
-          "column": 22,
-          "line": 305,
-          "type": "to",
-          "value": "to",
-        },
-        {
-          "column": 25,
-          "line": 305,
-          "type": "state",
-          "value": "run_task",
-        },
-        {
-          "column": 34,
           "line": 305,
           "type": "newline",
           "value": "
@@ -2754,24 +2710,42 @@ describe("Lexer E2E Tests", () => {
         {
           "column": 1,
           "line": 306,
-          "type": "newline",
-          "value": "
-      ",
-        },
-        {
-          "column": 1,
-          "line": 307,
           "type": "colon",
           "value": ":",
         },
         {
           "column": 2,
-          "line": 307,
+          "line": 306,
           "type": "content",
-          "value": "Ask: Do you want to finish?",
+          "value": "Do immediately",
         },
         {
-          "column": 30,
+          "column": 17,
+          "line": 306,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 307,
+          "type": "state",
+          "value": "human_review_detailed",
+        },
+        {
+          "column": 22,
+          "line": 307,
+          "type": "to",
+          "value": "to",
+        },
+        {
+          "column": 25,
+          "line": 307,
+          "type": "state",
+          "value": "run_task",
+        },
+        {
+          "column": 34,
           "line": 307,
           "type": "newline",
           "value": "
@@ -2779,24 +2753,6 @@ describe("Lexer E2E Tests", () => {
         },
         {
           "column": 1,
-          "line": 308,
-          "type": "state",
-          "value": "automated_one_shot_all_tasks_complete",
-        },
-        {
-          "column": 38,
-          "line": 308,
-          "type": "to",
-          "value": "to",
-        },
-        {
-          "column": 41,
-          "line": 308,
-          "type": "state",
-          "value": "initial_loaded",
-        },
-        {
-          "column": 56,
           "line": 308,
           "type": "newline",
           "value": "
@@ -2805,6 +2761,18 @@ describe("Lexer E2E Tests", () => {
         {
           "column": 1,
           "line": 309,
+          "type": "colon",
+          "value": ":",
+        },
+        {
+          "column": 2,
+          "line": 309,
+          "type": "content",
+          "value": "Ask: Do you want to finish?",
+        },
+        {
+          "column": 30,
+          "line": 309,
           "type": "newline",
           "value": "
       ",
@@ -2812,6 +2780,94 @@ describe("Lexer E2E Tests", () => {
         {
           "column": 1,
           "line": 310,
+          "type": "state",
+          "value": "automated_one_shot_all_tasks_complete",
+        },
+        {
+          "column": 38,
+          "line": 310,
+          "type": "to",
+          "value": "to",
+        },
+        {
+          "column": 41,
+          "line": 310,
+          "type": "state",
+          "value": "task_finished",
+        },
+        {
+          "column": 55,
+          "line": 310,
+          "type": "colon",
+          "value": ":",
+        },
+        {
+          "column": 56,
+          "line": 310,
+          "type": "content",
+          "value": "Call \`update_task\` to mark the task as completed.",
+        },
+        {
+          "column": 52,
+          "line": 311,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 312,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 313,
+          "type": "colon",
+          "value": ":",
+        },
+        {
+          "column": 2,
+          "line": 313,
+          "type": "content",
+          "value": "Do immediately",
+        },
+        {
+          "column": 17,
+          "line": 313,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 314,
+          "type": "state",
+          "value": "task_finished",
+        },
+        {
+          "column": 14,
+          "line": 314,
+          "type": "to",
+          "value": "to",
+        },
+        {
+          "column": 17,
+          "line": 314,
+          "type": "state",
+          "value": "initial_loaded",
+        },
+        {
+          "column": 32,
+          "line": 314,
+          "type": "newline",
+          "value": "
+      ",
+        },
+        {
+          "column": 1,
+          "line": 315,
           "type": "eof",
           "value": "",
         },

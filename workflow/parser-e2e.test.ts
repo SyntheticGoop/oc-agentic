@@ -57,7 +57,7 @@ describe("Parser E2E Tests", () => {
             "name": "automated_one_shot_loop_tasks",
           },
           "automated_one_shot_redefine_task": {
-            "guidance": "Generate new sub plan that would satisfy task requirements. Format sub plan for \`update_task\` and pass ONLY THAT INPUT to \`oc-agentic-inquisitor\`. Your message format will be \`[requirements] This needs clarity how execution will be carried out. Execution on this task must be strictly deterministic [specification] THE_TASK_SPECIFICATION\`. \`THE_TASK_SPECIFICATION\` needs to have its multiple lines compressed into a single line. Perform secondary research on any questions raised. You may use \`oc-agentic-investigator\` to research about any concerns, in parallel, that deal directly with the codebase. \`oc-agentic-investigator\` should be called with the following format: \`I am uncertain about these THE_POINT. This is my current assumption THE_ASSUMPTION. Here is the CONTEXT. This is were I would begin: INVESTIGATION_ENTRY_POINT. Can you help provide factual clarity?\`. Use your enhanced contextual understanding and ability to investigate to immediately reject or accept points, synthesizing new points, or making any other adjustments to the task plan. Ensure that your plan remains within the constraints of the sub problems to solve. Call \`update_task\` with the refined task specification to update the current task. Wait for successful task update.",
+            "guidance": "Synthesize new sub plan that would satisfy task requirements. Format sub plan for \`update_task\` and pass ONLY THAT INPUT to \`oc-agentic-inquisitor\`. Your message format will be \`[requirements] This needs clarity how execution will be carried out. Execution on this task must be strictly deterministic [specification] THE_TASK_SPECIFICATION\`. \`THE_TASK_SPECIFICATION\` needs to have its multiple lines compressed into a single line. Perform secondary research on any questions raised. You may use \`oc-agentic-investigator\` to research about any concerns, in parallel, that deal directly with the codebase. \`oc-agentic-investigator\` should be called with the following format: \`I am uncertain about these THE_POINT. This is my current assumption THE_ASSUMPTION. Here is the CONTEXT. This is were I would begin: INVESTIGATION_ENTRY_POINT. Can you help provide factual clarity?\`. Use your enhanced contextual understanding and ability to investigate to immediately reject or accept points, synthesizing new points, or making any other adjustments to the task plan. Ensure that your plan remains within the constraints of the sub problems to solve. Call \`update_task\` to update the task as with refined requirements. Ensure that you do not override previous requirements, only add or refine them. Wait for successful task update.",
             "name": "automated_one_shot_redefine_task",
           },
           "automated_one_shot_run_task": {
@@ -97,11 +97,11 @@ describe("Parser E2E Tests", () => {
             "name": "final_check",
           },
           "human_review_detailed": {
-            "guidance": "Collect human feedback. Ask the user for explicit review notes and any blockers. Wait for user input. Synthesize feedback into concrete changelist This list will be used in the next task execution",
+            "guidance": "Collect human feedback. Ask the user for explicit review notes and any blockers. Wait for user input. Synthesize feedback into concrete changelist This list will be used in the next task execution Call \`update_task\` to update the task as with refined requirements. Ensure that you do not override previous requirements, only add or refine them.",
             "name": "human_review_detailed",
           },
           "human_review_quick": {
-            "guidance": "Collect human feedback. Ask the user for explicit review notes and any blockers. Wait for user input. Synthesize feedback into concrete changelist This synthesized task plan MUST contain the following: 1. It must contain all the work already done. These sub-tasks should be classified as tasks that must be evaluated and reattempted if the evaluation failed. Evaluation means ensuring that the task is actually complete. 2. It must append all the new sub-tasks that must be completed. 3. It must not drop uncompleted sub-tasks from the current main task. Those must still be enforced. This list will be used in the next task execution",
+            "guidance": "Collect human feedback. Ask the user for explicit review notes and any blockers. Wait for user input. Synthesize feedback into concrete changelist This synthesized task plan MUST contain the following: 1. It must contain all the work already done. These sub-tasks should be classified as tasks that must be evaluated and reattempted if the evaluation failed. Evaluation means ensuring that the task is actually complete. 2. It must append all the new sub-tasks that must be completed. 3. It must not drop uncompleted sub-tasks from the current main task. Those must still be enforced. This list will be used in the next task execution Call \`update_task\` to update the task as with refined requirements. Ensure that you do not override previous requirements, only add or refine them.",
             "name": "human_review_quick",
           },
           "initial_loaded": {
@@ -144,6 +144,10 @@ describe("Parser E2E Tests", () => {
             "guidance": "Pass the task to \`oc-agentic-executor\`. Your message format will be \`Do TASK_DETAILS\` where TASK_DETAILS is the full specification of the current active task verbatim. Wait for execution to complete. Pass the task to \`oc-agentic-reviewer\`. Your message format will be \`Based on TASK_DETAILS review the current changes as reported by EXECUTION_REVIEW\` where TASK_DETAILS is the full specification of the current active task verbatim and EXECUTION_REVIEW is the output produced by the executor. Wait for review to complete.",
             "name": "run_task",
           },
+          "task_finished": {
+            "guidance": "Call \`update_task\` to mark the task as completed.",
+            "name": "task_finished",
+          },
           "update_task": {
             "guidance": "Ask the details of the task the user wants to update. Create the new expected task details. Await for user to confirm or continue refining the task. On confirmation, proceed to update the task with \`update_task\`.",
             "name": "update_task",
@@ -181,9 +185,9 @@ describe("Parser E2E Tests", () => {
               "guidance": "Ask: Do you want to perform a quick review?",
               "target": "human_review_quick",
             },
-            "initial_loaded": {
+            "task_finished": {
               "guidance": "Ask: Do you want to finish?",
-              "target": "initial_loaded",
+              "target": "task_finished",
             },
           },
           "automated_one_shot_create_task": {
@@ -394,6 +398,12 @@ describe("Parser E2E Tests", () => {
             "redefine_task": {
               "guidance": "Introspect: Task not yet successfully completed.",
               "target": "redefine_task",
+            },
+          },
+          "task_finished": {
+            "initial_loaded": {
+              "guidance": "Do immediately",
+              "target": "initial_loaded",
             },
           },
           "update_task": {
