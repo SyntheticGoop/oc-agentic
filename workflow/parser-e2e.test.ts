@@ -33,7 +33,7 @@ describe("Parser E2E Tests", () => {
             "name": "analyze_commit_changes",
           },
           "automated_one_shot_all_tasks_complete": {
-            "guidance": "Call \`get_project\` to get full task details. Decide acceptability automatically using previously gathered validation results. Present completed work to human for review. Show synthesized execution summary and diffs. Provide the user with three choices: - Quick review: human inspects, provides concise feedback; system will synthesize comments and attempt automated fixes then resume automated execution. - Precise review: human will hand off to the main review chain for deeper human-driven acceptance and possible merge into the main workflow (all_tasks_complete). - Finish: accept and return to initial_loaded.",
+            "guidance": "Synthesize current task specification with actual work done to produce updated task. Be precise with your editing. Call \`update_task\` to update the task as completed with new details. Wait for successful task update. Call \`get_project\` to get full task details. Decide acceptability automatically using previously gathered validation results. Present completed work to human for review. Show synthesized execution summary and diffs. Provide the user with three choices: - Quick review: human inspects, provides concise feedback; system will synthesize comments and attempt automated fixes then resume automated execution. - Precise review: human will hand off to the main review chain for deeper human-driven acceptance and possible merge into the main workflow (all_tasks_complete). - Finish: accept and return to initial_loaded.",
             "name": "automated_one_shot_all_tasks_complete",
           },
           "automated_one_shot_create_task": {
@@ -49,15 +49,15 @@ describe("Parser E2E Tests", () => {
             "name": "automated_one_shot_execution",
           },
           "automated_one_shot_final_check": {
-            "guidance": "Call \`get_project\` to load created task and confirm it exists. Format output and pass ONLY THAT INPUT to \`oc-agentic-inquisitor\` for a final internal consistency check. Your message format will be \`[requirements] This is a single task. Every part needs to be internally coherent and logically sound. Each part must build up to a cohesive whole and no contradictions are allowed. Work done must be atomic. Planning must be exhaustive. [specification] THE_TASK_SPECIFICATION\`. \`THE_TASK_SPECIFICATION\` needs to have its multiple lines compressed into a single line. Wait for reply. Use \`oc-agentic-investigator\` as needed. Present synthesized final single-task.",
+            "guidance": "Call \`get_project\` to load created task and confirm it exists. Find the newly created task in the task list. Call \`goto\` with the task_key of the newly created task to position to it. Wait for successful positioning. Format output and pass ONLY THAT INPUT to \`oc-agentic-inquisitor\` for a final internal consistency check. Your message format will be \`[requirements] This is a single task. Every part needs to be internally coherent and logically sound. Each part must build up to a cohesive whole and no contradictions are allowed. Work done must be atomic. Planning must be exhaustive. [specification] THE_TASK_SPECIFICATION\`. \`THE_TASK_SPECIFICATION\` needs to have its multiple lines compressed into a single line. Wait for reply. Use \`oc-agentic-investigator\` as needed. Present synthesized final single-task.",
             "name": "automated_one_shot_final_check",
           },
           "automated_one_shot_loop_tasks": {
-            "guidance": "Find first (and only) unfinished task. Go to the task with \`goto\`. Extract all current task details from \`get_project\`.",
+            "guidance": "Extract all current task details from \`get_project\`. Verify the task is positioned correctly and ready for execution.",
             "name": "automated_one_shot_loop_tasks",
           },
           "automated_one_shot_redefine_task": {
-            "guidance": "Generate new sub plan that would satisfy task requirements. Format sub plan for \`update_task\` and pass ONLY THAT INPUT to \`oc-agentic-inquisitor\`. Your message format will be \`[requirements] This needs clarity how execution will be carried out. Execution on this task must be strictly deterministic [specification] THE_TASK_SPECIFICATION\`. \`THE_TASK_SPECIFICATION\` needs to have its multiple lines compressed into a single line. Perform secondary research on any questions raised. You may use \`oc-agentic-investigator\` to research about any concerns, in parallel, that deal directly with the codebase. \`oc-agentic-investigator\` should be called with the following format: \`I am uncertain about these THE_POINT. This is my current assumption THE_ASSUMPTION. Here is the CONTEXT. This is were I would begin: INVESTIGATION_ENTRY_POINT. Can you help provide factual clarity?\`. Use your enhanced contextual understanding and ability to investigate to immediately reject or accept points, synthesizing new points, or making any other adjustments to the task plan. Ensure that your plan remains within the constraints of the sub problems to solve.",
+            "guidance": "Generate new sub plan that would satisfy task requirements. Format sub plan for \`update_task\` and pass ONLY THAT INPUT to \`oc-agentic-inquisitor\`. Your message format will be \`[requirements] This needs clarity how execution will be carried out. Execution on this task must be strictly deterministic [specification] THE_TASK_SPECIFICATION\`. \`THE_TASK_SPECIFICATION\` needs to have its multiple lines compressed into a single line. Perform secondary research on any questions raised. You may use \`oc-agentic-investigator\` to research about any concerns, in parallel, that deal directly with the codebase. \`oc-agentic-investigator\` should be called with the following format: \`I am uncertain about these THE_POINT. This is my current assumption THE_ASSUMPTION. Here is the CONTEXT. This is were I would begin: INVESTIGATION_ENTRY_POINT. Can you help provide factual clarity?\`. Use your enhanced contextual understanding and ability to investigate to immediately reject or accept points, synthesizing new points, or making any other adjustments to the task plan. Ensure that your plan remains within the constraints of the sub problems to solve. Call \`update_task\` with the refined task specification to update the current task. Wait for successful task update.",
             "name": "automated_one_shot_redefine_task",
           },
           "automated_one_shot_run_task": {
@@ -77,7 +77,7 @@ describe("Parser E2E Tests", () => {
             "name": "create_documentation_task",
           },
           "create_task": {
-            "guidance": "Ask to define the specifics of the task. These specifics will be used to create the task with \`create_task\` with (new="auto"). Detail the task specifics including type, scope, title, intent, objectives, and constraints.",
+            "guidance": "Ask to define the specifics of the first task for your new project. These specifics will be used to create the first task of your new independent project with \`create_task\` with (new="auto"). Detail the task specifics including type, scope, title, intent, objectives, and constraints.",
             "name": "create_task",
           },
           "delete_task": {
@@ -85,7 +85,7 @@ describe("Parser E2E Tests", () => {
             "name": "delete_task",
           },
           "document_work_done": {
-            "guidance": "Analyze current commit changes using \`jj diff --summary -r @\` to understand what work has been completed. Use \`oc-agentic-investigator\` to extract task details from actual file changes and commit context. Use \`oc-agentic-inquisitor\` for iterative plan refinement until task specification accurately reflects completed work. Create task documentation using \`create_task\` with (new="current") based on analysis of actual changes, not planned work. Loop back to initial_loaded state after completion without human interaction.",
+            "guidance": "Only fetch current commit changes using \`jj diff --summary -r @\` to understand what files have changed. Use \`oc-agentic-investigator\` to extract task details from actual file changes and commit context. You must explictly instruct for the following: Changes must be based off why a file was changed from its previous code to its current code. That change can be extracted using \`jj file show -r @ FILENAME\` for the current file and \`jj file show -r @- FILENAME\` for the previous file. YOU MUST NOT BASE IT OFF THE ENTIRE FILE'S CONTENT BLINDLY. Announce your conclusions out loud. Use \`oc-agentic-inquisitor\` for iterative plan refinement until task specification accurately reflects completed work. Announce your conclusions out loud. Create task documentation using \`create_task\` with (new="current") based on analysis of actual changes, not planned work. ENSURE you ground your decisions the change of contents. Loop back to initial_loaded state after completion without human interaction.",
             "name": "document_work_done",
           },
           "execution": {
@@ -306,7 +306,7 @@ describe("Parser E2E Tests", () => {
               "target": "automated_one_shot_define_task",
             },
             "create_task": {
-              "guidance": "Ask: Do you want to create a new tasks?",
+              "guidance": "Ask: Do you want to start a fresh project with new tasks?",
               "target": "create_task",
             },
             "document_work_done": {

@@ -15,18 +15,21 @@
 initial_loaded to refine_tasks:
   Ask if the user would like to create, update, delete, reorder or skip to execution.
 
-: Ask: Do you want to create a new tasks?
+: Ask: Do you want to start a fresh project with new tasks?
 initial_loaded to create_task:
-  Ask to define the specifics of the task.
-  These specifics will be used to create the task with `create_task` with (new="auto").
+  Ask to define the specifics of the first task for your new project.
+  These specifics will be used to create the first task of your new independent project with `create_task` with (new="auto").
   Detail the task specifics including type, scope, title, intent, objectives, and constraints.
 
 : Ask: Do you want to document work already done?
 initial_loaded to document_work_done:
-  Analyze current commit changes using `jj diff --summary -r @` to understand what work has been completed.
-  Use `oc-agentic-investigator` to extract task details from actual file changes and commit context.
+  Only fetch current commit changes using `jj diff --summary -r @` to understand what files have changed.
+  Use `oc-agentic-investigator` to extract task details from actual file changes and commit context. You must explictly instruct for the following: Changes must be based off why a file was changed from its previous code to its current code. That change can be extracted using `jj diff --context 0 --git -r @ FILENAME` for the current changes. Ground your full understading of final outcomes with `jj file show -r @ FILENAME` for the file without diffs. YOU MUST NOT BASE IT OFF THE ENTIRE FILE'S CONTENT BLINDLY.
+  Announce your conclusions out loud.
   Use `oc-agentic-inquisitor` for iterative plan refinement until task specification accurately reflects completed work.
+  Announce your conclusions out loud.
   Create task documentation using `create_task` with (new="current") based on analysis of actual changes, not planned work.
+  ENSURE you ground your decisions the change of contents.
   Loop back to initial_loaded state after completion without human interaction.
 
 : Do: When user is done clarifying their task.
@@ -50,6 +53,9 @@ checked_task to commit_create_task:
 : Do immediately
 document_work_done to analyze_commit_changes:
   Run `jj diff --summary -r @` to get summary of current commit changes.
+  Changes must be based off why a file was changed from its previous code to its current code.
+  That change can be extracted using `jj diff --context 0 --git -r @ FILENAME` for the current changes. Ground your full understading of final outcomes with `jj file show -r @ FILENAME` for the file without diffs
+  YOU MUST NOT BASE IT OFF THE ENTIRE FILE'S CONTENT BLINDLY.
   Extract file paths, change types, and modification patterns from diff output.
   Prepare context for commit analysis including changed files and their purposes.
 
@@ -63,9 +69,9 @@ analyze_commit_changes to investigate_changes:
 : Do immediately
 investigate_changes to refine_task_spec:
   Format extracted task details and pass to `oc-agentic-inquisitor`.
-  Your message format will be `[requirements] This task specification needs to accurately reflect completed work for retroactive documentation. The specification must be based on actual file changes and implementation details, not planned work. [specification] EXTRACTED_TASK_DETAILS`.
+  Your message format will be `[requirements] This task specification needs to accurately reflect completed work for retroactive documentation. The specification must be based on actual file changes and implementation details, not planned work. It MUST NOT overstate the scope and work done. Remember that we are supposed to state the CHANGES, not THE FINAL STATE  [specification] EXTRACTED_TASK_DETAILS`. `EXTRACTED_TASK_DETAILS` needs to have its multiple lines compressed into a single line.
   Wait for inquisitor refinement of task specification.
-  Iterate with inquisitor until task specification accurately captures completed work.
+  Iterate with inquisitor until task specification accurately captures completed work. Completed work MUST ONLY BE COMPOSED OF ACTUAL CHANGES.
   Ensure task type, scope, title, intent, objectives, and constraints reflect actual implementation.
 
 : Do immediately
@@ -118,7 +124,7 @@ refine_tasks to final_check:
   NEVER SKIP THIS EVEN IF IT WAS DONE BEFORE. QUESTIONS CAN CHANGE.
   Get full task list with `get_project`.
   Format output of `get_project` and pass ONLY THAT INPUT to `oc-agentic-inquisitor`.
-  Your message format will be `[requirements] This is a full task list. Every part needs to be internally coherent and logically sound. Each part must build up to a cohesive whole and no contradictions are allowed. Work done must be atomic. Planning must be exhaustive. [specification] THE_TASK_LIST_SPECIFICATION`.
+  Your message format will be `[requirements] This is a full task list. Every part needs to be internally coherent and logically sound. Each part must build up to a cohesive whole and no contradictions are allowed. Work done must be atomic. Planning must be exhaustive. [specification] THE_TASK_LIST_SPECIFICATION`. `THE_TASK_LIST_SPECIFICATION` needs to have its multiple lines compressed into a single line.
   Wait for reply from `oc-agentic-inquisitor`.
   You may use `oc-agentic-investigator` to research about any concerns, in parallel, that deal directly with the codebase.
   `oc-agentic-investigator` should be called with the following format: `I am uncertain about these THE_POINT. This is my current assumption THE_ASSUMPTION. Here is the CONTEXT. This is were I would begin: INVESTIGATION_ENTRY_POINT. Can you help provide factual clarity?`.
@@ -224,6 +230,9 @@ automated_one_shot_define_task to automated_one_shot_create_task:
 : Do immediately
 automated_one_shot_create_task to automated_one_shot_final_check:
   Call `get_project` to load created task and confirm it exists.
+  Find the newly created task in the task list.
+  Call `goto` with the task_key of the newly created task to position to it.
+  Wait for successful positioning.
   Format output and pass ONLY THAT INPUT to `oc-agentic-inquisitor` for a final internal consistency check.
   Your message format will be `[requirements] This is a single task. Every part needs to be internally coherent and logically sound. Each part must build up to a cohesive whole and no contradictions are allowed. Work done must be atomic. Planning must be exhaustive. [specification] THE_TASK_SPECIFICATION`. `THE_TASK_SPECIFICATION` needs to have its multiple lines compressed into a single line.
   Wait for reply.
@@ -236,9 +245,8 @@ automated_one_shot_final_check to automated_one_shot_execution:
 
 : Do immediately
 automated_one_shot_execution to automated_one_shot_loop_tasks:
-  Find first (and only) unfinished task.
-  Go to the task with `goto`.
   Extract all current task details from `get_project`.
+  Verify the task is positioned correctly and ready for execution.
 
 : Introspect: Has unfinished task.
 automated_one_shot_loop_tasks to automated_one_shot_run_task:
@@ -258,12 +266,18 @@ automated_one_shot_run_task to automated_one_shot_redefine_task:
   You may use `oc-agentic-investigator` to research about any concerns, in parallel, that deal directly with the codebase.
   `oc-agentic-investigator` should be called with the following format: `I am uncertain about these THE_POINT. This is my current assumption THE_ASSUMPTION. Here is the CONTEXT. This is were I would begin: INVESTIGATION_ENTRY_POINT. Can you help provide factual clarity?`.
   Use your enhanced contextual understanding and ability to investigate to immediately reject or accept points, synthesizing new points, or making any other adjustments to the task plan. Ensure that your plan remains within the constraints of the sub problems to solve.
+  Call `update_task` with the refined task specification to update the current task.
+  Wait for successful task update.
 
 : Do immediately
 automated_one_shot_redefine_task to automated_one_shot_run_task
 
 : Introspect: Task is complete. IMPORTANT: THIS IS STRICT 100% COMPLETION. YOU ARE NOT ALLOWED TO BYPASS THIS REQUIREMENT. DOING SO WILL CAUSE SERIOUS PROGRAM CORRUPTION.
 automated_one_shot_run_task to automated_one_shot_all_tasks_complete:
+  Synthesize current task specification with actual work done to produce updated task.
+  Be precise with your editing.
+  Call `update_task` to update the task as completed with new details.
+  Wait for successful task update.
   Call `get_project` to get full task details.
   Decide acceptability automatically using previously gathered validation results.
   Present completed work to human for review. Show synthesized execution summary and diffs. Provide the user with three choices:
@@ -295,3 +309,4 @@ human_review_detailed to run_task
 
 : Ask: Do you want to finish?
 automated_one_shot_all_tasks_complete to initial_loaded
+
