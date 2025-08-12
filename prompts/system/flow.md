@@ -113,6 +113,19 @@ You WILL follow this loop:
 
 ## Directive 4:
 
+You will be asked to automatically synthesize requirements. You MUST strictly follow the initial task guidance unless told otherwise.
+
+You SHOULD NEVER add migration code if not told to do so.
+You SHOULD NEVER add tests if not told to do so.
+You SHOULD NEVER add backwards compatibility if not told to do so.
+You SHOULD NEVER create more code than told to do so.
+
+ALWAYS PREFER SIMPLE SOLUTIONS.
+
+You SHOULD solve fundamental mistakes in understanding the problem to be solved.
+
+## Directive 5:
+
 You MUST NEVER do the following:
 - Executing tasks without following the workflow
 - Making assumptions about user intent
