@@ -1,122 +1,96 @@
 # opencode-agentic
 
-A collection of tools and utilities designed to enable agentic workflows for opencode, providing structured approaches to software development tasks.
+A small suite of MCP (Model Context Protocol) servers and agent bundles that provide agentic workflows for software development. This project is built to support the task-focused flow provided at `workflow/task.flow` — the codebase and bundled agents assume that flow as the canonical example, though the system itself can load other flows.
 
-## Overview
+Important note about integration
+- The MCP servers in `dist/` are local agent endpoints: they do not automatically integrate with any external coding tool. You (the integrator) must wire these servers into your own agent tooling or platform.
+- This project is designed to work with opencode tooling (see `opencode.json`). If you use a different tool, adapt the startup commands and MCP client wiring to your environment. Agents and how they select models are left to you — this repo provides the MCP server runtimes, flow assets, and agent bundles, but not opinionated integrations into third‑party coding assistants.
 
-This project provides MCP (Model Context Protocol) servers that implement agentic workflow patterns for software development. It includes tools for planning, task management, and workflow orchestration that help AI agents work more effectively on complex development tasks.
+Production usage (build once, run from dist/)
+1. Install dependencies
+   ```bash
+   yarn install
+   ```
 
-## Components
+2. Build production bundles (creates `dist/`)
+   ```bash
+   yarn build
+   ```
 
-### Planner MCP Server
-Located in `planner/`, this component provides:
-- Task planning and management capabilities
-- Persistent state management for development workflows
-- Integration with version control systems (Jujutsu)
+3. Run the bundled production servers from `dist/`
+   - Start the Planner MCP server:
+     ```bash
+     node dist/planner/mcp.js
+     ```
 
-### Workflow MCP Server  
-Located in `workflow/`, this component provides:
-- Workflow definition and execution
-- Structured development process management
-- Customizable workflow patterns
+   - Start the Workflow MCP server (load the canonical task flow):
+     ```bash
+     node dist/workflow/mcp.js --workflow=dist/workflow/task.flow
+     ```
 
-## Getting Started
+Notes:
+- Use the bundles in `dist/` for production runs. The `yarn build` step bundles the server entrypoints and copies prompts and `.flow` assets into `dist/`.
+- Agents or integrators should run their own MCP client processes (or embed an MCP client in their tool) and connect to these local servers according to their chosen transport/wiring.
 
-### Prerequisites
-- Node.js and Yarn package manager
-- TypeScript support
+Architecture — how the pieces fit together
+- `dist/workflow/mcp.js`
+  - Bundled Workflow MCP server.
+  - Loads one or more workflow files supplied via `--workflow=<path>`.
+  - Exposes the workflow-related MCP tools (`transition`, `find`) used by agent clients to validate/execute state transitions.
 
-### Installation
-```bash
-yarn install
-```
+- `dist/planner/mcp.js`
+  - Bundled Planner MCP server.
+  - Exposes a task-centric set of MCP tools (`get_project`, `create_task`, `update_task`, `delete_task`, `reorder_tasks`, `goto`) intended for managing tasks and plans.
+  - Uses the Jujutsu adapter for persistent storage when run from a workspace containing Jujutsu commit structures.
 
-### Running MCP Servers
+- `dist/workflow/*.flow` and `dist/prompts/*`
+  - Flow files and prompts copied into `dist/` at build time. The canonical flow in this project is `dist/workflow/task.flow`.
 
-**Planner Server:**
-```bash
-yarn run:mcp:planner
-```
+- Agent bundles (copied to `dist/`)
+  - Provided as runnable MCP clients after build. Agent behavior, model selection, and integration into a coding environment are intentionally left to the integrator.
 
-**Workflow Server:**
-```bash
-yarn run:mcp:workflow --workflow=path/to/workflow/file
-```
+Design intent and the single-flow focus
+- The project was developed around a canonical flow (`workflow/task.flow`). That flow demonstrates the intended end-to-end behaviors and is the primary, recommended configuration for users and integrators.
+- The system is not strictly limited to that flow — `workflow/mcp.js` loads any `.flow` file provided via `--workflow` — but the rest of the code and agent bundles expect the task-focused flow as the default scenario.
 
-### Development
+Runtime sequence and how to run the task flow
+- `task.flow` requires the Planner MCP server to be available at runtime. The expected production sequence is:
+  1. Build once: `yarn build`
+  2. Start the Planner MCP server (from the workspace you want to persist, if using persistence):
+     ```bash
+     node dist/planner/mcp.js
+     ```
+  3. Start the Workflow MCP server and load the bundled task flow:
+     ```bash
+     node dist/workflow/mcp.js --workflow=dist/workflow/task.flow
+     ```
+  4. Start your agent/integration (an MCP client) and instruct it to "start task flow". The agent should call the Workflow MCP server's `find`/`transition` tools and use the Planner MCP server for any task operations required by the flow.
 
-**Run tests:**
-```bash
-yarn test
-```
+- Agents are responsible for initiating the "start task flow" action and orchestrating the execution of the `task.flow` state machine. The repository provides bundled agent clients as examples, but integrating them into your coding assistant or tooling is your responsibility.
 
-**Lint and format:**
-```bash
-yarn lint
-```
+Opencode integration
+- `opencode.json` in the repository declares how opencode can install and start the MCP services:
+  - `flow`: `yarn run:mcp:workflow --workflow=workflow/task.flow`
+  - `planner`: `yarn run:mcp:planner`
+- For production deployments using the built bundles, run the equivalent `dist/` commands shown above.
+- If you integrate with opencode tooling, use `opencode.json` as a reference or adapt it to call the `dist/` bundles.
 
-**Build:**
-The project provides targeted build scripts and a unified build that outputs to the dist/ directory. The build is split into focused sub-commands so each MCP server and static assets can be bundled independently and then combined for distribution.
+Persistence and working directory
+- Planner persistence relies on Jujutsu commit structures (the `.jj/` workspace). For full persistence, run the planner server from the repository workspace (or another workspace initialized for Jujutsu) so `Jujutsu.cwd(process.cwd())` resolves correctly.
+- If no Jujutsu data is available, the planner will not operate correctly.
 
-- Build the planner MCP server (bundles planner/mcp.ts to dist/planner/):
-```bash
-yarn build:mcp:planner
-```
+Integration responsibilities (what you must provide)
+- MCP client wiring in your coding tool or agent runtime (how agents call the planner and workflow servers).
+- Model selection, credentials, and runtime configuration for any LLMs your agents will use.
+- Any UI or orchestration around agent prompts and tool invocation — agents in `dist/` are starting points and examples, not fully-managed integrations.
 
-- Build the workflow MCP server (bundles workflow/mcp.ts to dist/workflow-mcp/):
-```bash
-yarn build:mcp:workflow
-```
+Troubleshooting (production)
+- `dist/` assets missing: re-run `yarn build` and confirm `dist/workflow/task.flow` exists.
+- Agent cannot connect: ensure servers are started from the correct working directory and your MCP client wiring matches the chosen transport.
+- Persistence errors: verify you started the planner from a workspace containing Jujutsu commit structures (or accept reduced persistence).
+- MCP not connecting: these MCP server are `local`, not `remote`. Additionally it is required that you start the `planner` mcp server in the directory where your `jujutsu` repo is. That means your LLM client needs to support that.
 
-- Build the workflow LSP server (bundles workflow/lsp-server.ts to dist/workflow/):
-```bash
-yarn build:workflow:lsp
-```
-
-- Copy deliverable assets (prompts and .flow files) into dist/:
-```bash
-yarn build:assets
-```
-
-- Run a build validation that verifies copied assets and flow files exist:
-```bash
-yarn build:validate
-```
-
-- Run the unified build (runs all of the above in sequence):
-```bash
-yarn build
-```
-
-Expected distribution directory structure after a successful run:
-
-- dist/
-  - planner/         (bundled planner MCP server)
-  - workflow-mcp/    (bundled workflow MCP server)
-  - workflow/        (bundled workflow LSP server and any .flow files)
-  - prompts/         (copied prompts with subdirectories preserved, e.g. system/, agent/)
-
-Notes and validation steps:
-- The build uses tsup to bundle the TypeScript entry points. The workflow MCP bundle is placed in dist/workflow-mcp/ to avoid colliding with the existing LSP build placed in dist/workflow/.
-- The assets copy preserves the prompts/ subdirectory structure (prompts/system, prompts/agent) and copies .flow files from the workflow/ folder into dist/workflow/.
-- To perform a full build and validate it locally:
-  1. Install dependencies: yarn install
-  2. Run the unified build: yarn build
-  3. Run the quick validation: yarn build:validate
-
-If validation fails, inspect the dist/ directory to see which step did not produce the expected files or directories. The build scripts are intentionally permissive (use of || true) for the assets copy to avoid failing in environments that may not have specific files present; adjust as needed for stricter CI checks.
-
-## Project Structure
-
-- `planner/` - Planning and task management MCP server
-- `workflow/` - Workflow execution MCP server  
-- `src/` - Shared utilities and core functionality
-- `prompts/` - System prompts and agent guidelines
-
-## Contributing
-
-This project uses:
-- TypeScript with strict mode
-- Biome for formatting and linting
-- Vitest for testing
-- Yarn 4.9.2 for package management
+Files of note
+- `opencode.json` — opencode installer integration (reference)
+- `workflow/task.flow` — canonical flow used by this project (bundled to `dist/workflow`)
+- `planner/mcp.ts`, `workflow/mcp.ts` — server entrypoints (bundled to `dist/` on build)
